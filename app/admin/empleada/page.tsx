@@ -103,9 +103,9 @@ export default function EmpleadaPage() {
 
     // Datos mensuales (últimos 6 meses)
     const mesesMap = new Map<string, number>()
-    const hoy = new Date()
+    const hoyMensual = new Date()
     for (let i = 5; i >= 0; i--) {
-      const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)
+      const fecha = new Date(hoyMensual.getFullYear(), hoyMensual.getMonth() - i, 1)
       const mesKey = fecha.toLocaleDateString('es-CO', { year: 'numeric', month: 'short' })
       mesesMap.set(mesKey, 0)
     }
