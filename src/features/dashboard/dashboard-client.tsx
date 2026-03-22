@@ -2,14 +2,14 @@
 
 import * as React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { 
-    TrendingUp, 
-    Users, 
-    Wallet, 
-    CreditCard, 
-    History, 
-    Calendar as CalendarIcon, 
-    ChevronLeft, 
+import {
+    TrendingUp,
+    Users,
+    Wallet,
+    CreditCard,
+    History,
+    Calendar as CalendarIcon,
+    ChevronLeft,
     ChevronRight,
     MapPin,
     BarChart3,
@@ -34,21 +34,21 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar'
 import { format, addDays, subDays } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { 
-    getDashboardStats, 
-    getDashboardCharts, 
-    getPayrollPeriods, 
+import {
+    getDashboardStats,
+    getDashboardCharts,
+    getPayrollPeriods,
     getCurrentUserSession,
-    getDashboardSpecificData 
+    getDashboardSpecificData
 } from '@/features/dashboard/services'
 import { getSedes } from '@/features/trabajadores/services'
-import { 
-    BarChart, 
-    Bar, 
-    XAxis, 
-    YAxis, 
-    CartesianGrid, 
-    Tooltip as RechartsTooltip, 
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip as RechartsTooltip,
     ResponsiveContainer,
     Cell,
     PieChart,
@@ -56,13 +56,13 @@ import {
 } from 'recharts'
 import { LoadingGate } from '@/components/ui/loading-gate'
 import { toast } from '@/lib/toast-helper'
-import { 
-    Table, 
-    TableBody, 
-    TableCell, 
-    TableHead, 
-    TableHeader, 
-    TableRow 
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
 } from '@/components/ui/table'
 import { BillingModal } from '@/app/dashboard/ventas/billing-modal'
 import { getPaymentMethods, getTechnicians, getInvoiceById, deleteInvoice, verifyAdminPassword } from '@/features/billing/services'
@@ -81,11 +81,12 @@ export function DashboardClient() {
     const [periodPopoverOpen, setPeriodPopoverOpen] = React.useState(false)
     const [selectedPeriod, setSelectedPeriod] = React.useState<string>('')
     const [filterType, setFilterType] = React.useState<'DIA' | 'PERIODO'>('DIA')
-    
+
     // Custom Table States
     const [searchTerm, setSearchTerm] = React.useState('')
     const [activeFilters, setActiveFilters] = React.useState<{ [key: string]: string[] }>({})
     const [selectedInvoice, setSelectedInvoice] = React.useState<any>(null)
+    const [isViewOnly, setIsViewOnly] = React.useState(false)
     const [isAdminDeleteAuthOpen, setIsAdminDeleteAuthOpen] = React.useState(false)
     const [invoiceToDelete, setInvoiceToDelete] = React.useState<any>(null)
     const [adminPassword, setAdminPassword] = React.useState('')
@@ -129,7 +130,7 @@ export function DashboardClient() {
                     setSelectedPeriod(periodsRes.data[0].NM_IDNOMINA_PK.toString())
                 }
             }
-            
+
             // Fetch catalog for billing modal
             const [techs, servs, prods, payments] = await Promise.all([
                 getTechnicians(),
@@ -195,12 +196,13 @@ export function DashboardClient() {
         setCurrentDate(prev => dir === 'prev' ? subDays(prev, 1) : addDays(prev, 1))
     }
 
-    const handleOpenInvoice = async (invoice: any) => {
+    const handleOpenInvoice = async (invoice: any, isView: boolean = false) => {
         setIsFetchingInfo(true)
         try {
             const res = await getInvoiceById(invoice.FC_IDFACTURA_PK)
             if (res.success) {
                 setSelectedInvoice(res.data)
+                setIsViewOnly(isView)
                 setIsBillingModalOpen(true)
             } else {
                 toast.error(res.error || 'Error al obtener detalles de la factura')
@@ -245,6 +247,7 @@ export function DashboardClient() {
 
     const handleNewInvoice = () => {
         setSelectedInvoice(null)
+        setIsViewOnly(false)
         setIsBillingModalOpen(true)
     }
 
@@ -267,7 +270,7 @@ export function DashboardClient() {
                         <MapPin className="size-3 text-[#FF7E5F]" />
                         Sucursal:
                     </div>
-                    <select 
+                    <select
                         className="bg-transparent font-black text-xs uppercase pr-8 outline-none cursor-pointer"
                         value={selectedSede}
                         onChange={(e) => setSelectedSede(Number(e.target.value))}
@@ -341,7 +344,7 @@ export function DashboardClient() {
                                         value: p.NM_IDNOMINA_PK.toString()
                                     }))}
                                     value={selectedPeriod}
-                                    onValueChange={(val) => val && setSelectedPeriod(val)}
+                                    onValueChange={(val) => val && setSelectedPeriod(val.toString())}
                                     placeholder="BUSCAR..."
                                     className="bg-transparent border-none shadow-none h-6 font-black text-[10px] w-full px-0 hover:bg-transparent justify-start"
                                 />
@@ -352,7 +355,7 @@ export function DashboardClient() {
 
                 {/* View Switcher */}
                 <div className="flex items-center bg-black p-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                    <button 
+                    <button
                         onClick={() => setViewMode('GENERAL')}
                         className={cn(
                             "px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all italic flex items-center gap-2",
@@ -361,7 +364,7 @@ export function DashboardClient() {
                     >
                         <BarChart3 className="size-3.5" /> GENERAL
                     </button>
-                    <button 
+                    <button
                         onClick={() => setViewMode('ESPECIFICO')}
                         className={cn(
                             "px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all italic flex items-center gap-2",
@@ -379,25 +382,25 @@ export function DashboardClient() {
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                         {[
-                          { title: `Ventas ${selectedPeriod === 'hoy' ? 'Hoy' : 'Periodo'}`, value: `$${(stats?.ventas_total || 0).toLocaleString('es-CO')}`, icon: TrendingUp, color: 'from-[#FF7E5F] to-[#FEB47B]' },
-                          { title: 'Clientes Nuevos', value: stats?.clientes_nuevos || 0, icon: Users, color: 'from-blue-500 to-cyan-400' },
-                          { title: 'Créditos', value: `$${(stats?.creditos_total || 0).toLocaleString('es-CO')}`, sub: `${stats?.creditos_count || 0} pndte`, icon: CreditCard, color: 'from-red-500 to-rose-400' },
-                          { title: 'Deudas Activas', value: stats?.deudas_count || 0, sub: 'Clientes con deuda', icon: LayoutList, color: 'from-amber-500 to-yellow-400' },
-                          { title: 'Vales', value: `$${(stats?.vales_total || 0).toLocaleString('es-CO')}`, sub: `${stats?.vales_count || 0} activos`, icon: Wallet, color: 'from-emerald-500 to-teal-400' },
+                            { title: `Ventas ${selectedPeriod === 'hoy' ? 'Hoy' : 'Periodo'}`, value: `$${(stats?.ventas_total || 0).toLocaleString('es-CO')}`, icon: TrendingUp, color: 'from-[#FF7E5F] to-[#FEB47B]' },
+                            { title: 'Clientes Nuevos', value: stats?.clientes_nuevos || 0, icon: Users, color: 'from-blue-500 to-cyan-400' },
+                            { title: 'Créditos', value: `$${(stats?.creditos_total || 0).toLocaleString('es-CO')}`, sub: `${stats?.creditos_count || 0} pndte`, icon: CreditCard, color: 'from-red-500 to-rose-400' },
+                            { title: 'Deudas Activas', value: stats?.deudas_count || 0, sub: 'Clientes con deuda', icon: LayoutList, color: 'from-amber-500 to-yellow-400' },
+                            { title: 'Vales', value: `$${(stats?.vales_total || 0).toLocaleString('es-CO')}`, sub: `${stats?.vales_count || 0} activos`, icon: Wallet, color: 'from-emerald-500 to-teal-400' },
                         ].map((stat, i) => (
-                          <Card key={i} className="border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative group bg-white dark:bg-slate-900">
-                            <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${stat.color} opacity-[0.05] group-hover:opacity-[0.1] rounded-full -mr-12 -mt-12 transition-all duration-500 blur-xl group-hover:scale-150`} />
-                            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 relative z-10">
-                                <CardTitle className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{stat.title}</CardTitle>
-                                <div className={cn("p-2 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-gradient-to-br", stat.color)}>
-                                    <stat.icon className="size-4 text-white" />
-                                </div>
-                            </CardHeader>
-                            <CardContent className="relative z-10">
-                                <div className="text-3xl font-black text-slate-900 dark:text-white leading-none tracking-tighter">{stat.value}</div>
-                                {stat.sub && <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase italic">{stat.sub}</p>}
-                            </CardContent>
-                          </Card>
+                            <Card key={i} className="border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative group bg-white dark:bg-slate-900">
+                                <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${stat.color} opacity-[0.05] group-hover:opacity-[0.1] rounded-full -mr-12 -mt-12 transition-all duration-500 blur-xl group-hover:scale-150`} />
+                                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 relative z-10">
+                                    <CardTitle className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{stat.title}</CardTitle>
+                                    <div className={cn("p-2 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-gradient-to-br", stat.color)}>
+                                        <stat.icon className="size-4 text-white" />
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="relative z-10">
+                                    <div className="text-3xl font-black text-slate-900 dark:text-white leading-none tracking-tighter">{stat.value}</div>
+                                    {stat.sub && <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase italic">{stat.sub}</p>}
+                                </CardContent>
+                            </Card>
                         ))}
                     </div>
 
@@ -419,7 +422,7 @@ export function DashboardClient() {
                             <p className="text-[9px] font-bold text-slate-500 mt-1 uppercase">Servicios realizados en periodo</p>
                         </Card>
                         <Card className="border-2 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-slate-900 p-4 flex flex-col items-center justify-center text-center">
-                           <div className="size-10 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-slate-900 flex items-center justify-center mb-3">
+                            <div className="size-10 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-slate-900 flex items-center justify-center mb-3">
                                 <Users className="size-5 text-white" />
                             </div>
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Técnicos Activos</span>
@@ -429,108 +432,108 @@ export function DashboardClient() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Top Technicians Chart */}
-                    <Card className="border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-slate-900 p-6">
-                        <h3 className="text-sm font-black uppercase mb-6 flex items-center gap-2 tracking-tighter">
-                            <Zap className="size-4 text-[#FF7E5F]" /> Técnicos con mayor servicios
-                        </h3>
-                        <div className="h-[300px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartsData?.topTechs || []} layout="vertical" margin={{ left: 40, right: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
-                                    <XAxis type="number" hide />
-                                    <YAxis 
-                                        dataKey="name" 
-                                        type="category" 
-                                        tick={{ fontSize: 10, fontWeight: 900, fill: '#64748B' }} 
-                                        width={100} 
-                                    />
-                                    <RechartsTooltip 
-                                        cursor={{ fill: 'transparent' }}
-                                        contentStyle={{ backgroundColor: '#000', border: 'none', borderRadius: 0, padding: 8 }}
-                                        itemStyle={{ color: '#fff', fontSize: 10, fontWeight: 900 }}
-                                    />
-                                    <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                                        {(chartsData?.topTechs || []).map((entry: any, index: number) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </Card>
+                        {/* Top Technicians Chart */}
+                        <Card className="border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-slate-900 p-6">
+                            <h3 className="text-sm font-black uppercase mb-6 flex items-center gap-2 tracking-tighter">
+                                <Zap className="size-4 text-[#FF7E5F]" /> Técnicos con mayor servicios
+                            </h3>
+                            <div className="h-[300px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={chartsData?.topTechs || []} layout="vertical" margin={{ left: 40, right: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
+                                        <XAxis type="number" hide />
+                                        <YAxis
+                                            dataKey="name"
+                                            type="category"
+                                            tick={{ fontSize: 10, fontWeight: 900, fill: '#64748B' }}
+                                            width={100}
+                                        />
+                                        <RechartsTooltip
+                                            cursor={{ fill: 'transparent' }}
+                                            contentStyle={{ backgroundColor: '#000', border: 'none', borderRadius: 0, padding: 8 }}
+                                            itemStyle={{ color: '#fff', fontSize: 10, fontWeight: 900 }}
+                                        />
+                                        <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                                            {(chartsData?.topTechs || []).map((entry: any, index: number) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </Card>
 
-                    {/* Top Services Pie */}
-                    <Card className="border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-slate-900 p-6">
-                        <h3 className="text-sm font-black uppercase mb-6 flex items-center gap-2 tracking-tighter">
-                            <Users className="size-4 text-emerald-500" /> Top Servicios
-                        </h3>
-                         <div className="h-[300px] w-full flex items-center">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={chartsData?.topServices || []}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={100}
-                                        paddingAngle={5}
-                                        dataKey="count"
-                                    >
-                                        {(chartsData?.topServices || []).map((entry: any, index: number) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="black" strokeWidth={2} />
-                                        ))}
-                                    </Pie>
-                                    <RechartsTooltip />
-                                </PieChart>
-                            </ResponsiveContainer>
-                            <div className="w-1/3 space-y-2">
-                                {(chartsData?.topServices || []).map((s: any, i: number) => (
-                                    <div key={i} className="flex items-center gap-2">
-                                        <div className="size-2" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                                        <span className="text-[9px] font-black uppercase truncate">{s.name}</span>
-                                        <span className="text-[9px] font-black ml-auto">{s.count}</span>
+                        {/* Top Services Pie */}
+                        <Card className="border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-slate-900 p-6">
+                            <h3 className="text-sm font-black uppercase mb-6 flex items-center gap-2 tracking-tighter">
+                                <Users className="size-4 text-emerald-500" /> Top Servicios
+                            </h3>
+                            <div className="h-[300px] w-full flex items-center">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={chartsData?.topServices || []}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={100}
+                                            paddingAngle={5}
+                                            dataKey="count"
+                                        >
+                                            {(chartsData?.topServices || []).map((entry: any, index: number) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="black" strokeWidth={2} />
+                                            ))}
+                                        </Pie>
+                                        <RechartsTooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="w-1/3 space-y-2">
+                                    {(chartsData?.topServices || []).map((s: any, i: number) => (
+                                        <div key={i} className="flex items-center gap-2">
+                                            <div className="size-2" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                                            <span className="text-[9px] font-black uppercase truncate">{s.name}</span>
+                                            <span className="text-[9px] font-black ml-auto">{s.count}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* Top Products */}
+                        <Card className="lg:col-span-2 border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-slate-900 p-6">
+                            <h3 className="text-sm font-black uppercase mb-6 flex items-center gap-2 tracking-tighter">
+                                <Wallet className="size-4 text-blue-500" /> Top Productos Vendidos
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                {(chartsData?.topProducts || []).map((p: any, i: number) => (
+                                    <div key={i} className="border-2 border-black p-3 bg-slate-50 relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 p-1 bg-black text-white text-[8px] font-black">#{i + 1}</div>
+                                        <p className="text-[10px] font-black uppercase mb-1 truncate pr-4">{p.name}</p>
+                                        <p className="text-xl font-black text-[#FF7E5F]">{p.count}</p>
+                                        <p className="text-[8px] font-bold text-slate-400 uppercase">Unidades</p>
                                     </div>
                                 ))}
+                                {(chartsData?.topProducts || []).length === 0 && (
+                                    <p className="col-span-1 md:col-span-5 text-center text-slate-400 italic text-xs py-8 uppercase font-bold">Sin productos registrados en este periodo</p>
+                                )}
                             </div>
-                         </div>
-                    </Card>
-
-                    {/* Top Products */}
-                    <Card className="lg:col-span-2 border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-slate-900 p-6">
-                         <h3 className="text-sm font-black uppercase mb-6 flex items-center gap-2 tracking-tighter">
-                            <Wallet className="size-4 text-blue-500" /> Top Productos Vendidos
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                            {(chartsData?.topProducts || []).map((p: any, i: number) => (
-                                <div key={i} className="border-2 border-black p-3 bg-slate-50 relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-1 bg-black text-white text-[8px] font-black">#{i+1}</div>
-                                    <p className="text-[10px] font-black uppercase mb-1 truncate pr-4">{p.name}</p>
-                                    <p className="text-xl font-black text-[#FF7E5F]">{p.count}</p>
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase">Unidades</p>
-                                </div>
-                            ))}
-                            {(chartsData?.topProducts || []).length === 0 && (
-                                <p className="col-span-1 md:col-span-5 text-center text-slate-400 italic text-xs py-8 uppercase font-bold">Sin productos registrados en este periodo</p>
-                            )}
-                        </div>
-                    </Card>
-                </div>
+                        </Card>
+                    </div>
                 </div>
             ) : (
                 <div className="space-y-8 animate-in slide-in-from-bottom-5 duration-500">
-                     {/* Facturas Table */}
-                     <Card className="border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-slate-900 overflow-hidden">
+                    {/* Facturas Table */}
+                    <Card className="border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-slate-900 overflow-hidden">
                         <div className="bg-black p-3 flex items-center justify-between">
-                             <h3 className="text-xs font-black uppercase text-white tracking-widest flex items-center gap-2">
+                            <h3 className="text-xs font-black uppercase text-white tracking-widest flex items-center gap-2">
                                 <LayoutList className="size-4" /> Detalle de Ventas
-                             </h3>
-                             <Button 
+                            </h3>
+                            <Button
                                 onClick={handleNewInvoice}
                                 className="h-7 px-3 bg-white text-black hover:bg-slate-200 rounded-none border-2 border-black font-black text-[9px] uppercase italic gap-1"
-                             >
+                            >
                                 <Plus className="size-3" /> Agregar Factura
-                             </Button>
+                            </Button>
                         </div>
                         <div className="overflow-x-auto">
                             <Table>
@@ -572,8 +575,8 @@ export function DashboardClient() {
                                                 <span className={cn(
                                                     "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm border",
                                                     f.FC_ESTADO === 'PAGADO' ? "bg-emerald-50 text-emerald-600 border-emerald-200" :
-                                                    f.FC_ESTADO === 'PENDIENTE' ? "bg-orange-50 text-orange-600 border-orange-200" :
-                                                    "bg-red-50 text-red-600 border-red-200"
+                                                        f.FC_ESTADO === 'PENDIENTE' ? "bg-orange-50 text-orange-600 border-orange-200" :
+                                                            "bg-red-50 text-red-600 border-red-200"
                                                 )}>
                                                     {f.FC_ESTADO}
                                                 </span>
@@ -581,7 +584,7 @@ export function DashboardClient() {
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button
-                                                        onClick={() => handleOpenInvoice(f)}
+                                                        onClick={() => handleOpenInvoice(f, true)}
                                                         className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-lg transition-all"
                                                         title="Ver detalles"
                                                     >
@@ -589,7 +592,7 @@ export function DashboardClient() {
                                                     </button>
                                                     {f.FC_ESTADO === 'PENDIENTE' && (
                                                         <button
-                                                            onClick={() => handleOpenInvoice(f)}
+                                                            onClick={() => handleOpenInvoice(f, false)}
                                                             className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-lg transition-all"
                                                             title="Editar factura"
                                                         >
@@ -618,9 +621,9 @@ export function DashboardClient() {
                                 </TableBody>
                             </Table>
                         </div>
-                     </Card>
+                    </Card>
 
-                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* Créditos Table */}
                         <Card className="border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-slate-900 overflow-hidden">
                             <div className="bg-[#FF7E5F] p-3">
@@ -650,8 +653,8 @@ export function DashboardClient() {
                             </div>
                         </Card>
 
-                         {/* Vales Table */}
-                         <Card className="border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-slate-900 overflow-hidden">
+                        {/* Vales Table */}
+                        <Card className="border-2 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-slate-900 overflow-hidden">
                             <div className="bg-emerald-500 p-3">
                                 <h3 className="text-xs font-black uppercase text-white tracking-widest flex items-center gap-2">
                                     <Wallet className="size-4" /> Vales / Anticipos
@@ -667,12 +670,12 @@ export function DashboardClient() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                         {(specificData?.vales || []).map((v: any) => (
+                                        {(specificData?.vales || []).map((v: any) => (
                                             <TableRow key={v.VL_IDVALE_PK}>
                                                 <TableCell className="text-[10px] font-black uppercase">{v.trabajador_nombre}</TableCell>
                                                 <TableCell className="text-[11px] font-black">$ {Number(v.VL_VALOR_TOTAL).toLocaleString('es-CO')}</TableCell>
                                                 <TableCell className="text-center">
-                                                     <span className="px-1.5 py-0.5 text-[8px] font-black uppercase border bg-slate-50">
+                                                    <span className="px-1.5 py-0.5 text-[8px] font-black uppercase border bg-slate-50">
                                                         {v.VL_ESTADO}
                                                     </span>
                                                 </TableCell>
@@ -682,13 +685,13 @@ export function DashboardClient() {
                                 </Table>
                             </div>
                         </Card>
-                     </div>
+                    </div>
                 </div>
             )}
 
             {/* Floating Add Button in Specific View */}
             {viewMode === 'ESPECIFICO' && (
-                <Button 
+                <Button
                     onClick={handleNewInvoice}
                     className="fixed bottom-8 right-8 size-14 rounded-full bg-black text-white shadow-[8px_8px_0px_0px_rgba(255,126,95,1)] hover:scale-110 active:scale-95 transition-all z-50 p-0"
                 >
@@ -696,7 +699,7 @@ export function DashboardClient() {
                 </Button>
             )}
 
-            <BillingModal 
+            <BillingModal
                 isOpen={isBillingModalOpen}
                 onClose={() => {
                     setIsBillingModalOpen(false)
@@ -709,6 +712,7 @@ export function DashboardClient() {
                 sucursales={sedes}
                 sessionUser={user}
                 invoice={selectedInvoice}
+                isViewOnly={isViewOnly}
             />
 
             {/* Modal Autenticación Admin para Eliminar */}

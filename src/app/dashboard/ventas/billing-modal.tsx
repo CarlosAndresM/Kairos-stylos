@@ -85,6 +85,7 @@ interface BillingModalProps {
   sucursales: any[]
   sessionUser: any
   invoice?: any // Factura para editar
+  isViewOnly?: boolean // Modo solo lectura
 }
 
 export function BillingModal({
@@ -96,7 +97,8 @@ export function BillingModal({
   paymentMethods,
   sucursales,
   sessionUser,
-  invoice
+  invoice,
+  isViewOnly = false
 }: BillingModalProps) {
   const [isLoading, setIsLoading] = React.useState(false)
   const [nextInvoiceNum, setNextInvoiceNum] = React.useState<string>('')
@@ -109,7 +111,7 @@ export function BillingModal({
   const [pendingStatusChange, setPendingStatusChange] = React.useState<string | null>(null)
 
   const isEditing = !!invoice
-  const isPaid = invoice?.FC_ESTADO === 'PAGADO' || invoice?.FC_ESTADO === 'CANCELADO'
+  const isPaid = isViewOnly || invoice?.FC_ESTADO === 'PAGADO' || invoice?.FC_ESTADO === 'CANCELADO'
 
   const cleanupTempFiles = async (urls?: string[]) => {
     const filesToDelete = urls || uploadedTempFiles.current
@@ -600,7 +602,7 @@ export function BillingModal({
                       <Select
                         value={field.value?.toString()}
                         onValueChange={(val) => field.onChange(Number(val))}
-                        disabled={sessionUser?.rol !== 'ADMINISTRADOR_TOTAL'}
+                        disabled={sessionUser?.role !== 'ADMINISTRADOR_TOTAL'}
                       >
                         <SelectTrigger className="w-[120px] h-6 rounded-none border-slate-400 text-[9px] font-black uppercase mb-1">
                           <SelectValue placeholder="SUCURSAL" />
@@ -1086,20 +1088,26 @@ export function BillingModal({
                 onClick={handleClose}
                 className="flex-1 h-12 rounded-none border border-slate-200 font-bold text-sm hover:bg-slate-50 uppercase tracking-tighter text-slate-500"
               >
-                DESCARTAR
+                {isViewOnly ? 'CERRAR VISTA' : 'DESCARTAR'}
               </Button>
-              <Button
-                type="submit"
-                disabled={isLoading || totalPaid !== total || total <= 0}
-                className={cn(
-                  "flex-[2] h-12 rounded-none font-black text-lg uppercase tracking-tighter transition-all shadow-lg",
-                  totalPaid === total && total > 0
-                    ? "bg-slate-900 hover:bg-black text-white"
-                    : "bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200 shadow-none"
-                )}
-              >
-                {isLoading ? 'GUARDANDO...' : 'PROCESAR FACTURA'}
-              </Button>
+              {!isViewOnly && (
+                <Button
+                  type="submit"
+                  disabled={isLoading || uploadingPhysical || uploadingIndexes.length > 0 || totalPaid !== total || total <= 0}
+                  className={cn(
+                    "flex-[2] h-12 rounded-none font-black text-lg uppercase tracking-tighter transition-all shadow-lg",
+                    !isLoading && !uploadingPhysical && uploadingIndexes.length === 0 && totalPaid === total && total > 0
+                      ? "bg-slate-900 hover:bg-black text-white"
+                      : "bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200 shadow-none"
+                  )}
+                >
+                  {isLoading
+                    ? 'GUARDANDO...'
+                    : (uploadingPhysical || uploadingIndexes.length > 0)
+                      ? 'SUBIENDO IMAGEN...'
+                      : 'PROCESAR FACTURA'}
+                </Button>
+              )}
             </div>
           </form>
         </Form>

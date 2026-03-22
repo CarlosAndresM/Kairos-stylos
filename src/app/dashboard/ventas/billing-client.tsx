@@ -74,6 +74,7 @@ export function BillingClient({
 
   const [searchTerm, setSearchTerm] = React.useState('')
   const [isModalOpen, setIsModalOpen] = React.useState(false)
+  const [isViewOnly, setIsViewOnly] = React.useState(false)
   const [selectedInvoice, setSelectedInvoice] = React.useState<any>(null)
   const [isFetchingInfo, setIsFetchingInfo] = React.useState(false)
   const [invoices, setInvoices] = React.useState<any[]>(initialInvoices)
@@ -147,12 +148,13 @@ export function BillingClient({
     setCurrentDate(prev => dir === 'prev' ? subDays(prev, 1) : addDays(prev, 1))
   }
 
-  const handleOpenInvoice = async (invoice: any) => {
+  const handleOpenInvoice = async (invoice: any, isView: boolean = false) => {
     setIsFetchingInfo(true)
     try {
       const res = await getInvoiceById(invoice.FC_IDFACTURA_PK)
       if (res.success) {
         setSelectedInvoice(res.data)
+        setIsViewOnly(isView)
         setIsModalOpen(true)
       } else {
         toast.error(res.error || 'Error al obtener detalles de la factura')
@@ -196,6 +198,7 @@ export function BillingClient({
 
   const handleNewInvoice = () => {
     setSelectedInvoice(null)
+    setIsViewOnly(false)
     setIsModalOpen(true)
   }
 
@@ -365,7 +368,7 @@ export function BillingClient({
                   <TableCell className="py-2 px-4 text-right">
                     <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={() => handleOpenInvoice(invoice)}
+                        onClick={() => handleOpenInvoice(invoice, true)}
                         className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-lg transition-all"
                         title="Ver detalles"
                       >
@@ -373,7 +376,7 @@ export function BillingClient({
                       </button>
                       {invoice.FC_ESTADO === 'PENDIENTE' && (
                         <button
-                          onClick={() => handleOpenInvoice(invoice)}
+                          onClick={() => handleOpenInvoice(invoice, false)}
                           className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-lg transition-all"
                           title="Editar factura"
                         >
@@ -413,6 +416,7 @@ export function BillingClient({
         products={products}
         paymentMethods={paymentMethods}
         invoice={selectedInvoice}
+        isViewOnly={isViewOnly}
         sucursales={sucursales}
         sessionUser={sessionUser}
       />
