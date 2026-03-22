@@ -50,6 +50,8 @@ interface BillingClientProps {
   services: any[]
   products: any[]
   paymentMethods: any[]
+  sucursales: any[]
+  sessionUser: any
 }
 
 /**
@@ -60,7 +62,9 @@ export function BillingClient({
   technicians,
   services,
   products,
-  paymentMethods
+  paymentMethods,
+  sucursales,
+  sessionUser
 }: BillingClientProps) {
   const [mounted, setMounted] = React.useState(false)
 
@@ -198,15 +202,6 @@ export function BillingClient({
   return (
     <LoadingGate>
       <div className="space-y-6">
-        {/* Loader Overlay for date changes (secondary) */}
-        {isLoading && (
-          <div className="fixed inset-0 z-[55] flex items-center justify-center bg-white/40 dark:bg-slate-950/40 backdrop-blur-[2px] animate-in fade-in duration-300">
-            <div className="flex flex-col items-center gap-2">
-                <div className="size-8 border-4 border-slate-200 dark:border-slate-800 border-t-black dark:border-t-white rounded-full animate-spin" />
-                <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Actualizando...</span>
-            </div>
-          </div>
-        )}
       {/* Date Navigation & Actions Header */}
       <div className="flex flex-col xl:flex-row gap-4 xl:items-center justify-between bg-slate-100 dark:bg-slate-900/50 p-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none">
         <div className="flex items-center gap-1 bg-white dark:bg-slate-950 border-2 border-black p-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -418,6 +413,8 @@ export function BillingClient({
         products={products}
         paymentMethods={paymentMethods}
         invoice={selectedInvoice}
+        sucursales={sucursales}
+        sessionUser={sessionUser}
       />
 
       {/* Modal Autenticación Admin para Eliminar */}

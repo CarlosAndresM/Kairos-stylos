@@ -80,6 +80,12 @@ const NAV_ITEMS = [
     href: '/dashboard/nomina',
     icon: History,
     roles: ['ADMINISTRADOR_TOTAL']
+  },
+  {
+    title: 'Créditos',
+    href: '/dashboard/creditos',
+    icon: Receipt,
+    roles: ['ADMINISTRADOR_TOTAL', 'CAJERO']
   }
 ]
 

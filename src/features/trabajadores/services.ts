@@ -22,6 +22,7 @@ export async function getTrabajadores(): Promise<ApiResponse<WorkerWithStats[]>>
         r.RL_NOMBRE,
         t.SC_IDSUCURSAL_FK,
         s.SC_NOMBRE,
+        t.TR_SUELDO_BASE,
         (
           SELECT COUNT(*) 
           FROM KS_FACTURA_DETALLES fd 
@@ -70,24 +71,24 @@ export async function saveTrabajador(data: WorkerFormData): Promise<ApiResponse>
       if (data.TR_PASSWORD && data.TR_PASSWORD.trim() !== '') {
         await db.execute(
           `UPDATE KS_TRABAJADORES 
-           SET TR_NOMBRE = ?, TR_TELEFONO = ?, TR_PASSWORD = ?, TR_ACTIVO = ?, RL_IDROL_FK = ?, SC_IDSUCURSAL_FK = ? 
+           SET TR_NOMBRE = ?, TR_TELEFONO = ?, TR_PASSWORD = ?, TR_ACTIVO = ?, RL_IDROL_FK = ?, SC_IDSUCURSAL_FK = ?, TR_SUELDO_BASE = ? 
            WHERE TR_IDTRABAJADOR_PK = ?`,
-          [data.TR_NOMBRE, data.TR_TELEFONO || '', data.TR_PASSWORD || '', data.TR_ACTIVO, data.RL_IDROL_FK, data.SC_IDSUCURSAL_FK || null, data.TR_IDTRABAJADOR_PK] as any[]
+          [data.TR_NOMBRE, data.TR_TELEFONO || '', data.TR_PASSWORD || '', data.TR_ACTIVO, data.RL_IDROL_FK, data.SC_IDSUCURSAL_FK || null, data.TR_SUELDO_BASE || 0, data.TR_IDTRABAJADOR_PK] as any[]
         );
       } else {
         await db.execute(
           `UPDATE KS_TRABAJADORES 
-           SET TR_NOMBRE = ?, TR_TELEFONO = ?, TR_ACTIVO = ?, RL_IDROL_FK = ?, SC_IDSUCURSAL_FK = ? 
+           SET TR_NOMBRE = ?, TR_TELEFONO = ?, TR_ACTIVO = ?, RL_IDROL_FK = ?, SC_IDSUCURSAL_FK = ?, TR_SUELDO_BASE = ?
            WHERE TR_IDTRABAJADOR_PK = ?`,
-          [data.TR_NOMBRE, data.TR_TELEFONO || '', data.TR_ACTIVO, data.RL_IDROL_FK, data.SC_IDSUCURSAL_FK || null, data.TR_IDTRABAJADOR_PK] as any[]
+          [data.TR_NOMBRE, data.TR_TELEFONO || '', data.TR_ACTIVO, data.RL_IDROL_FK, data.SC_IDSUCURSAL_FK || null, data.TR_SUELDO_BASE || 0, data.TR_IDTRABAJADOR_PK] as any[]
         );
       }
     } else {
       // Create
       await db.execute(
-        `INSERT INTO KS_TRABAJADORES (TR_NOMBRE, TR_TELEFONO, TR_PASSWORD, TR_ACTIVO, RL_IDROL_FK, SC_IDSUCURSAL_FK) 
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [data.TR_NOMBRE, data.TR_TELEFONO || '', data.TR_PASSWORD || '123456', data.TR_ACTIVO, data.RL_IDROL_FK, data.SC_IDSUCURSAL_FK || null] as any[]
+        `INSERT INTO KS_TRABAJADORES (TR_NOMBRE, TR_TELEFONO, TR_PASSWORD, TR_ACTIVO, RL_IDROL_FK, SC_IDSUCURSAL_FK, TR_SUELDO_BASE) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [data.TR_NOMBRE, data.TR_TELEFONO || '', data.TR_PASSWORD || '123456', data.TR_ACTIVO, data.RL_IDROL_FK, data.SC_IDSUCURSAL_FK || null, data.TR_SUELDO_BASE || 0] as any[]
       );
     }
     revalidatePath("/dashboard/trabajadores");

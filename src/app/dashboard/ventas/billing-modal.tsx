@@ -82,6 +82,8 @@ interface BillingModalProps {
   services: any[]
   products: any[]
   paymentMethods: any[]
+  sucursales: any[]
+  sessionUser: any
   invoice?: any // Factura para editar
 }
 
@@ -92,6 +94,8 @@ export function BillingModal({
   services,
   products,
   paymentMethods,
+  sucursales,
+  sessionUser,
   invoice
 }: BillingModalProps) {
   const [isLoading, setIsLoading] = React.useState(false)
@@ -194,8 +198,8 @@ export function BillingModal({
       TR_IDCLIENTE_FK: null,
       isVale: false,
       FC_FECHA: new Date(),
-      SC_IDSUCURSAL_FK: 1,
-      TR_IDCAJERO_FK: 1,
+      SC_IDSUCURSAL_FK: sessionUser?.sucursal_id || 1,
+      TR_IDCAJERO_FK: sessionUser?.id || 1,
       services: [{ SV_IDSERVICIO_FK: undefined as any, TR_IDTECNICO_FK: undefined as any, FD_VALOR: 0 }],
       products: [],
       payments: [],
@@ -234,8 +238,8 @@ export function BillingModal({
         TR_IDCLIENTE_FK: null,
         isVale: false,
         FC_FECHA: new Date(),
-        SC_IDSUCURSAL_FK: 1,
-        TR_IDCAJERO_FK: 1,
+        SC_IDSUCURSAL_FK: sessionUser?.sucursal_id || 1,
+        TR_IDCAJERO_FK: sessionUser?.id || 1,
         services: [{ SV_IDSERVICIO_FK: undefined as any, TR_IDTECNICO_FK: undefined as any, FD_VALOR: 0 }],
         products: [],
         payments: [],
@@ -591,6 +595,29 @@ export function BillingModal({
                 <div className="flex flex-col gap-1 items-end mr-4 border-r border-slate-300 pr-4">
                   <FormField
                     control={form.control}
+                    name="SC_IDSUCURSAL_FK"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value?.toString()}
+                        onValueChange={(val) => field.onChange(Number(val))}
+                        disabled={sessionUser?.rol !== 'ADMINISTRADOR_TOTAL'}
+                      >
+                        <SelectTrigger className="w-[120px] h-6 rounded-none border-slate-400 text-[9px] font-black uppercase mb-1">
+                          <SelectValue placeholder="SUCURSAL" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-none border-2 border-black">
+                          {sucursales.map(s => (
+                            <SelectItem key={s.SC_IDSUCURSAL_PK} value={s.SC_IDSUCURSAL_PK.toString()} className="text-[10px] font-black uppercase">
+                              {s.SC_NOMBRE}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="FC_ESTADO"
                     render={({ field }) => (
                       <Select
@@ -598,7 +625,7 @@ export function BillingModal({
                         onValueChange={handleStatusChange}
                       >
                         <SelectTrigger className={cn(
-                          "w-[100px] h-6 rounded-none border-slate-400 text-[9px] font-black uppercase",
+                          "w-[120px] h-6 rounded-none border-slate-400 text-[9px] font-black uppercase",
                           field.value === 'PAGADO' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
                             field.value === 'CANCELADO' ? "bg-red-50 text-red-700 border-red-200" :
                               "bg-orange-50 text-orange-700 border-orange-200"
@@ -608,7 +635,7 @@ export function BillingModal({
                         <SelectContent className="rounded-none border-2 border-black">
                           <SelectItem value="PENDIENTE" className="text-[10px] font-black uppercase">PENDIENTE</SelectItem>
                           <SelectItem value="PAGADO" className="text-[10px] font-black uppercase">PAGADO</SelectItem>
-                          <SelectItem value="CANCELADO" className="text-[10px] font-black uppercase">CANCELADO</SelectItem>
+                          {!!invoice && <SelectItem value="CANCELADO" className="text-[10px] font-black uppercase">CANCELADO</SelectItem>}
                         </SelectContent>
                       </Select>
                     )}
