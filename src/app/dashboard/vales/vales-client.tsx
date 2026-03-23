@@ -350,7 +350,7 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
                     onFilterChange={(vals: string[]) => handleFilterChange('ROL', vals)}
                   />
                 </TableHead>
-                <TableHead>Monto / Cuotas</TableHead>
+                <TableHead>Monto</TableHead>
                 <TableHead className="py-0 px-2">
                   <TableFilter
                     label="Estado"
@@ -391,12 +391,7 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
                       </Badge>
                     </TableCell>
                     <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
-                      <div className="flex flex-col">
-                        <span>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(adelanto.AD_MONTO))}</span>
-                        <span className="text-[10px] text-slate-500 font-normal">
-                          {adelanto.AD_CUOTAS > 1 ? `${adelanto.AD_CUOTAS_PAGADAS}/${adelanto.AD_CUOTAS} cuotas` : '1 cuota'}
-                        </span>
-                      </div>
+                      <span>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(adelanto.AD_MONTO))}</span>
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(adelanto.AD_ESTADO)}
