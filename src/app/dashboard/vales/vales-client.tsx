@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Plus, XCircle, Search, Calendar as CalendarIcon, Wallet } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,9 +32,12 @@ import {
 } from '@/components/ui/table';
 import { TableFilter } from '@/components/ui/table-filter';
 import { toast } from '@/lib/toast-helper';
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
+import { ComboboxSearch } from '@/components/ui/combobox-search';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface Adelanto {
   AD_IDADELANTO_PK: number;
@@ -44,16 +48,15 @@ interface Adelanto {
   AD_CUOTAS_PAGADAS: number;
   AD_ESTADO: 'PENDIENTE' | 'DESCONTADO' | 'ANULADO';
   AD_OBSERVACIONES: string | null;
-  TR_NOMBRES: string;
-  TR_APELLIDOS: string;
+  TR_NOMBRE: string;
+  AD_FECHA_DESEMBOLSO: string | null;
+  AD_FECHA_INICIO_COBRO: string | null;
   AD_FECHA_CREACION: string;
 }
 
 interface Trabajador {
   TR_IDTRABAJADOR_PK: number;
-  TR_NOMBRES: string;
-  TR_APELLIDOS: string;
-  TR_DOCUMENTO: string;
+  TR_NOMBRE: string;
 }
 
 interface ValesClientProps {
@@ -71,13 +74,14 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
   // Form State
   const [monto, setMonto] = useState('');
   const [cuotas, setCuotas] = useState('1');
-  const [fecha, setFecha] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [fechaDesembolso, setFechaDesembolso] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [fechaInicioCobro, setFechaInicioCobro] = useState('');
   const [trabajadorId, setTrabajadorId] = useState('');
   const [observaciones, setObservaciones] = useState('');
 
   const filteredAdelantos = React.useMemo(() => {
     return adelantos.filter(a => {
-      const fullName = `${a.TR_NOMBRES} ${a.TR_APELLIDOS}`.toLowerCase();
+      const fullName = (a.TR_NOMBRE || '').toLowerCase();
       const searchMatch = fullName.includes(searchTerm.toLowerCase());
       if (!searchMatch) return false;
 
@@ -85,7 +89,7 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
         if (values.length === 0) continue;
         
         let val = '';
-        if (col === 'TRABAJADOR') val = `${a.TR_NOMBRES} ${a.TR_APELLIDOS}`;
+        if (col === 'TRABAJADOR') val = a.TR_NOMBRE || '';
         else val = (a[col as keyof Adelanto] as string)?.toString() || '';
 
         if (!values.includes(val)) return false;
@@ -96,10 +100,17 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
 
   const getFilterOptions = (col: string) => {
     if (col === 'TRABAJADOR') {
-      return Array.from(new Set(adelantos.map(a => `${a.TR_NOMBRES} ${a.TR_APELLIDOS}`))).filter(Boolean).sort();
+      return Array.from(new Set(adelantos.map(a => a.TR_NOMBRE))).filter(Boolean).sort();
     }
     return Array.from(new Set(adelantos.map(a => (a[col as keyof Adelanto] as string)?.toString() || ''))).filter(Boolean).sort();
   };
+
+  const workerOptions = React.useMemo(() => {
+    return trabajadores.map(t => ({
+      label: t.TR_NOMBRE,
+      value: t.TR_IDTRABAJADOR_PK
+    }));
+  }, [trabajadores]);
 
   const handleFilterChange = (col: string, values: string[]) => {
     setActiveFilters(prev => ({ ...prev, [col]: values }));
@@ -107,7 +118,7 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!monto || !trabajadorId || !fecha) {
+    if (!monto || !trabajadorId || !fechaDesembolso) {
       toast.error('Campos incompletos', 'Por favor llena todos los campos obligatorios');
       return;
     }
@@ -118,7 +129,8 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
         TR_IDTRABAJADOR_FK: parseInt(trabajadorId, 10),
         AD_MONTO: parseFloat(monto),
         AD_CUOTAS: parseInt(cuotas, 10) || 1,
-        AD_FECHA: fecha,
+        AD_FECHA_DESEMBOLSO: fechaDesembolso,
+        AD_FECHA_INICIO_COBRO: fechaInicioCobro || null,
         AD_OBSERVACIONES: observaciones
       };
 
@@ -240,12 +252,12 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
               ) : (
                 filteredAdelantos.map((adelanto) => (
                   <TableRow key={adelanto.AD_IDADELANTO_PK}>
-                    <TableCell className="font-medium">
-                      {format(new Date(adelanto.AD_FECHA), "dd 'de' MMM, yyyy", { locale: es })}
+                    <TableCell className="font-medium text-xs text-slate-500">
+                      {format(new Date(adelanto.AD_FECHA_CREACION), "dd/MM/yy HH:mm", { locale: es })}
                     </TableCell>
                     <TableCell>
                       <div className="font-medium text-slate-900 dark:text-slate-100">
-                        {adelanto.TR_NOMBRES} {adelanto.TR_APELLIDOS}
+                        {adelanto.TR_NOMBRE}
                       </div>
                     </TableCell>
                     <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
@@ -295,21 +307,17 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
           <form onSubmit={handleCreate} className="space-y-4 py-4">
             <div className="space-y-1.5">
               <Label>Trabajador</Label>
-              <Select value={trabajadorId} onValueChange={setTrabajadorId} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar trabajador" />
-                </SelectTrigger>
-                <SelectContent>
-                  {trabajadores.map((t) => (
-                    <SelectItem key={t.TR_IDTRABAJADOR_PK} value={t.TR_IDTRABAJADOR_PK.toString()}>
-                      {t.TR_NOMBRES} {t.TR_APELLIDOS} - {t.TR_DOCUMENTO}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ComboboxSearch
+                options={workerOptions}
+                value={trabajadorId ? parseInt(trabajadorId, 10) : ''}
+                onValueChange={(val) => setTrabajadorId(val.toString())}
+                placeholder="Seleccionar trabajador..."
+                searchPlaceholder="Buscar por nombre..."
+                emptyText="No se encontraron trabajadores."
+              />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Monto</Label>
                 <div className="relative">
@@ -328,7 +336,7 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
               </div>
 
               <div className="space-y-1.5">
-                <Label>N° de Cuotas</Label>
+                <Label>N° de Cuotas (Semanales)</Label>
                 <Input 
                   type="number" 
                   value={cuotas}
@@ -339,19 +347,69 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
                   placeholder="1"
                 />
               </div>
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Fecha</Label>
+                <Label>Fecha Desembolso</Label>
                 <div className="relative">
                   <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
                   <Input 
                     type="date" 
                     className="pl-9"
-                    value={fecha}
-                    onChange={(e) => setFecha(e.target.value)}
+                    value={fechaDesembolso}
+                    onChange={(e) => setFechaDesembolso(e.target.value)}
                     required
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Inicio de Cobro (Semana)</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal pl-3",
+                        !fechaInicioCobro && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
+                      {fechaInicioCobro ? (
+                        format(new Date(fechaInicioCobro + 'T00:00:00'), "PPP", { locale: es })
+                      ) : (
+                        <span>Seleccionar semana...</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={fechaInicioCobro ? new Date(fechaInicioCobro + 'T00:00:00') : undefined}
+                      onSelect={(date) => setFechaInicioCobro(date ? format(date, 'yyyy-MM-dd') : '')}
+                      initialFocus
+                      locale={es}
+                      modifiers={{
+                        selectedWeek: (date) => {
+                          if (!fechaInicioCobro) return false;
+                          const selected = new Date(fechaInicioCobro + 'T00:00:00');
+                          const start = startOfWeek(selected, { weekStartsOn: 0 });
+                          const end = endOfWeek(selected, { weekStartsOn: 0 });
+                          return isWithinInterval(date, { start, end });
+                        }
+                      }}
+                      modifiersClassNames={{
+                        selectedWeek: "bg-primary/10 text-primary font-bold rounded-none first:rounded-l-md last:rounded-r-md"
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+                {fechaInicioCobro && (
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Semana: {format(startOfWeek(new Date(fechaInicioCobro + 'T00:00:00'), { weekStartsOn: 0 }), 'dd/MM')} - {format(endOfWeek(new Date(fechaInicioCobro + 'T00:00:00'), { weekStartsOn: 0 }), 'dd/MM')}
+                  </p>
+                )}
               </div>
             </div>
 
