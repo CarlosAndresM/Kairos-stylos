@@ -1237,7 +1237,7 @@ export function DashboardClient() {
                                 {detailType === 'Ventas Hoy' && (specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PAGADO').map((f: any) => (
                                     <TableRow key={f.FC_IDFACTURA_PK} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
                                         <TableCell className="font-bold text-xs">Factura {f.FC_NUMERO_FACTURA}</TableCell>
-                                        <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(f.FC_FECHA), 'dd/MM/yyyy HH:mm')}</TableCell>
+                                        <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(f.FC_FECHA), 'dd/MM/yyyy')}</TableCell>
                                         <TableCell className="text-[10px] font-bold uppercase text-slate-700">{f.cliente_display || 'GENERAL'}</TableCell>
                                         <TableCell className="text-right font-black text-xs text-[#FF7E5F]">$ {Number(f.FC_TOTAL).toLocaleString('es-CO')}</TableCell>
                                     </TableRow>
@@ -1248,7 +1248,7 @@ export function DashboardClient() {
                                         {(specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PAGADO').map((f: any) => (
                                             <TableRow key={`caja-f-${f.FC_IDFACTURA_PK}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
                                                 <TableCell className="font-bold text-xs uppercase">Venta: {f.FC_NUMERO_FACTURA}</TableCell>
-                                                <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(f.FC_FECHA), 'dd/MM/yyyy HH:mm')}</TableCell>
+                                                <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(f.FC_FECHA), 'dd/MM/yyyy')}</TableCell>
                                                 <TableCell className="text-[10px] font-bold uppercase text-slate-700">{f.cliente_display || 'GENERAL'}</TableCell>
                                                 <TableCell className="text-right font-black text-xs text-emerald-600">$ {Number(f.FC_TOTAL).toLocaleString('es-CO')}</TableCell>
                                             </TableRow>
@@ -1256,7 +1256,7 @@ export function DashboardClient() {
                                         {(specificData?.abonos || []).map((ab: any) => (
                                             <TableRow key={`caja-ab-${ab.AB_IDABONO_PK}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
                                                 <TableCell className="font-bold text-xs uppercase">Abono Deuda ({ab.FC_NUMERO_FACTURA})</TableCell>
-                                                <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(ab.AB_FECHA), 'dd/MM/yyyy HH:mm')}</TableCell>
+                                                <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(ab.AB_FECHA), 'dd/MM/yyyy')}</TableCell>
                                                 <TableCell className="text-[10px] font-bold uppercase text-slate-700">{ab.cliente_display}</TableCell>
                                                 <TableCell className="text-right font-black text-xs text-blue-600">$ {Number(ab.AB_VALOR).toLocaleString('es-CO')}</TableCell>
                                             </TableRow>
@@ -1267,7 +1267,7 @@ export function DashboardClient() {
                                 {detailType === 'Abonos de Deuda' && (specificData?.abonos || []).map((ab: any) => (
                                     <TableRow key={ab.AB_IDABONO_PK} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
                                         <TableCell className="font-bold text-xs uppercase">Abono {ab.AB_IDABONO_PK}</TableCell>
-                                        <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(ab.AB_FECHA), 'dd/MM/yyyy HH:mm')}</TableCell>
+                                        <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(ab.AB_FECHA), 'dd/MM/yyyy')}</TableCell>
                                         <TableCell className="text-[10px] font-bold uppercase text-slate-700">{ab.cliente_display} ({ab.FC_NUMERO_FACTURA})</TableCell>
                                         <TableCell className="text-right font-black text-xs text-indigo-600">$ {Number(ab.AB_VALOR).toLocaleString('es-CO')}</TableCell>
                                     </TableRow>
@@ -1276,7 +1276,7 @@ export function DashboardClient() {
                                 {detailType === 'Por Cobrar' && (specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PENDIENTE').map((f: any) => (
                                     <TableRow key={f.FC_IDFACTURA_PK} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
                                         <TableCell className="font-bold text-xs">Factura {f.FC_NUMERO_FACTURA}</TableCell>
-                                        <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(f.FC_FECHA), 'dd/MM/yyyy HH:mm')}</TableCell>
+                                        <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(f.FC_FECHA), 'dd/MM/yyyy')}</TableCell>
                                         <TableCell className="text-[10px] font-bold uppercase text-slate-700">{f.cliente_display || 'GENERAL'}</TableCell>
                                         <TableCell className="text-right font-black text-xs text-red-500">$ {Number(f.FC_TOTAL).toLocaleString('es-CO')}</TableCell>
                                     </TableRow>
@@ -1312,7 +1312,7 @@ export function DashboardClient() {
                                             <TableRow key={`pago-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
                                                 <TableCell className="font-bold text-xs">Factura {factura?.FC_NUMERO_FACTURA || pago.FC_IDFACTURA_FK}</TableCell>
                                                 <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">
-                                                    {factura ? format(new Date(factura.FC_FECHA), 'dd/MM/yyyy HH:mm') : '---'}
+                                                    {factura ? format(new Date(factura.FC_FECHA), 'dd/MM/yyyy') : '---'}
                                                 </TableCell>
                                                 <TableCell className="text-[10px] font-bold uppercase text-slate-700">
                                                     {factura?.cliente_display || 'GENERAL'}
@@ -1344,7 +1344,7 @@ export function DashboardClient() {
                                 }).map((f: any, i: number) => (
                                     <TableRow key={`tech-${f.FC_IDFACTURA_PK}-${i}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
                                         <TableCell className="font-bold text-xs">Factura {f.FC_NUMERO_FACTURA}</TableCell>
-                                        <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(f.FC_FECHA), 'dd/MM/yyyy HH:mm')}</TableCell>
+                                        <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(f.FC_FECHA), 'dd/MM/yyyy')}</TableCell>
                                         <TableCell className="text-[10px] font-bold uppercase text-slate-700">{f.cliente_display || 'GENERAL'}</TableCell>
                                         <TableCell className="text-right font-black text-xs text-[#FF7E5F]">$ {Number(f.FC_TOTAL).toLocaleString('es-CO')}</TableCell>
                                     </TableRow>

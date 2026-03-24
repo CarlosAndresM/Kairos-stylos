@@ -379,7 +379,7 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
                 filteredAdelantos.map((adelanto) => (
                   <TableRow key={adelanto.AD_IDADELANTO_PK}>
                     <TableCell className="font-medium text-xs text-slate-500">
-                      {safeFormat(adelanto.AD_FECHA_CREACION, "dd/MM/yy HH:mm")}
+                      {safeFormat(adelanto.AD_FECHA_CREACION, "dd/MM/yy")}
                     </TableCell>
                     <TableCell>
                       <div className="font-medium text-slate-900 dark:text-slate-100">

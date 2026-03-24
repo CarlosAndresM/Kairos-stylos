@@ -460,7 +460,7 @@ export default function NominaAdminClient() {
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha Proceso</p>
-                  <p className="text-sm font-bold text-slate-600">{format(new Date(), "dd/MM/yyyy HH:mm")}</p>
+                  <p className="text-sm font-bold text-slate-600">{format(new Date(), "dd/MM/yyyy")}</p>
                 </div>
               </div>
 

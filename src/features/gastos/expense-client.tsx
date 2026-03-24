@@ -249,7 +249,7 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                         </div>
                     </TableCell>
                     <TableCell className="text-[11px] font-medium text-slate-500 tabular-nums px-4 whitespace-nowrap text-center">
-                      {item.fecha ? format(new Date(item.fecha), "dd MMM, yyyy '∙' HH:mm", { locale: es }) : '--'}
+                      {item.fecha ? format(new Date(item.fecha), "dd MMM, yyyy", { locale: es }) : '--'}
                     </TableCell>
                     <TableCell className="px-4 text-center">
                       <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200">

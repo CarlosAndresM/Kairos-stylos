@@ -217,7 +217,7 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                                             <TableRow key={idx} className="group hover:bg-slate-50/50 transition-colors">
                                                 <TableCell className="px-6 py-4">
                                                     <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">
-                                                        {format(new Date(item.FC_FECHA), 'dd MMM, HH:mm', { locale: es })}
+                                                        {format(new Date(item.FC_FECHA), 'dd MMM', { locale: es })}
                                                     </span>
                                                 </TableCell>
                                                 <TableCell className="py-4">
