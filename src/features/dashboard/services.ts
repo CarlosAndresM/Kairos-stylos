@@ -348,6 +348,17 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
       sucursalId !== -1 ? [...baseParams, sucursalId] : baseParams
     );
 
+    // 7. Pagos por factura (para filtrar por método en el detalle modal)
+    const [pagos]: any = await db.execute(
+      `SELECT pf.FC_IDFACTURA_FK, pf.PF_VALOR, mp.MP_NOMBRE as metodo
+       FROM KS_PAGOS_FACTURA pf
+       JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+       JOIN KS_FACTURAS f ON pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+       WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? ${sucursalFilter}
+       ORDER BY f.FC_FECHA DESC`,
+      sucursalId !== -1 ? [...baseParams, sucursalId] : baseParams
+    );
+
     return {
       success: true,
       data: {
@@ -356,7 +367,8 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
         vales,
         productos,
         abonos,
-        adelantos
+        adelantos,
+        pagos
       },
       error: null
     };

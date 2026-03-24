@@ -1282,16 +1282,46 @@ export function DashboardClient() {
                                     </TableRow>
                                 ))}
 
-                                {['Efectivo', 'Transferencia', 'Datáfono', 'Crédito', 'Servicio Trabajador'].includes(detailType) && (specificData?.facturas || []).filter((f: any) => {
-                                    return true;
-                                }).map((f: any) => (
-                                    <TableRow key={f.FC_IDFACTURA_PK} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
-                                        <TableCell className="font-bold text-xs">Factura {f.FC_NUMERO_FACTURA}</TableCell>
-                                        <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(f.FC_FECHA), 'dd/MM/yyyy HH:mm')}</TableCell>
-                                        <TableCell className="text-[10px] font-bold uppercase text-slate-700">{f.cliente_display || 'GENERAL'}</TableCell>
-                                        <TableCell className="text-right font-black text-xs">$ {Number(f.FC_TOTAL).toLocaleString('es-CO')}</TableCell>
-                                    </TableRow>
-                                ))}
+                                {['Efectivo', 'Transferencia', 'Datáfono', 'Crédito', 'Servicio Trabajador'].includes(detailType) && (() => {
+                                    // Map the UI card name to the DB method name
+                                    const methodMap: Record<string, string> = {
+                                        'Efectivo': 'EFECTIVO',
+                                        'Transferencia': 'TRANSFERENCIA',
+                                        'Datáfono': 'DATAFONO',
+                                        'Crédito': 'CREDITO',
+                                        'Servicio Trabajador': 'SERVICIO DE TRABAJADOR',
+                                    }
+                                    const dbMethod = methodMap[detailType] || detailType.toUpperCase()
+
+                                    // Find all payments matching this method
+                                    const matchingPayments = (specificData?.pagos || []).filter(
+                                        (p: any) => p.metodo?.toUpperCase() === dbMethod
+                                    )
+
+                                    if (matchingPayments.length === 0) {
+                                        return (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="py-20 text-center text-slate-300 font-bold italic text-[10px] uppercase tracking-widest">No se encontraron registros</TableCell>
+                                            </TableRow>
+                                        )
+                                    }
+
+                                    return matchingPayments.map((pago: any, idx: number) => {
+                                        const factura = (specificData?.facturas || []).find((f: any) => f.FC_IDFACTURA_PK === pago.FC_IDFACTURA_FK)
+                                        return (
+                                            <TableRow key={`pago-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
+                                                <TableCell className="font-bold text-xs">Factura {factura?.FC_NUMERO_FACTURA || pago.FC_IDFACTURA_FK}</TableCell>
+                                                <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">
+                                                    {factura ? format(new Date(factura.FC_FECHA), 'dd/MM/yyyy HH:mm') : '---'}
+                                                </TableCell>
+                                                <TableCell className="text-[10px] font-bold uppercase text-slate-700">
+                                                    {factura?.cliente_display || 'GENERAL'}
+                                                </TableCell>
+                                                <TableCell className="text-right font-black text-xs text-[#FF7E5F]">$ {Number(pago.PF_VALOR).toLocaleString('es-CO')}</TableCell>
+                                            </TableRow>
+                                        )
+                                    })
+                                })()}
 
                                 {detailType === 'Vales (Adelantos)' && (specificData?.adelantos || []).map((v: any) => (
                                     <TableRow key={v.AD_IDADELANTO_PK} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
