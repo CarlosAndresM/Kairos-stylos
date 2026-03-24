@@ -66,7 +66,7 @@ export async function saveNominaConfig(data: NominaConfigData): Promise<ApiRespo
 /**
  * Procesar la nómina semanal para un rango de fechas.
  */
-export async function procesarNominaSemanal(data: { startDate: Date, endDate: Date }): Promise<ApiResponse> {
+export async function procesarNominaSemanal(data: { startDate: Date, endDate: Date, role?: string }): Promise<ApiResponse> {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
@@ -75,11 +75,10 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
     const configRes = await getConfigForDate(data.startDate);
     const config = configRes.data!;
 
-    // 2. Eliminar cualquier nómina existente en este rango que NO esté CONFIRMADA
-    // (Limpieza por si el usuario está volviendo a procesar)
+    // 2. Eliminar cualquier nómina existente en este rango y tipo que NO esté CONFIRMADA
     const [existing]: any = await (connection as any).execute(
-      "SELECT NM_IDNOMINA_PK FROM KS_NOMINAS WHERE DATE(NM_FECHA_INICIO) = DATE(?) AND DATE(NM_FECHA_FIN) = DATE(?) AND NM_ESTADO != 'CONFIRMADA'",
-      [data.startDate, data.endDate]
+      "SELECT NM_IDNOMINA_PK FROM KS_NOMINAS WHERE DATE(NM_FECHA_INICIO) = DATE(?) AND DATE(NM_FECHA_FIN) = DATE(?) AND NM_TIPO = ? AND NM_ESTADO != 'CONFIRMADA'",
+      [data.startDate, data.endDate, roleName]
     );
 
     if (existing.length > 0) {
@@ -88,8 +87,8 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
 
     // 3. Crear cabecera de Nómina
     const [nominaResult]: any = await (connection as any).execute(
-      "INSERT INTO KS_NOMINAS (NM_FECHA_INICIO, NM_FECHA_FIN, NM_ESTADO) VALUES (?, ?, 'PROCESANDO')",
-      [data.startDate, data.endDate]
+      "INSERT INTO KS_NOMINAS (NM_FECHA_INICIO, NM_FECHA_FIN, NM_ESTADO, NM_TIPO) VALUES (?, ?, 'PROCESANDO', ?)",
+      [data.startDate, data.endDate, roleName]
     );
     const nominaId = nominaResult.insertId;
 
@@ -97,7 +96,7 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
     const roleName = (data as any).role || 'TECNICO';
 
     const [workers]: any = await (connection as any).execute(
-      `SELECT t.TR_IDTRABAJADOR_PK, t.TR_NOMBRE, t.TR_SUELDO_BASE 
+      `SELECT t.TR_IDTRABAJADOR_PK, t.TR_NOMBRE
        FROM KS_TRABAJADORES t
        JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
        WHERE t.TR_ACTIVO = TRUE 
@@ -163,7 +162,7 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
 
       // 4.5. Calcular totales
       const totalComm = svcComm - prdDeduct;
-      const basePay = Number(worker.TR_SUELDO_BASE || 0);
+      const basePay = 0; // Se elimina el sueldo base para técnicos
       const netPay = basePay + totalComm - valesDeduct - adelantosTotalDeduct;
 
       // 4.6. Insertar detalle
@@ -273,11 +272,11 @@ export async function confirmarNomina(nominaId: number): Promise<ApiResponse> {
 /**
  * Obtener una nómina procesada para un rango de fechas
  */
-export async function getNominaByRange(startDate: Date, endDate: Date): Promise<ApiResponse> {
+export async function getNominaByRange(startDate: Date, endDate: Date, type: string = 'TECNICO'): Promise<ApiResponse> {
   try {
     const [rows]: any = await db.query(
-      "SELECT * FROM KS_NOMINAS WHERE DATE(NM_FECHA_INICIO) = DATE(?) AND DATE(NM_FECHA_FIN) = DATE(?) LIMIT 1",
-      [startDate, endDate]
+      "SELECT * FROM KS_NOMINAS WHERE DATE(NM_FECHA_INICIO) = DATE(?) AND DATE(NM_FECHA_FIN) = DATE(?) AND NM_TIPO = ? LIMIT 1",
+      [startDate, endDate, type]
     );
 
     if (rows.length === 0) return { success: true, data: null };
@@ -339,9 +338,10 @@ export async function deleteNomina(nominaId: number): Promise<ApiResponse> {
 export async function getPayrollWorkers(role: string = 'TECNICO'): Promise<ApiResponse<any[]>> {
   try {
     const [rows]: any = await db.execute(`
-      SELECT t.TR_IDTRABAJADOR_PK, t.TR_NOMBRE
+      SELECT t.TR_IDTRABAJADOR_PK, t.TR_NOMBRE, t.TR_TELEFONO, s.SC_NOMBRE
       FROM KS_TRABAJADORES t
       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+      LEFT JOIN KS_SUCURSALES s ON t.SC_IDSUCURSAL_FK = s.SC_IDSUCURSAL_PK
       WHERE t.TR_ACTIVO = TRUE 
       AND r.RL_NOMBRE = ?
       ORDER BY t.TR_NOMBRE ASC
@@ -351,3 +351,99 @@ export async function getPayrollWorkers(role: string = 'TECNICO'): Promise<ApiRe
     return { success: false, data: null, error: "Error al obtener trabajadores para nómina" };
   }
 }
+
+/**
+ * Procesar la nómina para administrativos con salarios manuales.
+ */
+export async function procesarNominaAdmins(data: {
+  startDate: Date,
+  endDate: Date,
+  salaries: { workerId: number, salary: number }[]
+}): Promise<ApiResponse> {
+  const connection = await db.getConnection();
+  try {
+    const roleName = 'ADMINISTRADOR_PUNTO';
+
+    // 1. Eliminar cualquier nómina existente en este rango y tipo que NO esté CONFIRMADA
+    const [existing]: any = await (connection as any).execute(
+      "SELECT NM_IDNOMINA_PK FROM KS_NOMINAS WHERE DATE(NM_FECHA_INICIO) = DATE(?) AND DATE(NM_FECHA_FIN) = DATE(?) AND NM_TIPO = ? AND NM_ESTADO != 'CONFIRMADA'",
+      [data.startDate, data.endDate, roleName]
+    );
+
+    if (existing.length > 0) {
+      await (connection as any).execute("DELETE FROM KS_NOMINA_DETALLES WHERE NM_IDNOMINA_FK = ?", [existing[0].NM_IDNOMINA_PK]);
+      await (connection as any).execute("DELETE FROM KS_NOMINAS WHERE NM_IDNOMINA_PK = ?", [existing[0].NM_IDNOMINA_PK]);
+    }
+
+    // 2. Crear cabecera de Nómina
+    const [nominaResult]: any = await (connection as any).execute(
+      "INSERT INTO KS_NOMINAS (NM_FECHA_INICIO, NM_FECHA_FIN, NM_ESTADO, NM_TIPO) VALUES (?, ?, 'PROCESANDO', ?)",
+      [data.startDate, data.endDate, roleName]
+    );
+    const nominaId = nominaResult.insertId;
+
+    await (connection as any).beginTransaction();
+
+    let granTotal = 0;
+
+    for (const item of data.salaries) {
+      // 3. Obtener cuotas de servicios para este periodo
+      const [vales]: any = await (connection as any).execute(
+        `SELECT SUM(STC_VALOR_CUOTA) as total 
+         FROM KS_SERVICIO_TRABAJADOR_CUOTAS stc
+         JOIN KS_SERVICIOS_TRABAJADOR st ON stc.ST_IDSERVICIO_TRABAJADOR_FK = st.ST_IDSERVICIO_TRABAJADOR_PK
+         WHERE st.TR_IDTRABAJADOR_FK = ? AND stc.STC_ESTADO = 'PENDIENTE' AND DATE(stc.STC_FECHA_COBRO) BETWEEN DATE(?) AND DATE(?)`,
+        [item.workerId, data.startDate, data.endDate]
+      );
+      const valesDeduct = Number(vales[0].total || 0);
+
+      // 4. Obtener deducciones de adelantos (Vales reales) para este periodo
+      const [adelantos]: any = await (connection as any).execute(
+        `SELECT AD_MONTO, AD_CUOTAS, AD_CUOTAS_PAGADAS, AD_IDADELANTO_PK
+         FROM KS_ADELANTOS 
+         WHERE TR_IDTRABAJADOR_FK = ? AND AD_ESTADO = 'PENDIENTE' 
+         AND DATE(AD_FECHA_INICIO_COBRO) <= DATE(?)`,
+        [item.workerId, data.endDate]
+      );
+
+      let adelantosTotalDeduct = 0;
+      for (const adelanto of adelantos) {
+        const remainingCuotas = adelanto.AD_CUOTAS - adelanto.AD_CUOTAS_PAGADAS;
+        if (remainingCuotas > 0) {
+          const cuotaValor = adelanto.AD_MONTO / adelanto.AD_CUOTAS;
+          adelantosTotalDeduct += cuotaValor;
+        }
+      }
+
+      // 5. Calcular totales
+      const basePay = Number(item.salary || 0);
+      const netPay = basePay - valesDeduct - adelantosTotalDeduct;
+
+      // 6. Insertar detalle
+      await (connection as any).execute(
+        `INSERT INTO KS_NOMINA_DETALLES 
+         (NM_IDNOMINA_FK, TR_IDTRABAJADOR_FK, ND_BASE, ND_COMISIONES, ND_BONOS, ND_DEDUCCIONES_SERVICIOS_TRABAJADOR, ND_DEDUCCIONES_ADELANTOS, ND_TOTAL_NETO)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [nominaId, item.workerId, basePay, 0, 0, valesDeduct, adelantosTotalDeduct, netPay]
+      );
+
+      granTotal += netPay;
+    }
+
+    // 7. Actualizar gran total en la cabecera
+    await (connection as any).execute("UPDATE KS_NOMINAS SET NM_TOTAL_PAGADO = ? WHERE NM_IDNOMINA_PK = ?", [granTotal, nominaId]);
+
+    await connection.commit();
+    revalidatePath("/dashboard/nomina-admin");
+
+    return { success: true, data: { nominaId }, message: "Nómina de administradores procesada correctamente" };
+
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Error al procesar nómina admins:", error);
+    return { success: false, error: "Error al procesar la nómina de administradores" };
+  } finally {
+    if (connection) connection.release();
+  }
+}
+

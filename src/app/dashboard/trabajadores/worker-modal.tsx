@@ -67,7 +67,6 @@ export function WorkerModal({
       TR_ACTIVO: editingWorker ? !!editingWorker.TR_ACTIVO : true,
       RL_IDROL_FK: editingWorker?.RL_IDROL_FK,
       SC_IDSUCURSAL_FK: editingWorker?.SC_IDSUCURSAL_FK ?? defaultSucursal,
-      TR_SUELDO_BASE: editingWorker?.TR_SUELDO_BASE || 0,
     }
   })
 
@@ -82,7 +81,6 @@ export function WorkerModal({
         TR_ACTIVO: !!editingWorker.TR_ACTIVO,
         RL_IDROL_FK: editingWorker.RL_IDROL_FK,
         SC_IDSUCURSAL_FK: editingWorker.SC_IDSUCURSAL_FK,
-        TR_SUELDO_BASE: editingWorker.TR_SUELDO_BASE || 0,
       })
     } else {
       form.reset({
@@ -93,7 +91,6 @@ export function WorkerModal({
         TR_ACTIVO: true,
         RL_IDROL_FK: undefined,
         SC_IDSUCURSAL_FK: defaultSucursal,
-        TR_SUELDO_BASE: 0,
       })
     }
   }, [editingWorker, form, isOpen, defaultSucursal])
@@ -237,19 +234,6 @@ export function WorkerModal({
                 )}
               </div>
 
-              <FormField
-                control={form.control}
-                name="TR_SUELDO_BASE"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-bold uppercase text-slate-500 tracking-wider">Sueldo Base ($)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="0" {...field} className="rounded-xl border-slate-200 focus:ring-[#FF7E5F]/20" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}

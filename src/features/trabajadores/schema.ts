@@ -8,7 +8,6 @@ export const workerSchema = z.object({
   TR_ACTIVO: z.coerce.boolean().default(true),
   RL_IDROL_FK: z.coerce.number({ required_error: 'El rol es obligatorio' }).min(1, 'El rol es obligatorio'),
   SC_IDSUCURSAL_FK: z.coerce.number({ required_error: 'La sucursal es obligatoria' }).min(1, 'La sucursal es obligatoria').optional().nullable(),
-  TR_SUELDO_BASE: z.coerce.number().min(0).default(0),
 });
 
 export type WorkerFormData = z.infer<typeof workerSchema>;

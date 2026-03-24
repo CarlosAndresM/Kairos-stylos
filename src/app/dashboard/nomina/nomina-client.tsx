@@ -224,7 +224,6 @@ export default function NominaClient() {
             <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10">
               <TableRow className="hover:bg-transparent">
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] px-6">Trabajador</TableHead>
-                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Base</TableHead>
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Comisiones (Neto)</TableHead>
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Servicio Trabajador</TableHead>
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Vales (Adelantos)</TableHead>
@@ -237,7 +236,6 @@ export default function NominaClient() {
                 nominaData.map((item, idx) => (
                   <TableRow key={idx} className="hover:bg-slate-50 transition-colors border-b border-slate-100">
                     <TableCell className="font-bold text-slate-900 text-xs px-6 uppercase tracking-tight">{item.TR_NOMBRE}</TableCell>
-                    <TableCell className="text-right font-medium text-xs">$ {item.ND_BASE.toLocaleString()}</TableCell>
                     <TableCell className="text-right font-bold text-xs text-emerald-600">$ {item.ND_COMISIONES.toLocaleString()}</TableCell>
                     <TableCell className="text-right font-medium text-xs text-red-600 tracking-tighter">
                       - $ {(item.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0).toLocaleString()}

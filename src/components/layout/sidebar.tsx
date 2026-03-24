@@ -40,7 +40,7 @@ function useIsMobile() {
 
 const NAV_GROUPS = [
   {
-    label: 'Dashboard',
+    label: 'Administración',
     items: [
       {
         title: 'Dashboard',
@@ -48,11 +48,6 @@ const NAV_GROUPS = [
         icon: LayoutDashboard,
         roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
       },
-    ]
-  },
-  {
-    label: 'Administración',
-    items: [
       {
         title: 'Usuarios Admin',
         href: '/dashboard/usuarios-admin',
@@ -70,18 +65,6 @@ const NAV_GROUPS = [
         href: '/dashboard/gastos',
         icon: TrendingDown,
         roles: ['ADMINISTRADOR_TOTAL']
-      },
-      {
-        title: 'Nomina Tecnicos',
-        href: '/dashboard/nomina',
-        icon: History,
-        roles: ['ADMINISTRADOR_TOTAL']
-      },
-      {
-        title: 'Nomina Administrador',
-        href: '/dashboard/nomina-admin',
-        icon: History,
-        roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
       },
     ]
   },
@@ -109,6 +92,40 @@ const NAV_GROUPS = [
     ]
   },
   {
+    label: 'Nómina',
+    items: [
+      {
+        title: 'Técnicos',
+        href: '/dashboard/nomina',
+        icon: History,
+        roles: ['ADMINISTRADOR_TOTAL']
+      },
+      {
+        title: 'Administradores de Punto',
+        href: '/dashboard/nomina-admin',
+        icon: History,
+        roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
+      },
+    ]
+  },
+  {
+    label: 'Negocio',
+    items: [
+      {
+        title: 'Servicios & Productos',
+        href: '/dashboard/catalogos',
+        icon: Package,
+        roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
+      },
+      {
+        title: 'Solicitudes Productos',
+        href: '/dashboard/solicitudes',
+        icon: ClipboardList,
+        roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
+      },
+    ]
+  },
+  {
     label: 'Cliente',
     items: [
       {
@@ -124,21 +141,9 @@ const NAV_GROUPS = [
         roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
       },
       {
-        title: 'Servicios & Productos',
-        href: '/dashboard/catalogos',
-        icon: Package,
-        roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
-      },
-      {
         title: 'Créditos',
         href: '/dashboard/creditos',
         icon: Receipt,
-        roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
-      },
-      {
-        title: 'Solicitudes',
-        href: '/dashboard/solicitudes',
-        icon: ClipboardList,
         roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
       },
     ]
