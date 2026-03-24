@@ -2,19 +2,23 @@ import { z } from 'zod';
 
 // Detalle de servicio en la factura
 export const invoiceServiceSchema = z.object({
+  FD_IDDETALLE_PK: z.number().optional().nullable(), // PK real de la DB para edición
   tempId: z.string().optional(), // Para vinculación en frontend antes de guardar
   SV_IDSERVICIO_FK: z.number({ required_error: 'Seleccione un servicio' }),
   TR_IDTECNICO_FK: z.number({ required_error: 'Seleccione un técnico' }),
   FD_VALOR: z.coerce.number().min(0, 'El valor no puede ser negativo'),
   products: z.array(z.object({
+    FP_IDFACTURA_PRODUCTO_PK: z.number().optional().nullable(), // PK real
     PR_IDPRODUCTO_FK: z.number({ required_error: 'Seleccione un producto' }),
     TR_IDTECNICO_FK: z.number({ required_error: 'Seleccione un técnico' }),
     FP_VALOR: z.coerce.number().min(0, 'El valor no puede ser negativo'),
+    FD_IDDETALLE_FK: z.number().optional().nullable(), // FK al servicio
   })).optional().default([]),
 });
 
 // Detalle de producto en la factura (Venta directa o independiente)
 export const invoiceProductSchema = z.object({
+  FP_IDFACTURA_PRODUCTO_PK: z.number().optional().nullable(),
   PR_IDPRODUCTO_FK: z.number({ required_error: 'Seleccione un producto' }),
   TR_IDTECNICO_FK: z.number({ required_error: 'Seleccione un técnico' }),
   FP_VALOR: z.coerce.number().min(0, 'El valor no puede ser negativo'),

@@ -229,10 +229,6 @@ export function DashboardClient() {
 
     const handleProductChange = (productId: string) => {
         setApSelectedProductId(productId)
-        const product = catalogData.products.find((p: any) => p.PR_IDPRODUCTO_PK.toString() === productId)
-        if (product && product.PR_PRECIO) {
-            setApValue(Number(product.PR_PRECIO))
-        }
     }
 
     const fetchInvoiceForAssociation = async (invoiceId: string) => {
@@ -1458,7 +1454,7 @@ export function DashboardClient() {
                                     <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">3. SERVICIO DONDE SE USÓ:</label>
                                     <ComboboxSearch
                                         options={(apInvoiceDetails?.services || []).map((s: any) => ({
-                                            label: `${catalogData.services.find((cs: any) => cs.SV_IDSERVICIO_PK === s.SV_IDSERVICIO_FK)?.SV_NOMBRE || 'Servicio'} - $${Number(s.FD_VALOR).toLocaleString()}`,
+                                            label: `${catalogData.services.find((cs: any) => cs.SV_IDSERVICIO_PK === s.SV_IDSERVICIO_FK)?.SV_NOMBRE || 'Servicio'} - $${Number(s.FD_VALOR).toLocaleString('es-CO')}`,
                                             value: s.FD_IDDETALLE_PK.toString()
                                         }))}
                                         value={apSelectedServiceId}

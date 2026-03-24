@@ -45,6 +45,7 @@ import { UnifiedGasto, GastoData } from './schema'
 import { createExpense } from './services'
 import { getSedes } from '@/features/trabajadores/services'
 import { DashboardBanner } from '@/components/layout/dashboard-banner'
+import { NumericFormat } from 'react-number-format'
 
 interface ExpenseClientProps {
   initialData: UnifiedGasto[]
@@ -311,13 +312,14 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
 
             <div className="space-y-2">
               <Label htmlFor="valor" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Valor ($)</Label>
-              <Input
-                id="valor"
-                type="number"
-                placeholder="0"
-                className="rounded-xl border-slate-200 font-black text-2xl text-[#FF7E5F] focus:border-[#FF7E5F] h-14 transition-all"
+              <NumericFormat
+                thousandSeparator="."
+                decimalSeparator=","
+                prefix="$ "
+                placeholder="$ 0"
+                className="w-full h-14 border border-slate-200 rounded-xl px-4 text-2xl font-black text-[#FF7E5F] focus:outline-none focus:border-[#FF7E5F] transition-all bg-white"
                 value={formData.GS_VALOR || ''}
-                onChange={e => setFormData({ ...formData, GS_VALOR: Number(e.target.value) })}
+                onValueChange={(values) => setFormData({ ...formData, GS_VALOR: Number(values.value) })}
                 required
               />
             </div>

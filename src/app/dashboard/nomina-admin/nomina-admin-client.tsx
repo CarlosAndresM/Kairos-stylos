@@ -42,6 +42,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { NumericFormat } from 'react-number-format';
 
 function getQuincenas(month: Date) {
   const q1Start = startOfMonth(month);
@@ -301,13 +302,16 @@ export default function NominaAdminClient() {
                     </TableCell>
                     <TableCell className="px-6 text-right">
                       <div className="relative max-w-[200px] ml-auto">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                        <Input
-                          type="number"
-                          className="pl-8 text-sm font-black text-right h-10 rounded-xl border-slate-200 focus:ring-[#FF7E5F]/20"
+                        <NumericFormat
+                          thousandSeparator="."
+                          decimalSeparator=","
+                          prefix="$ "
+                          className="w-full text-sm font-black text-right h-10 rounded-xl border border-slate-200 focus:ring-[#FF7E5F]/20 px-4"
                           value={manualSalaries[admin.TR_IDTRABAJADOR_PK] || ""}
-                          onChange={(e) => setManualSalaries(prev => ({ ...prev, [admin.TR_IDTRABAJADOR_PK]: e.target.value }))}
-                          placeholder="0"
+                          onValueChange={(values) => {
+                            setManualSalaries(prev => ({ ...prev, [admin.TR_IDTRABAJADOR_PK]: values.value }))
+                          }}
+                          placeholder="$ 0"
                         />
                       </div>
                     </TableCell>
@@ -344,12 +348,12 @@ export default function NominaAdminClient() {
                     nominaData.map((item, idx) => (
                       <TableRow key={idx} className="hover:bg-slate-50 transition-colors border-b border-slate-100">
                         <TableCell className="font-bold text-slate-900 text-xs px-6 uppercase tracking-tight">{item.TR_NOMBRE}</TableCell>
-                        <TableCell className="text-right font-medium text-xs">$ {item.ND_BASE.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-medium text-xs">$ {item.ND_BASE.toLocaleString('es-CO')}</TableCell>
                         <TableCell className="text-right font-medium text-xs text-red-600 tracking-tighter">
-                          - $ {((item.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) + (item.ND_DEDUCCIONES_ADELANTOS || 0)).toLocaleString()}
+                          - $ {((item.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) + (item.ND_DEDUCCIONES_ADELANTOS || 0)).toLocaleString('es-CO')}
                         </TableCell>
                         <TableCell className="text-right font-black text-sm text-slate-900 px-6">
-                          $ {Math.max(0, Number(item.ND_TOTAL_NETO || 0)).toLocaleString()}
+                          $ {Math.max(0, Number(item.ND_TOTAL_NETO || 0)).toLocaleString('es-CO')}
                         </TableCell>
                         <TableCell className="px-6 text-right">
                           <Button
@@ -393,7 +397,7 @@ export default function NominaAdminClient() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 md:p-6 shadow-sm mb-6">
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total acumulado quincena</span>
-                <span className="text-2xl font-black text-slate-900 dark:text-white">$ {nominaData.reduce((acc, curr) => acc + Math.max(0, Number(curr.ND_TOTAL_NETO || 0)), 0).toLocaleString()}</span>
+                <span className="text-2xl font-black text-slate-900 dark:text-white">$ {nominaData.reduce((acc, curr) => acc + Math.max(0, Number(curr.ND_TOTAL_NETO || 0)), 0).toLocaleString('es-CO')}</span>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 md:gap-3">
@@ -463,22 +467,22 @@ export default function NominaAdminClient() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-slate-500 font-medium">Sueldo Base Periodo</span>
-                  <span className="font-black text-slate-900">$ {showVolante.ND_BASE.toLocaleString()}</span>
+                  <span className="font-black text-slate-900">$ {showVolante.ND_BASE.toLocaleString('es-CO')}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-slate-500 font-medium">Deducciones Servicios (Préstamos)</span>
-                  <span className="font-bold text-red-600">- $ {(showVolante.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0).toLocaleString()}</span>
+                  <span className="font-bold text-red-600">- $ {(showVolante.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0).toLocaleString('es-CO')}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-slate-500 font-medium">Deducciones Vales (Adelantos)</span>
-                  <span className="font-bold text-red-600">- $ {(showVolante.ND_DEDUCCIONES_ADELANTOS || 0).toLocaleString()}</span>
+                  <span className="font-bold text-red-600">- $ {(showVolante.ND_DEDUCCIONES_ADELANTOS || 0).toLocaleString('es-CO')}</span>
                 </div>
               </div>
 
               <div className="pt-6 border-t border-slate-100">
                 <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-inner">
                   <span className="text-xs font-black uppercase tracking-widest text-[#FF7E5F]">Neto Recibido</span>
-                  <span className="text-2xl font-black text-slate-900">$ {Math.max(0, showVolante.ND_TOTAL_NETO).toLocaleString()}</span>
+                  <span className="text-2xl font-black text-slate-900">$ {Math.max(0, showVolante.ND_TOTAL_NETO).toLocaleString('es-CO')}</span>
                 </div>
               </div>
 

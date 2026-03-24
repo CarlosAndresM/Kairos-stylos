@@ -52,7 +52,7 @@ export async function getInvoiceById(id: number): Promise<ApiResponse> {
     );
 
     const [products]: any = await (db as any).execute(
-      "SELECT FP_VALOR, PR_IDPRODUCTO_FK, TR_IDTECNICO_FK, FD_IDDETALLE_FK FROM KS_FACTURA_PRODUCTOS WHERE FC_IDFACTURA_FK = ?",
+      "SELECT FP_IDFACTURA_PRODUCTO_PK, FP_VALOR, PR_IDPRODUCTO_FK, TR_IDTECNICO_FK, FD_IDDETALLE_FK FROM KS_FACTURA_PRODUCTOS WHERE FC_IDFACTURA_FK = ?",
       [id]
     );
 

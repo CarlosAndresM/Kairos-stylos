@@ -236,17 +236,17 @@ export default function NominaClient() {
                 nominaData.map((item, idx) => (
                   <TableRow key={idx} className="hover:bg-slate-50 transition-colors border-b border-slate-100">
                     <TableCell className="font-bold text-slate-900 text-xs px-6 uppercase tracking-tight">{item.TR_NOMBRE}</TableCell>
-                    <TableCell className="text-right font-bold text-xs text-emerald-600">$ {item.ND_COMISIONES.toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-bold text-xs text-emerald-600">$ {item.ND_COMISIONES.toLocaleString('es-CO')}</TableCell>
                     <TableCell className="text-right font-medium text-xs text-red-600 tracking-tighter">
-                      - $ {(item.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0).toLocaleString()}
+                      - $ {(item.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0).toLocaleString('es-CO')}
                     </TableCell>
                     <TableCell className="text-right font-medium text-xs text-orange-600 tracking-tighter">
-                      - $ {(item.ND_DEDUCCIONES_ADELANTOS || 0).toLocaleString()}
+                      - $ {(item.ND_DEDUCCIONES_ADELANTOS || 0).toLocaleString('es-CO')}
                     </TableCell>
                     <TableCell className="text-right font-black text-sm text-slate-900 px-6">
-                      $ {Math.max(0, Number(item.ND_TOTAL_NETO || 0)).toLocaleString()}
+                      $ {Math.max(0, Number(item.ND_TOTAL_NETO || 0)).toLocaleString('es-CO')}
                       {Number(item.ND_TOTAL_NETO) < 0 && (
-                        <div className="text-[9px] text-red-500 font-bold uppercase mt-1">Saldo Negativo: $ {Math.abs(Number(item.ND_TOTAL_NETO)).toLocaleString()}</div>
+                        <div className="text-[9px] text-red-500 font-bold uppercase mt-1">Saldo Negativo: $ {Math.abs(Number(item.ND_TOTAL_NETO)).toLocaleString('es-CO')}</div>
                       )}
                     </TableCell>
                     <TableCell>
@@ -285,7 +285,7 @@ export default function NominaClient() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 md:p-6 shadow-sm mb-6">
           <div className="flex flex-col">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total acumulado de la semana</span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">$ {nominaData.reduce((acc, curr) => acc + Math.max(0, Number(curr.ND_TOTAL_NETO || 0)), 0).toLocaleString()}</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white">$ {nominaData.reduce((acc, curr) => acc + Math.max(0, Number(curr.ND_TOTAL_NETO || 0)), 0).toLocaleString('es-CO')}</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 md:gap-3">

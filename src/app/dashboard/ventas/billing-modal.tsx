@@ -223,7 +223,14 @@ export function BillingModal({
       const mappedServices = (invoice.services || []).map((s: any) => {
         const serviceProds = (invoice.products || []).filter((p: any) =>
           p.FD_IDDETALLE_FK && String(p.FD_IDDETALLE_FK) === String(s.FD_IDDETALLE_PK)
-        )
+        ).map((p: any) => ({
+          FP_IDFACTURA_PRODUCTO_PK: p.FP_IDFACTURA_PRODUCTO_PK,
+          PR_IDPRODUCTO_FK: p.PR_IDPRODUCTO_FK,
+          TR_IDTECNICO_FK: p.TR_IDTECNICO_FK,
+          FP_VALOR: Number(p.FP_VALOR),
+          FD_IDDETALLE_FK: p.FD_IDDETALLE_FK
+        }))
+        
         return {
           ...s,
           tempId: s.tempId || uuidv4(),
@@ -232,7 +239,13 @@ export function BillingModal({
       })
 
       // Productos independientes (si quedara alguno)
-      const standaloneProducts = (invoice.products || []).filter((p: any) => !p.FD_IDDETALLE_FK)
+      const standaloneProducts = (invoice.products || []).filter((p: any) => !p.FD_IDDETALLE_FK).map((p: any) => ({
+          FP_IDFACTURA_PRODUCTO_PK: p.FP_IDFACTURA_PRODUCTO_PK,
+          PR_IDPRODUCTO_FK: p.PR_IDPRODUCTO_FK,
+          TR_IDTECNICO_FK: p.TR_IDTECNICO_FK,
+          FP_VALOR: Number(p.FP_VALOR),
+          FD_IDDETALLE_FK: null
+      }))
 
       form.reset({
         FC_IDFACTURA_PK: invoice.FC_IDFACTURA_PK,
@@ -730,12 +743,14 @@ export function BillingModal({
                               )} />
                             </td>
                             <td className="px-4 py-3">
-                              <span className="text-xs text-slate-400 italic">
+                              <span className="text-xs text-slate-400 font-medium italic">
                                 {(watchedServices[index]?.products || []).length > 0
-                                  ? watchedServices[index].products.map((p: any) => {
+                                  ? watchedServices[index].products.map((p: any, pIdx: number) => {
                                     const pName = products.find(cp => cp.PR_IDPRODUCTO_PK === p.PR_IDPRODUCTO_FK)?.PR_NOMBRE || 'Producto'
-                                    return `${pName} ($${Number(p.FP_VALOR || 0).toLocaleString('es-CO')})`
-                                  }).join(', ')
+                                    return <span key={pIdx} className="inline-block bg-slate-100 rounded px-1.5 py-0.5 mr-1 mb-1 not-italic text-slate-600 font-bold border border-slate-200">
+                                      {pName} (${Number(p.FP_VALOR || 0).toLocaleString('es-CO')})
+                                    </span>
+                                  })
                                   : 'Sin productos'}
                               </span>
                             </td>

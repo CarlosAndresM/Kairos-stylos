@@ -66,11 +66,11 @@ export async function deleteService(id: number): Promise<ApiResponse> {
 
 export async function getProducts(): Promise<ApiResponse> {
   try {
+    // FORCE NO CACHE with a random comment
     const [rows] = await db.execute(
-      "SELECT PR_IDPRODUCTO_PK, PR_NOMBRE, PR_ACTIVO FROM KS_PRODUCTOS ORDER BY PR_NOMBRE ASC"
+      "SELECT /* v2 */ PR_IDPRODUCTO_PK, PR_NOMBRE, PR_ACTIVO FROM KS_PRODUCTOS WHERE 1=1 ORDER BY PR_NOMBRE ASC"
     );
 
-    // Convert TINYINT (0/1) from MySQL to Boolean for Zod validation
     const products = (rows as any[]).map(p => ({
       ...p,
       PR_ACTIVO: !!p.PR_ACTIVO

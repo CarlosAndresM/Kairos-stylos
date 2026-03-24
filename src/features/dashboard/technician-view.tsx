@@ -178,13 +178,13 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                                             axisLine={false} 
                                             tickLine={false} 
                                             tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
-                                            tickFormatter={(val) => `$${val.toLocaleString()}`}
+                                            tickFormatter={(val) => `$${val.toLocaleString('es-CO')}`}
                                         />
                                         <RechartsTooltip 
                                             cursor={{ fill: '#f8fafc' }}
                                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
                                             labelFormatter={(label) => format(new Date(label), 'EEEE, d MMMM', { locale: es })}
-                                            formatter={(value: any) => [`$${value.toLocaleString()}`, 'Valor']}
+                                            formatter={(value: any) => [`$${value.toLocaleString('es-CO')}`, 'Valor']}
                                         />
                                         <Bar dataKey="total" radius={[6, 6, 0, 0]} barSize={40}>
                                             {chartsData.map((entry, index) => (

@@ -17,7 +17,8 @@ SGI-OS
 
 # production
 /build
-
+/.next
+/.next.zip
 # misc
 .DS_Store
 *.pem

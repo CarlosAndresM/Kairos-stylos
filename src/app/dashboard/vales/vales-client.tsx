@@ -39,6 +39,7 @@ import { ComboboxSearch } from '@/components/ui/combobox-search';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Progress } from '@/components/ui/progress';
+import { NumericFormat } from 'react-number-format';
 
 interface Adelanto {
   AD_IDADELANTO_PK: number;
@@ -489,16 +490,15 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
               <div className="space-y-1.5">
                 <Label>Monto</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$</span>
-                  <Input
-                    type="number"
-                    placeholder="0.00"
-                    className="pl-7"
+                  <NumericFormat
+                    thousandSeparator="."
+                    decimalSeparator=","
+                    prefix="$ "
+                    placeholder="$ 0.00"
+                    className="w-full h-10 border border-slate-200 dark:border-slate-800 rounded-md px-3 text-sm font-medium focus:ring-2 focus:ring-[#FF7E5F]/20 focus:border-[#FF7E5F] transition-all bg-white dark:bg-slate-900"
                     value={monto}
-                    onChange={(e) => setMonto(e.target.value)}
+                    onValueChange={(values) => setMonto(values.value)}
                     required
-                    min="1"
-                    step="0.01"
                   />
                 </div>
               </div>
