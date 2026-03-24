@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getRecentInvoices, getTechnicians, getPaymentMethods } from "@/features/billing/services";
+import { getRecentInvoices, getWorkers, getPaymentMethods } from "@/features/billing/services";
 import { getServices, getProducts } from "@/features/catalog/services";
 import { getSedes } from "@/features/trabajadores/services";
 import { getCurrentUserSession } from "@/features/dashboard/services";
@@ -23,8 +23,8 @@ export default async function VentasPage() {
     paymentMethodsRes,
     sucursalesRes
   ] = await Promise.all([
-    getRecentInvoices(sessionUser?.sucursal_id || 1), // Sucursal del usuario
-    getTechnicians(),
+    getRecentInvoices(sessionUser?.branchId || 1), // Sucursal del usuario
+    getWorkers(),
     getServices(),
     getProducts(),
     getPaymentMethods(),

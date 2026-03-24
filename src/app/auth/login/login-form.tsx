@@ -165,14 +165,7 @@ export function LoginForm() {
         {isLoading ? 'Iniciando sesión...' : 'INICIAR SESIÓN'}
       </Button>
 
-      <div className="text-center">
-        <a
-          href="#"
-          className="text-muted-foreground hover:text-[#FF7E5F] text-sm font-medium transition-colors underline underline-offset-4"
-        >
-          ¿Olvidaste tu contraseña?
-        </a>
-      </div>
     </form>
+
   )
 }

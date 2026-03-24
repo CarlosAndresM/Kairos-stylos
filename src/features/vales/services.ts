@@ -2,15 +2,16 @@ import { getAdelantos, getAdelantosPendientes, getAdelantosByTrabajador } from '
 import { createAdelantoMutation, anularAdelantoMutation } from '@/features/vales/mutations';
 import { CreateAdelantoSchema } from '@/features/vales/schema';
 
-export async function getAllAdelantosService() {
+export async function getAllAdelantosService(sucursalId?: number) {
   try {
-    const data = await getAdelantos();
+    const data = await getAdelantos(sucursalId);
     return { success: true, data };
   } catch (error: any) {
     console.error('getAllAdelantosService error:', error);
     return { success: false, data: null, error: 'Error al obtener los vales', meta: { error: error.message } };
   }
 }
+
 
 export async function getAdelantosPendientesService() {
   try {

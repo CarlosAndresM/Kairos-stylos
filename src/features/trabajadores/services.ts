@@ -10,9 +10,10 @@ import { cookies } from "next/headers";
  * TRABAJADORES
  */
 
-export async function getTrabajadores(): Promise<ApiResponse<WorkerWithStats[]>> {
+export async function getTrabajadores(sucursalId?: number): Promise<ApiResponse<WorkerWithStats[]>> {
   try {
-    const [rows] = await db.execute(`
+    const params: any[] = [];
+    let query = `
       SELECT 
         t.TR_IDTRABAJADOR_PK, 
         t.TR_NOMBRE, 
@@ -45,8 +46,18 @@ export async function getTrabajadores(): Promise<ApiResponse<WorkerWithStats[]>>
       FROM KS_TRABAJADORES t
       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
       LEFT JOIN KS_SUCURSALES s ON t.SC_IDSUCURSAL_FK = s.SC_IDSUCURSAL_PK
-      ORDER BY t.TR_NOMBRE ASC
-    `);
+      WHERE 1=1
+    `;
+
+    if (sucursalId) {
+      query += ` AND t.SC_IDSUCURSAL_FK = ?`;
+      params.push(sucursalId);
+    }
+
+    query += ` ORDER BY t.TR_NOMBRE ASC`;
+
+    const [rows] = await db.execute(query, params);
+
 
     // Convert TINYINT (0/1) from MySQL to Boolean
     const workers = (rows as any[]).map(t => ({

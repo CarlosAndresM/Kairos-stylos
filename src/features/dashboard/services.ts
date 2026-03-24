@@ -71,7 +71,7 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
       params
     );
 
-    // 5b. Deuda Total Generada Hoy (Para mostrar en las tarjetas de CREDITO y VALE)
+    // 5b. Deuda Total Generada Hoy (Para mostrar en las tarjetas de CREDITO y SERVICIO DE TRABAJADOR)
     const [deudaNueva]: any = await db.execute(
       `SELECT mp.MP_NOMBRE as metodo, SUM(pf.PF_VALOR) as total
        FROM KS_PAGOS_FACTURA pf
@@ -79,7 +79,7 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
        JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
        WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? 
        AND (f.FC_ESTADO = 'PENDIENTE' OR f.FC_ESTADO = 'PAGADO')
-       AND mp.MP_NOMBRE IN ('CREDITO', 'VALE')
+       AND mp.MP_NOMBRE IN ('CREDITO', 'SERVICIO DE TRABAJADOR')
        ${sucursalFilter ? 'AND f.' + sucursalFilter.trim().substring(4) : ''}
        GROUP BY mp.MP_NOMBRE`,
       params
@@ -87,10 +87,14 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
 
     // 6. Servicios en el periodo
     const [valesResult]: any = await db.execute(
-      `SELECT SUM(ST_VALOR_TOTAL) as total, COUNT(*) as count 
+      `SELECT SUM(st.ST_VALOR_TOTAL) as total, COUNT(*) as count 
        FROM KS_SERVICIOS_TRABAJADOR st
+       JOIN KS_TRABAJADORES t ON st.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK
+       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
        LEFT JOIN KS_FACTURAS f ON st.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
-       WHERE DATE(st.ST_FECHA) BETWEEN ? AND ? ${sucursalFilter ? 'AND (f.FC_IDFACTURA_PK IS NULL OR f.' + sucursalFilter.trim().substring(4) + ')' : ''}`,
+       WHERE DATE(st.ST_FECHA) BETWEEN ? AND ? 
+       AND r.RL_NOMBRE != 'ADMINISTRADOR_TOTAL'
+       ${sucursalFilter ? 'AND (f.FC_IDFACTURA_PK IS NULL OR f.' + sucursalFilter.trim().substring(4) + ')' : ''}`,
       params
     );
 
@@ -100,7 +104,7 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
       'TRANSFERENCIA': 0,
       'DATAFONO': 0,
       'CREDITO': 0,
-      'VALE': 0
+      'SERVICIO DE TRABAJADOR': 0
     };
 
     (paymentsBreakdown || []).forEach((row: any) => {
@@ -108,9 +112,21 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
       if (metodo === 'EFECTIVO') metodos['EFECTIVO'] += Number(row.total || 0);
       else if (metodo === 'DATAFONO' || metodo === 'TARJETA') metodos['DATAFONO'] += Number(row.total || 0);
       else if (metodo === 'CREDITO') metodos['CREDITO'] += Number(row.total || 0);
-      else if (metodo === 'VALE') metodos['VALE'] += Number(row.total || 0);
+      else if (metodo === 'SERVICIO DE TRABAJADOR') metodos['SERVICIO DE TRABAJADOR'] += Number(row.total || 0);
       else metodos['TRANSFERENCIA'] += Number(row.total || 0);
     });
+
+    // 7. Adelantos (Vales Reales) en el periodo
+    const [adelantosResult]: any = await db.execute(
+      `SELECT SUM(ad.AD_MONTO) as total 
+       FROM KS_ADELANTOS ad
+       JOIN KS_TRABAJADORES t ON ad.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK
+       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+       WHERE DATE(ad.AD_FECHA) BETWEEN ? AND ? 
+       AND ad.AD_ESTADO != 'ANULADO'
+       AND r.RL_NOMBRE != 'ADMINISTRADOR_TOTAL'`,
+      [dateFrom, dateTo]
+    );
 
     const totalVentasPagadas = Number(salesResult[0]?.total || 0);
     const totalAbonosRecibidos = Number(abonosResult[0]?.total || 0);
@@ -129,6 +145,7 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
         abonos_count: Number(abonosResult[0]?.count || 0),
         clientes_nuevos: Number(clientsResult[0]?.total || 0),
         vales_total: Number(valesResult[0]?.total || 0),
+        adelantos_total: Number(adelantosResult[0]?.total || 0),
       },
       error: null
     };
@@ -154,7 +171,8 @@ export async function getDashboardCharts(sucursalId: number, dateFrom: string, d
        FROM KS_TRABAJADORES t
        JOIN KS_FACTURA_DETALLES fd ON t.TR_IDTRABAJADOR_PK = fd.TR_IDTECNICO_FK
        JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
-       WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? ${sucursalFilter}
+       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+       WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND r.RL_NOMBRE = 'TECNICO' ${sucursalFilter}
        GROUP BY t.TR_IDTRABAJADOR_PK
        ORDER BY total DESC
        LIMIT 10`,
@@ -231,12 +249,11 @@ export async function getCurrentUserSession(): Promise<ApiResponse> {
 
 export async function getDashboardSpecificData(sucursalId: number, dateFrom: string, dateTo: string): Promise<ApiResponse> {
   try {
-    const params: any[] = [dateFrom, dateTo];
+    const baseParams: any[] = [dateFrom, dateTo];
     let sucursalFilter = "";
 
     if (sucursalId !== -1) {
       sucursalFilter = " AND f.SC_IDSUCURSAL_FK = ?";
-      params.push(sucursalId);
     }
 
     // 1. Facturas detalladas
@@ -256,7 +273,7 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
        LEFT JOIN KS_TRABAJADORES t ON f.TR_IDCLIENTE_FK = t.TR_IDTRABAJADOR_PK
        WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? ${sucursalFilter}
        ORDER BY f.FC_FECHA DESC`,
-      params
+      sucursalId !== -1 ? [...baseParams, sucursalId] : baseParams
     );
 
     // 2. Créditos
@@ -267,18 +284,21 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
        LEFT JOIN KS_TRABAJADORES t ON f.TR_IDCLIENTE_FK = t.TR_IDTRABAJADOR_PK
        WHERE DATE(c.CR_FECHA) BETWEEN ? AND ? ${sucursalFilter}
        ORDER BY c.CR_FECHA DESC`,
-      params
+      sucursalId !== -1 ? [...baseParams, sucursalId] : baseParams
     );
 
-    // 3. Servicios Propios
+    // 3. Servicios Propios (Técnicos)
     const [vales]: any = await db.execute(
       `SELECT st.*, t.TR_NOMBRE as trabajador_nombre, f.FC_NUMERO_FACTURA
        FROM KS_SERVICIOS_TRABAJADOR st
        JOIN KS_TRABAJADORES t ON st.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK
+       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
        LEFT JOIN KS_FACTURAS f ON st.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
-       WHERE DATE(st.ST_FECHA) BETWEEN ? AND ? ${sucursalFilter ? 'AND (f.FC_IDFACTURA_PK IS NULL OR f.' + sucursalFilter.trim().substring(6) + ')' : ''}
+       WHERE DATE(st.ST_FECHA) BETWEEN ? AND ? 
+       AND r.RL_NOMBRE != 'ADMINISTRADOR_TOTAL'
+       ${sucursalId !== -1 ? 'AND (f.SC_IDSUCURSAL_FK = ? OR (f.FC_IDFACTURA_PK IS NULL AND t.SC_IDSUCURSAL_FK = ?))' : ''}
        ORDER BY st.ST_FECHA DESC`,
-      params
+      sucursalId !== -1 ? [...baseParams, sucursalId, sucursalId] : baseParams
     );
 
     // 4. Productos detallados
@@ -293,7 +313,39 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
        LEFT JOIN KS_SERVICIOS sv ON fd.SV_IDSERVICIO_FK = sv.SV_IDSERVICIO_PK
        WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? ${sucursalFilter}
        ORDER BY f.FC_FECHA DESC`,
-      params
+      sucursalId !== -1 ? [...baseParams, sucursalId] : baseParams
+    );
+
+    // 5. Abonos detallados
+    const [abonos]: any = await db.execute(
+      `SELECT ab.*, c.CR_VALOR_PENDIENTE as cr_valor_pendiente, f.FC_NUMERO_FACTURA, COALESCE(f.FC_CLIENTE_NOMBRE, t.TR_NOMBRE) as cliente_display
+       FROM KS_CREDITO_ABONOS ab
+       JOIN KS_CREDITOS c ON ab.CR_IDCREDITO_FK = c.CR_IDCREDITO_PK
+       JOIN KS_FACTURAS f ON c.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+       LEFT JOIN KS_TRABAJADORES t ON f.TR_IDCLIENTE_FK = t.TR_IDTRABAJADOR_PK
+       WHERE DATE(ab.AB_FECHA) BETWEEN ? AND ? ${sucursalFilter}
+       ORDER BY ab.AB_FECHA DESC`,
+      sucursalId !== -1 ? [...baseParams, sucursalId] : baseParams
+    );
+
+    // 6. Adelantos (Vales Reales) detallados
+    // Nota: Los adelantos reales dependen del trabajador, no de la factura.
+    // Habitualmente se filtran por la sucursal del trabajador.
+    let adelantoFilter = "";
+    if (sucursalId !== -1) {
+      adelantoFilter = " AND t.SC_IDSUCURSAL_FK = ?";
+    }
+
+    const [adelantos]: any = await db.execute(
+      `SELECT a.*, t.TR_NOMBRE as trabajador_nombre
+       FROM KS_ADELANTOS a
+       JOIN KS_TRABAJADORES t ON a.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK
+       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+       WHERE DATE(a.AD_FECHA) BETWEEN ? AND ? 
+       AND r.RL_NOMBRE != 'ADMINISTRADOR_TOTAL'
+       ${adelantoFilter}
+       ORDER BY a.AD_FECHA DESC`,
+      sucursalId !== -1 ? [...baseParams, sucursalId] : baseParams
     );
 
     return {
@@ -302,12 +354,118 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
         facturas,
         creditos,
         vales,
-        productos
+        productos,
+        abonos,
+        adelantos
       },
       error: null
     };
   } catch (error) {
     console.error("Error in getDashboardSpecificData:", error);
     return { success: false, data: null, error: "Error al obtener datos específicos" };
+  }
+}
+
+export async function getTechnicianStats(workerId: number, dateFrom: string, dateTo: string): Promise<ApiResponse> {
+  try {
+    const params = [workerId, dateFrom, dateTo];
+
+    // 1. Total Services Value (Commissions potential)
+    const [servicesResult]: any = await db.execute(
+      `SELECT SUM(fd.FD_VALOR) as total, COUNT(*) as count
+       FROM KS_FACTURA_DETALLES fd
+       JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+       WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO != 'CANCELADO'`,
+      params
+    );
+
+    // 2. Total Products Value (Deductions potential)
+    const [productsResult]: any = await db.execute(
+      `SELECT SUM(fp.FP_VALOR) as total, COUNT(*) as count
+       FROM KS_FACTURA_PRODUCTOS fp
+       JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+       WHERE fp.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO != 'CANCELADO'`,
+      params
+    );
+
+    return {
+      success: true,
+      data: {
+        services_total: Number(servicesResult[0]?.total || 0),
+        services_count: Number(servicesResult[0]?.count || 0),
+        products_total: Number(productsResult[0]?.total || 0),
+        products_count: Number(productsResult[0]?.count || 0),
+      },
+      error: null
+    };
+  } catch (error) {
+    console.error("Error in getTechnicianStats:", error);
+    return { success: false, data: null, error: "Error al obtener estadísticas del técnico" };
+  }
+}
+
+export async function getTechnicianCharts(workerId: number, dateFrom: string, dateTo: string): Promise<ApiResponse> {
+  try {
+    const [rows]: any = await db.execute(
+      `SELECT DATE(f.FC_FECHA) as date, SUM(fd.FD_VALOR) as total
+       FROM KS_FACTURA_DETALLES fd
+       JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+       WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO != 'CANCELADO'
+       GROUP BY DATE(f.FC_FECHA)
+       ORDER BY DATE(f.FC_FECHA) ASC`,
+      [workerId, dateFrom, dateTo]
+    );
+
+    return { success: true, data: rows, error: null };
+  } catch (error) {
+    console.error("Error in getTechnicianCharts:", error);
+    return { success: false, data: null, error: "Error al obtener gráficos del técnico" };
+  }
+}
+
+export async function getTechnicianServices(workerId: number, dateFrom: string, dateTo: string): Promise<ApiResponse> {
+  try {
+    // Detailed list of services performed by the technician
+    const [rows]: any = await db.execute(
+      `SELECT f.FC_NUMERO_FACTURA, f.FC_FECHA, s.SV_NOMBRE as nombre, fd.FD_VALOR as valor, 'SERVICIO' as tipo
+       FROM KS_FACTURA_DETALLES fd
+       JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+       JOIN KS_SERVICIOS s ON fd.SV_IDSERVICIO_FK = s.SV_IDSERVICIO_PK
+       WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO != 'CANCELADO'
+       
+       UNION ALL
+       
+       SELECT f.FC_NUMERO_FACTURA, f.FC_FECHA, p.PR_NOMBRE as nombre, fp.FP_VALOR as valor, 'PRODUCTO' as tipo
+       FROM KS_FACTURA_PRODUCTOS fp
+       JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+       JOIN KS_PRODUCTOS p ON fp.PR_IDPRODUCTO_FK = p.PR_IDPRODUCTO_PK
+       WHERE fp.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO != 'CANCELADO'
+       
+       ORDER BY FC_FECHA DESC`,
+      [workerId, dateFrom, dateTo, workerId, dateFrom, dateTo]
+    );
+
+    return { success: true, data: rows, error: null };
+  } catch (error) {
+    console.error("Error in getTechnicianServices:", error);
+    return { success: false, data: null, error: "Error al obtener servicios del técnico" };
+  }
+}
+
+export async function getTechnicianPayrollHistory(workerId: number): Promise<ApiResponse> {
+  try {
+    const [rows]: any = await db.execute(
+      `SELECT n.NM_FECHA_INICIO, n.NM_FECHA_FIN, nd.* 
+       FROM KS_NOMINA_DETALLES nd
+       JOIN KS_NOMINAS n ON nd.NM_IDNOMINA_FK = n.NM_IDNOMINA_PK
+       WHERE nd.TR_IDTRABAJADOR_FK = ? AND n.NM_ESTADO = 'CONFIRMADA'
+       ORDER BY n.NM_FECHA_INICIO DESC`,
+      [workerId]
+    );
+
+    return { success: true, data: rows, error: null };
+  } catch (error) {
+    console.error("Error in getTechnicianPayrollHistory:", error);
+    return { success: false, data: null, error: "Error al obtener historial de nómina" };
   }
 }

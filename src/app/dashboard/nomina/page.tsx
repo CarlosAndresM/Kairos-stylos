@@ -3,7 +3,7 @@ import NominaClient from "./nomina-client";
 import { LoadingGate } from "@/components/ui/loading-gate";
 
 export const metadata: Metadata = {
-  title: "Nómina | Kyroy Stilos",
+  title: "Nomina Tecnicos | Kyroy Stilos",
   description: "Cálculo de nómina y comisiones para administradores",
 };
 

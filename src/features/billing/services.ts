@@ -7,20 +7,20 @@ import { revalidatePath } from "next/cache";
 import { finalizeUpload } from "@/lib/file-utils";
 
 /**
- * Obtener técnicos disponibles
+ * Obtener todos los trabajadores activos y sus cargos
  */
-export async function getTechnicians(): Promise<ApiResponse> {
+export async function getWorkers(): Promise<ApiResponse> {
   try {
     const [rows] = await db.execute(
       `SELECT t.TR_IDTRABAJADOR_PK, t.TR_NOMBRE, r.RL_NOMBRE 
        FROM KS_TRABAJADORES t 
        JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK 
-       WHERE r.RL_NOMBRE IN ('TECNICO', 'ADMINISTRADOR_PUNTO') AND t.TR_ACTIVO = TRUE`
+       WHERE t.TR_ACTIVO = TRUE AND r.RL_NOMBRE != 'ADMINISTRADOR_TOTAL'`
     );
     return { success: true, data: rows, error: null };
   } catch (error) {
-    console.error("Error fetching technicians:", error);
-    return { success: false, data: null, error: "Error al obtener técnicos" };
+    console.error("Error fetching workers:", error);
+    return { success: false, data: null, error: "Error al obtener trabajadores" };
   }
 }
 
@@ -94,6 +94,28 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
 
     const isUpdate = !!data.FC_IDFACTURA_PK;
     let invoiceId = data.FC_IDFACTURA_PK;
+    
+    // 0.1 Check for duplicate invoice number IF provided
+    if (data.FC_NUMERO_FACTURA) {
+      const checkQuery = isUpdate 
+        ? "SELECT 1 FROM KS_FACTURAS WHERE FC_NUMERO_FACTURA = ? AND FC_IDFACTURA_PK != ?" 
+        : "SELECT 1 FROM KS_FACTURAS WHERE FC_NUMERO_FACTURA = ?";
+      const checkParams = isUpdate ? [data.FC_NUMERO_FACTURA, invoiceId] : [data.FC_NUMERO_FACTURA];
+      
+      const [existing]: any = await (connection as any).execute(checkQuery, checkParams);
+      if (existing.length > 0) {
+        throw new Error(`El número de factura "${data.FC_NUMERO_FACTURA}" ya está en uso.`);
+      }
+    }
+
+    // 0.2 If no invoice number provided for new invoice, auto-generate it
+    let targetInvoiceNum = data.FC_NUMERO_FACTURA;
+    if (!isUpdate && !targetInvoiceNum) {
+      const [rows]: any = await (connection as any).execute(
+        "SELECT COALESCE(MAX(CAST(FC_NUMERO_FACTURA AS UNSIGNED)), 0) + 1 AS next FROM KS_FACTURAS WHERE FC_NUMERO_FACTURA REGEXP '^[0-9]+$'"
+      );
+      targetInvoiceNum = String(rows[0]?.next || 1);
+    }
 
     // 0. Si hay evidencia física, mover de temp
     let fizUrl = data.FC_EVIDENCIA_FISICA_URL;
@@ -171,7 +193,7 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
           FC_TIPO_CLIENTE, TR_IDCLIENTE_FK, FC_EVIDENCIA_FISICA_URL
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          data.FC_NUMERO_FACTURA || `FAC-${Date.now()}`,
+          targetInvoiceNum,
           data.FC_FECHA,
           data.FC_TIPO_CLIENTE === 'CLIENTE' ? data.FC_CLIENTE_NOMBRE : null,
           data.FC_TIPO_CLIENTE === 'CLIENTE' ? data.FC_CLIENTE_TELEFONO : null,

@@ -3,30 +3,30 @@
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogFooter,
   DialogDescription
 } from '@/components/ui/dialog'
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { workerSchema, WorkerFormData } from '@/features/trabajadores/schema'
@@ -39,17 +39,23 @@ interface WorkerModalProps {
   editingWorker?: any
   roles: any[]
   sedes: any[]
+  sucursalId?: number
+  isTotalAdmin?: boolean
 }
 
-export function WorkerModal({ 
-  isOpen, 
-  onClose, 
-  onSave, 
-  editingWorker, 
-  roles, 
-  sedes 
+export function WorkerModal({
+  isOpen,
+  onClose,
+  onSave,
+  editingWorker,
+  roles,
+  sedes,
+  sucursalId,
+  isTotalAdmin
 }: WorkerModalProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+
+  const defaultSucursal = isTotalAdmin ? undefined : sucursalId;
 
   const form = useForm<WorkerFormData>({
     resolver: zodResolver(workerSchema),
@@ -60,7 +66,7 @@ export function WorkerModal({
       TR_PASSWORD: '',
       TR_ACTIVO: editingWorker ? !!editingWorker.TR_ACTIVO : true,
       RL_IDROL_FK: editingWorker?.RL_IDROL_FK,
-      SC_IDSUCURSAL_FK: editingWorker?.SC_IDSUCURSAL_FK,
+      SC_IDSUCURSAL_FK: editingWorker?.SC_IDSUCURSAL_FK ?? defaultSucursal,
       TR_SUELDO_BASE: editingWorker?.TR_SUELDO_BASE || 0,
     }
   })
@@ -86,15 +92,19 @@ export function WorkerModal({
         TR_PASSWORD: '',
         TR_ACTIVO: true,
         RL_IDROL_FK: undefined,
-        SC_IDSUCURSAL_FK: undefined,
+        SC_IDSUCURSAL_FK: defaultSucursal,
         TR_SUELDO_BASE: 0,
       })
     }
-  }, [editingWorker, form, isOpen])
+  }, [editingWorker, form, isOpen, defaultSucursal])
 
   const onSubmit = async (data: WorkerFormData) => {
     setIsSubmitting(true)
     try {
+      // Forzar sucursal si no es admin total y es un nuevo trabajador
+      if (!isTotalAdmin && !data.TR_IDTRABAJADOR_PK) {
+        data.SC_IDSUCURSAL_FK = sucursalId || null;
+      }
       await onSave(data)
     } finally {
       setIsSubmitting(false)
@@ -166,8 +176,8 @@ export function WorkerModal({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs font-bold uppercase text-slate-500 tracking-wider">Rol</FormLabel>
-                      <Select 
-                        onValueChange={(val) => field.onChange(parseInt(val))} 
+                      <Select
+                        onValueChange={(val) => field.onChange(parseInt(val))}
                         value={field.value?.toString()}
                       >
                         <FormControl>
@@ -188,34 +198,43 @@ export function WorkerModal({
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="SC_IDSUCURSAL_FK"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-bold uppercase text-slate-500 tracking-wider">Sucursal</FormLabel>
-                      <Select 
-                        onValueChange={(val) => field.onChange(val === 'none' ? null : parseInt(val))} 
-                        value={field.value?.toString() || 'none'}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl border-slate-200">
-                            <SelectValue placeholder="Seleccione sucursal" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="rounded-xl">
-                          <SelectItem value="none">Sin sucursal (Global)</SelectItem>
-                          {sedes.map((sede) => (
-                            <SelectItem key={sede.SC_IDSUCURSAL_PK} value={sede.SC_IDSUCURSAL_PK.toString()}>
-                              {sede.SC_NOMBRE}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {isTotalAdmin ? (
+                  <FormField
+                    control={form.control}
+                    name="SC_IDSUCURSAL_FK"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs font-bold uppercase text-slate-500 tracking-wider">Sucursal</FormLabel>
+                        <Select
+                          onValueChange={(val) => field.onChange(val === 'none' ? null : parseInt(val))}
+                          value={field.value?.toString() || 'none'}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="rounded-xl border-slate-200">
+                              <SelectValue placeholder="Seleccione sucursal" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="none">Sin sucursal (Global)</SelectItem>
+                            {sedes.map((sede) => (
+                              <SelectItem key={sede.SC_IDSUCURSAL_PK} value={sede.SC_IDSUCURSAL_PK.toString()}>
+                                {sede.SC_NOMBRE}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs font-bold uppercase text-slate-500 tracking-wider">Sucursal</span>
+                    <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-400">
+                      {sedes.find(s => s.SC_IDSUCURSAL_PK === sucursalId)?.SC_NOMBRE || 'SUCURSAL ASIGNADA'}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <FormField
@@ -254,16 +273,16 @@ export function WorkerModal({
             </div>
 
             <DialogFooter className="pt-4 gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={onClose}
                 className="rounded-xl px-6"
               >
                 Cancelar
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isSubmitting}
                 className="bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white font-bold rounded-xl px-8 shadow-lg shadow-[#FF7E5F]/20"
               >

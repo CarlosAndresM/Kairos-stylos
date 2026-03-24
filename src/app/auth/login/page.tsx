@@ -56,18 +56,8 @@ export default function LoginPage() {
           <CardContent className="px-6 pb-6">
             <LoginForm />
             
-            <div className="mt-6 text-center text-sm">
-              <p className="text-[#4A4A4A] dark:text-gray-300 font-medium">
-                ¿No tienes cuenta?{' '}
-                <Link
-                  href="/auth/register"
-                  className="text-[#FF7E5F] hover:text-[#FEB47B] font-bold transition-colors underline underline-offset-4"
-                >
-                  Regístrate aquí.
-                </Link>
-              </p>
-            </div>
           </CardContent>
+
         </Card>
       </div>
       

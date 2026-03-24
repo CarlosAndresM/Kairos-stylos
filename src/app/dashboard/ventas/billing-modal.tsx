@@ -65,7 +65,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { NumericFormat } from 'react-number-format'
 import { invoiceSchema, type InvoiceFormData } from '@/features/billing/schema'
-import { saveInvoice, getNextInvoiceNumber } from '@/features/billing/services'
+import { getRecentInvoices, getWorkers, getPaymentMethods, saveInvoice, getNextInvoiceNumber } from "@/features/billing/services";
 import { toast } from '@/lib/toast-helper'
 import { cn } from '@/lib/utils'
 import { ComboboxSearch } from '@/components/ui/combobox-search'
@@ -273,13 +273,6 @@ export function BillingModal({
         FC_TOTAL: 0,
         FC_EVIDENCIA_FISICA_URL: null
       })
-      getNextInvoiceNumber().then(res => {
-        if (res.success) {
-          const num = String(res.data)
-          setNextInvoiceNum(num)
-          form.setValue("FC_NUMERO_FACTURA", num)
-        }
-      })
     }
   }, [isOpen, invoice, form])
 
@@ -341,9 +334,9 @@ export function BillingModal({
   // Mapeo para comboboxes
   const technicianOptions = technicians
     .filter(t => t.RL_NOMBRE === 'TECNICO')
-    .map(t => ({ label: t.TR_NOMBRE, value: t.TR_IDTRABAJADOR_PK }))
+    .map(t => ({ label: `${t.TR_NOMBRE} (${t.RL_NOMBRE})`, value: t.TR_IDTRABAJADOR_PK }))
 
-  const workerOptions = technicians.map(t => ({ label: t.TR_NOMBRE, value: t.TR_IDTRABAJADOR_PK }))
+  const workerOptions = technicians.map(t => ({ label: `${t.TR_NOMBRE} (${t.RL_NOMBRE})`, value: t.TR_IDTRABAJADOR_PK }))
 
   const serviceOptions = services.map(s => ({ label: s.SV_NOMBRE, value: s.SV_IDSERVICIO_PK }))
   const productOptions = products.map(p => ({ label: p.PR_NOMBRE, value: p.PR_IDPRODUCTO_PK }))
@@ -576,9 +569,8 @@ export function BillingModal({
                     )} />
                   )}
 
-                  {/* Factura física */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Evidencia fÃ­sica</label>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Evidencia física</label>
                     <div className="flex items-center gap-2">
                       <input type="file" accept="image/*" className="hidden" ref={physicalInvoiceInputRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhysicalInvoiceUpload(f) }} />
                       <Button type="button" variant="outline" size="sm" disabled={uploadingPhysical || isPaid} onClick={() => physicalInvoiceInputRef.current?.click()} className={cn("gap-2", form.watch("FC_EVIDENCIA_FISICA_URL") && "border-green-300 text-green-700 bg-green-50")}>
@@ -638,7 +630,8 @@ export function BillingModal({
                         <FormLabel>Fecha de emisión</FormLabel>
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button variant="outline" disabled={true} className="w-full justify-start font-bold gap-2 bg-slate-50 border-slate-200">
+                            <Button variant="outline" disabled={isPaid}
+                              className={cn("w-full justify-start font-bold gap-2 bg-white border-slate-200 hover:border-[#FF7E5F]/50", isPaid && "bg-slate-50")}>
                               <CalendarIcon className="size-4 text-slate-400" />
                               {field.value ? format(field.value, "dd/MM/yyyy") : "Seleccionar"}
                             </Button>
@@ -653,7 +646,9 @@ export function BillingModal({
                     <FormField control={form.control} name="FC_NUMERO_FACTURA" render={({ field }) => (
                       <FormItem>
                         <FormLabel>N° Factura</FormLabel>
-                        <Input {...field} value={field.value || ''} disabled={true} className="bg-slate-50 font-bold border-slate-200" placeholder="Automático" />
+                        <Input {...field} value={field.value || ''} disabled={isPaid}
+                          className={cn("bg-white font-bold border-slate-200 focus:border-[#FF7E5F] focus:ring-[#FF7E5F]/20", isPaid && "bg-slate-50")}
+                          placeholder="AUTOMÁTICO" />
                       </FormItem>
                     )} />
                   </div>

@@ -99,8 +99,11 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
        FROM KS_TRABAJADORES t
        JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
        WHERE t.TR_ACTIVO = TRUE 
-       AND r.RL_NOMBRE NOT IN ('ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO')`
+       AND r.RL_NOMBRE = 'TECNICO'`
     );
+
+    console.log(`[Nomina] Procesando periodo: ${data.startDate.toISOString()} a ${data.endDate.toISOString()}`);
+    console.log(`[Nomina] Técnicos activos encontrados: ${workers.length}`);
 
     let granTotal = 0;
 
@@ -110,7 +113,7 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
         `SELECT SUM(fd.FD_VALOR) as total 
          FROM KS_FACTURA_DETALLES fd 
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
-         WHERE fd.TR_IDTECNICO_FK = ? AND f.FC_FECHA BETWEEN ? AND ?`,
+         WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?)`,
         [worker.TR_IDTRABAJADOR_PK, data.startDate, data.endDate]
       );
       const svcTotal = Number(services[0].total || 0);
@@ -121,7 +124,7 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
         `SELECT SUM(fp.FP_VALOR) as total 
          FROM KS_FACTURA_PRODUCTOS fp
          JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
-         WHERE fp.TR_IDTECNICO_FK = ? AND f.FC_FECHA BETWEEN ? AND ?`,
+         WHERE fp.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?)`,
         [worker.TR_IDTRABAJADOR_PK, data.startDate, data.endDate]
       );
       const prdTotal = Number(products[0].total || 0);
@@ -132,21 +135,40 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
         `SELECT SUM(STC_VALOR_CUOTA) as total 
          FROM KS_SERVICIO_TRABAJADOR_CUOTAS stc
          JOIN KS_SERVICIOS_TRABAJADOR st ON stc.ST_IDSERVICIO_TRABAJADOR_FK = st.ST_IDSERVICIO_TRABAJADOR_PK
-         WHERE st.TR_IDTRABAJADOR_FK = ? AND stc.STC_ESTADO = 'PENDIENTE' AND stc.STC_FECHA_COBRO BETWEEN ? AND ?`,
+         WHERE st.TR_IDTRABAJADOR_FK = ? AND stc.STC_ESTADO = 'PENDIENTE' AND DATE(stc.STC_FECHA_COBRO) BETWEEN DATE(?) AND DATE(?)`,
         [worker.TR_IDTRABAJADOR_PK, data.startDate, data.endDate]
       );
       const valesDeduct = Number(vales[0].total || 0);
 
-      // 4.4. Calcular totales
+      // 4.4. Obtener deducciones de adelantos (Vales reales) para este periodo
+      const [adelantos]: any = await (connection as any).execute(
+        `SELECT AD_MONTO, AD_CUOTAS, AD_CUOTAS_PAGADAS, AD_IDADELANTO_PK
+         FROM KS_ADELANTOS 
+         WHERE TR_IDTRABAJADOR_FK = ? AND AD_ESTADO = 'PENDIENTE' 
+         AND DATE(AD_FECHA_INICIO_COBRO) <= DATE(?)`,
+        [worker.TR_IDTRABAJADOR_PK, data.endDate]
+      );
+
+      let adelantosTotalDeduct = 0;
+      for (const adelanto of adelantos) {
+        const remainingCuotas = adelanto.AD_CUOTAS - adelanto.AD_CUOTAS_PAGADAS;
+        if (remainingCuotas > 0) {
+          const cuotaValor = adelanto.AD_MONTO / adelanto.AD_CUOTAS;
+          adelantosTotalDeduct += cuotaValor;
+        }
+      }
+
+      // 4.5. Calcular totales
       const totalComm = svcComm - prdDeduct;
       const basePay = Number(worker.TR_SUELDO_BASE || 0);
-      const netPay = basePay + totalComm - valesDeduct;
+      const netPay = basePay + totalComm - valesDeduct - adelantosTotalDeduct;
 
-      // 4.5. Insertar detalle
+      // 4.6. Insertar detalle
       await (connection as any).execute(
-        `INSERT INTO KS_NOMINA_DETALLES (NM_IDNOMINA_FK, TR_IDTRABAJADOR_FK, ND_BASE, ND_COMISIONES, ND_BONOS, ND_DEDUCCIONES_VALES, ND_TOTAL_NETO)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [nominaId, worker.TR_IDTRABAJADOR_PK, basePay, totalComm, 0, valesDeduct, netPay]
+        `INSERT INTO KS_NOMINA_DETALLES 
+         (NM_IDNOMINA_FK, TR_IDTRABAJADOR_FK, ND_BASE, ND_COMISIONES, ND_BONOS, ND_DEDUCCIONES_SERVICIOS_TRABAJADOR, ND_DEDUCCIONES_ADELANTOS, ND_TOTAL_NETO)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [nominaId, worker.TR_IDTRABAJADOR_PK, basePay, totalComm, 0, valesDeduct, adelantosTotalDeduct, netPay]
       );
 
       granTotal += netPay;
@@ -158,7 +180,7 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
     await connection.commit();
     revalidatePath("/dashboard/nomina");
 
-    const message = workers.length === 0 
+    const message = workers.length === 0
       ? "Nómina procesada, pero no se encontraron técnicos activos para este periodo."
       : "Nómina procesada correctamente";
 
@@ -206,6 +228,25 @@ export async function confirmarNomina(nominaId: number): Promise<ApiResponse> {
          AND stc.STC_FECHA_COBRO BETWEEN ? AND ?`,
         [detail.TR_IDTRABAJADOR_FK, NM_FECHA_INICIO, NM_FECHA_FIN]
       );
+
+      // 3.1. Actualizar adelantos (Vales reales)
+      const [adelantos]: any = await (connection as any).execute(
+        `SELECT AD_MONTO, AD_CUOTAS, AD_CUOTAS_PAGADAS, AD_IDADELANTO_PK
+         FROM KS_ADELANTOS 
+         WHERE TR_IDTRABAJADOR_FK = ? AND AD_ESTADO = 'PENDIENTE' 
+         AND AD_FECHA_INICIO_COBRO <= ?`,
+        [detail.TR_IDTRABAJADOR_FK, NM_FECHA_FIN]
+      );
+
+      for (const adelanto of adelantos) {
+        const newPagadas = adelanto.AD_CUOTAS_PAGADAS + 1;
+        const newEstado = newPagadas >= adelanto.AD_CUOTAS ? 'DESCONTADO' : 'PENDIENTE';
+
+        await (connection as any).execute(
+          "UPDATE KS_ADELANTOS SET AD_CUOTAS_PAGADAS = ?, AD_ESTADO = ?, NM_IDNOMINA_FK = ? WHERE AD_IDADELANTO_PK = ?",
+          [newPagadas, newEstado, nominaId, adelanto.AD_IDADELANTO_PK]
+        );
+      }
     }
 
     // 4. Cambiar estado a CONFIRMADA
@@ -247,8 +288,8 @@ export async function getNominaByRange(startDate: Date, endDate: Date): Promise<
       [nomina.NM_IDNOMINA_PK]
     );
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: {
         ...nomina,
         details
@@ -277,7 +318,7 @@ export async function deleteNomina(nominaId: number): Promise<ApiResponse> {
     await connection.beginTransaction();
     await (connection as any).execute("DELETE FROM KS_NOMINA_DETALLES WHERE NM_IDNOMINA_FK = ?", [nominaId]);
     await (connection as any).execute("DELETE FROM KS_NOMINAS WHERE NM_IDNOMINA_PK = ?", [nominaId]);
-    
+
     await connection.commit();
     revalidatePath("/dashboard/nomina");
     return { success: true, message: "Liquidación borrada correctamente" };
@@ -299,7 +340,7 @@ export async function getPayrollWorkers(): Promise<ApiResponse<any[]>> {
       FROM KS_TRABAJADORES t
       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
       WHERE t.TR_ACTIVO = TRUE 
-      AND r.RL_NOMBRE NOT IN ('ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO')
+      AND r.RL_NOMBRE = 'TECNICO'
       ORDER BY t.TR_NOMBRE ASC
     `);
     return { success: true, data: rows };

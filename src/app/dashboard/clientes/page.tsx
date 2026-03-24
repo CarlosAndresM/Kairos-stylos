@@ -2,13 +2,19 @@ import { Metadata } from "next";
 import { getDynamicClients } from "@/features/billing/client-services";
 import { ClientClient } from "./client-component";
 
+import { getCurrentUserSession } from "@/features/dashboard/services";
+
 export const metadata: Metadata = {
   title: "Clientes | Kyroy Stilos",
   description: "Listado dinámico de clientes",
 };
 
 export default async function ClientesPage() {
-  const res = await getDynamicClients();
+  const sessionRes = await getCurrentUserSession();
+  const sessionUser = sessionRes.success ? sessionRes.data : null;
+  const sucursalId = sessionUser?.role === 'ADMINISTRADOR_TOTAL' ? undefined : sessionUser?.branchId;
+
+  const res = await getDynamicClients(sucursalId);
   const clients = res.success ? (res.data as any[]) : [];
 
   return (

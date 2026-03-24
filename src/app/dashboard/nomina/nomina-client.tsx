@@ -156,10 +156,10 @@ export default function NominaClient() {
         <div className="flex flex-col gap-1">
           <h1 className="text-xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
             <Banknote className="h-8 w-8 text-[#ff86a2]" />
-            Gestión de Nómina
+            Gestión Nomina Técnicos
           </h1>
           <p className="text-sm text-slate-400 font-medium italic">
-            Cálculo semanal de comisiones y sueldos.
+            Cálculo semanal de comisiones y sueldos para técnicos.
           </p>
         </div>
 
@@ -170,7 +170,7 @@ export default function NominaClient() {
             className="gap-2"
           >
             <Settings className="size-4" />
-            Parametrizar Nómina
+            Parametrizar Nomina Técnicos
           </Button>
         </div>
       </div>
@@ -219,7 +219,7 @@ export default function NominaClient() {
             className="bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white shadow-lg shadow-[#FF7E5F]/20 rounded-xl gap-2"
           >
             {loading ? <RefreshCw className="animate-spin mr-2 h-3.5 w-3.5" /> : <PlayCircle className="mr-2 h-4 w-4" />}
-            PROCESAR NÓMINA
+            PROCESAR NOMINA TÉCNICOS
           </Button>
         </div>
       </div>
@@ -233,7 +233,8 @@ export default function NominaClient() {
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] px-6">Trabajador</TableHead>
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Base</TableHead>
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Comisiones (Neto)</TableHead>
-                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Deducciones Vales</TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Servicio Trabajador</TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Vales (Adelantos)</TableHead>
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right px-6">Total a Pagar</TableHead>
                 <TableHead className="w-[80px]"></TableHead>
               </TableRow>
@@ -246,7 +247,10 @@ export default function NominaClient() {
                     <TableCell className="text-right font-medium text-xs">$ {item.ND_BASE.toLocaleString()}</TableCell>
                     <TableCell className="text-right font-bold text-xs text-emerald-600">$ {item.ND_COMISIONES.toLocaleString()}</TableCell>
                     <TableCell className="text-right font-medium text-xs text-red-600 tracking-tighter">
-                      - $ {item.ND_DEDUCCIONES_VALES.toLocaleString()}
+                      - $ {(item.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right font-medium text-xs text-orange-600 tracking-tighter">
+                      - $ {(item.ND_DEDUCCIONES_ADELANTOS || 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right font-black text-sm text-slate-900 px-6">$ {item.ND_TOTAL_NETO.toLocaleString()}</TableCell>
                     <TableCell>
@@ -260,16 +264,15 @@ export default function NominaClient() {
                 <TableRow>
                   <TableCell colSpan={6} className="h-64 text-center py-10 italic text-slate-400">
                     <div className="flex flex-col items-center justify-center text-slate-500">
-                        <AlertCircle className="h-8 w-8 opacity-20" />
+                      <AlertCircle className="h-8 w-8 opacity-20 mb-2" />
                       {nominaBatch ? (
                         <>
                           <p className="text-xs font-medium">Esta n&oacute;mina se proces&oacute; pero result&oacute; vac&iacute;a.</p>
-                          <p className="text-[10px] text-slate-500 uppercase">Aseg&uacute;rese de tener trabajadores con el rol 'TECNICO' activos.</p>
+                          <p className="text-[10px] text-slate-500 uppercase">Aseg&uacute;rese de tener trabajadores con el rol 'TECNICO' activos y con servicios en estas fechas.</p>
                         </>
                       ) : (
                         <>
-                          <p className="text-xs font-medium">No hay una n&oacute;mina procesada para esta semana.</p>
-                          <Button variant="outline" size="sm" onClick={handleProcesar} className="h-8 text-[10px] font-black uppercase">Click para procesar</Button>
+                          <p className="text-xs font-medium uppercase tracking-widest opacity-70">Seleccione un periodo y presione el bot&oacute;n superior para calcular.</p>
                         </>
                       )}
                     </div>
@@ -334,7 +337,7 @@ export default function NominaClient() {
             <div className="flex items-center gap-3">
               <Settings className="h-5 w-5 text-[#FF7E5F]" />
               <DialogTitle className="text-lg font-bold">
-                Parametrizar Nómina
+                Parametrizar Nomina Técnicos
               </DialogTitle>
             </div>
             <Button
@@ -357,14 +360,14 @@ export default function NominaClient() {
               </h4>
               <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
                 <Table className="border-collapse">
-          <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-20">
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10 px-4 text-slate-500">Vigencia Desde</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10 px-4 text-center text-slate-500">% SVC</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10 px-4 text-center text-slate-500">% PRD</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10 px-4 text-right text-slate-500">Estado</TableHead>
-            </TableRow>
-          </TableHeader>
+                  <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-20">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10 px-4 text-slate-500">Vigencia Desde</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10 px-4 text-center text-slate-500">% SVC</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10 px-4 text-center text-slate-500">% PRD</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase tracking-wider h-10 px-4 text-right text-slate-500">Estado</TableHead>
+                    </TableRow>
+                  </TableHeader>
                   <TableBody>
                     {configs.map((cfg, idx) => (
                       <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors border-b border-slate-100 last:border-0 group">
@@ -405,7 +408,7 @@ export default function NominaClient() {
 
             {/* Capa Superior (Overlay): Formulario */}
             {showConfigForm && (
-                <div className="absolute top-0 right-0 bottom-0 w-[400px] z-50 bg-white dark:bg-slate-900 border-l border-slate-200 shadow-xl animate-in slide-in-from-right duration-300 h-full p-4 space-y-4">
+              <div className="absolute top-0 right-0 bottom-0 w-[400px] z-50 bg-white dark:bg-slate-900 border-l border-slate-200 shadow-xl animate-in slide-in-from-right duration-300 h-full p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nuevo Registro de Vigencia</h4>
                 </div>
