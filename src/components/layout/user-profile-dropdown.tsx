@@ -85,7 +85,7 @@ export function UserProfileDropdown({ userName, userRole }: UserProfileDropdownP
             <Headphones className="size-4" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-bold">Support (WhatsApp)</span>
+            <span className="text-sm font-bold">Support </span>
             <span className="text-[10px] text-slate-400 font-medium">Asistencia técnica</span>
           </div>
         </DropdownMenuItem>
