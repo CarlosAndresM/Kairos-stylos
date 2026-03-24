@@ -27,6 +27,7 @@ async function clean() {
     await connection.query('SET FOREIGN_KEY_CHECKS = 0');
 
     const tablesToTruncate = [
+      'KS_PAGOS_FACTURA',
       'KS_FACTURA_DETALLES',
       'KS_FACTURA_PRODUCTOS',
       'KS_FACTURAS',
@@ -38,8 +39,10 @@ async function clean() {
       'KS_NOMINAS',
       'KS_SERVICIOS',
       'KS_PRODUCTOS',
-      'KS_CLIENTES'
+      'KS_CREDITO_ABONOS',
+      'KS_CREDITOS'
     ];
+
 
     for (const table of tablesToTruncate) {
       console.log(`- Limpiando tabla: ${table}...`);
