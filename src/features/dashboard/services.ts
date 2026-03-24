@@ -148,16 +148,16 @@ export async function getDashboardCharts(sucursalId: number, dateFrom: string, d
       params.push(sucursalId);
     }
 
-    // 1. Top Technicians by services count
+    // 1. Top Technicians by services value
     const [topTechs]: any = await db.execute(
-      `SELECT t.TR_NOMBRE as name, COUNT(fd.FD_IDDETALLE_PK) as count
+      `SELECT t.TR_NOMBRE as name, COUNT(fd.FD_IDDETALLE_PK) as count, SUM(fd.FD_VALOR) as total
        FROM KS_TRABAJADORES t
        JOIN KS_FACTURA_DETALLES fd ON t.TR_IDTRABAJADOR_PK = fd.TR_IDTECNICO_FK
        JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? ${sucursalFilter}
        GROUP BY t.TR_IDTRABAJADOR_PK
-       ORDER BY count DESC
-       LIMIT 5`,
+       ORDER BY total DESC
+       LIMIT 10`,
       params
     );
 

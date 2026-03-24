@@ -149,7 +149,7 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
       <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-6 border-b border-slate-200">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-rose-50 rounded-2xl border border-rose-100 shadow-sm">
+            <div className="p-3 bg-orange-50 rounded-2xl border border-orange-100 shadow-sm">
               <TrendingDown className="size-6 text-[#FF7E5F]" />
             </div>
             <div>
@@ -271,9 +271,9 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                     <TableCell className="px-4 text-center">
                       <span className={cn(
                         "px-2.5 py-1 rounded-full text-[10px] font-bold tracking-tight border",
-                        item.tipo === 'NOMINA' 
-                          ? "bg-indigo-50 text-indigo-600 border-indigo-100" 
-                          : "bg-blue-50 text-blue-600 border-blue-100"
+                        item.tipo === 'NOMINA'
+                          ? "bg-orange-50 text-orange-600 border-orange-100"
+                          : "bg-amber-50 text-amber-600 border-amber-100"
                       )}>
                         {item.tipo}
                       </span>

@@ -126,7 +126,7 @@ export default async function ServicioTrabajadorPage() {
                         "px-3 py-1 rounded-full text-[10px] font-bold tracking-tight border",
                         s.ST_ESTADO === 'PAGADO' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
                         s.ST_ESTADO === 'PENDIENTE' ? "bg-amber-50 text-amber-600 border-amber-100" :
-                        "bg-rose-50 text-rose-600 border-rose-100"
+                        "bg-red-50 text-red-600 border-red-100"
                       )}>
                         {s.ST_ESTADO}
                       </span>

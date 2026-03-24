@@ -29,7 +29,8 @@ import {
     HandCoins,
     Ticket,
     UserPlus,
-    DollarSign
+    DollarSign,
+    Trophy
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -599,11 +600,11 @@ export function DashboardClient() {
                                 color: 'from-slate-600 to-slate-450'
                             },
                         ].map((stat, i) => (
-                            <Card key={i} className="border-2 border-rose-100 rounded-none shadow-md overflow-hidden relative group bg-white dark:bg-slate-900">
+                            <Card key={i} className="border border-orange-100 rounded-xl shadow-sm overflow-hidden relative group bg-white dark:bg-slate-900">
                                 <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${stat.color} opacity-[0.05] group-hover:opacity-[0.1] rounded-full -mr-12 -mt-12 transition-all duration-500 blur-xl group-hover:scale-150`} />
                                 <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 relative z-10">
-                                    <CardTitle className="text-[10px] font-black text-rose-300 uppercase tracking-[0.2em]">{stat.title}</CardTitle>
-                                    <div className={cn("p-2 border-2 border-rose-100 shadow-sm bg-gradient-to-br", stat.color)}>
+                                    <CardTitle className="text-[10px] font-black text-orange-300 uppercase tracking-[0.2em]">{stat.title}</CardTitle>
+                                    <div className={cn("p-2 border border-orange-100 shadow-sm bg-gradient-to-br", stat.color)}>
                                         <stat.icon className="size-4 text-white" />
                                     </div>
                                 </CardHeader>
@@ -616,38 +617,57 @@ export function DashboardClient() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-                        {/* Top Technicians Chart */}
+                        {/* Top Technicians Ranking */}
                         <Card className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
-                            <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center gap-2">
-                                <Zap className="size-4 text-[#FF7E5F]" />
-                                <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Técnicos con mayor servicios</h3>
+                            <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Trophy className="size-4 text-[#FF7E5F]" />
+                                    <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Top Técnicos</h3>
+                                </div>
+                                <div className="p-1 px-2 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-400 uppercase">
+                                    Ranking
+                                </div>
                             </div>
-                            <div className="p-6 h-[300px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={chartsData?.topTechs || []} layout="vertical" margin={{ left: 40, right: 20 }}>
-                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F1F5F9" />
-                                        <XAxis type="number" hide />
-                                        <YAxis
-                                            dataKey="name"
-                                            type="category"
-                                            tick={{ fontSize: 10, fontWeight: 700, fill: '#64748B' }}
-                                            width={100}
-                                        />
-                                        <RechartsTooltip
-                                            cursor={{ fill: 'transparent' }}
-                                            contentStyle={{ backgroundColor: '#fff', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                            itemStyle={{ color: '#0F172A', fontSize: 10, fontWeight: 700 }}
-                                        />
-                                        <Bar dataKey="count" radius={[0, 8, 8, 0]} label={{ position: 'right', fill: '#64748B', fontSize: 10, fontWeight: 700 }}>
-                                            {(chartsData?.topTechs || []).map((entry: any, index: number) => (
-                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
+                            <div className="p-0 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                {isLoading ? (
+                                    <div className="p-4 space-y-4">
+                                        {[1, 2, 3].map(i => (
+                                            <Skeleton key={i} className="h-12 w-full rounded-xl" />
+                                        ))}
+                                    </div>
+                                ) : (chartsData?.topTechs || []).length > 0 ? (
+                                    <div className="divide-y divide-slate-100">
+                                        {(chartsData?.topTechs || []).map((tech: any, index: number) => (
+                                            <div key={index} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={cn(
+                                                        "size-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 shadow-sm",
+                                                        index === 0 ? "bg-amber-100 text-amber-600 border border-amber-200 shadow-inner" :
+                                                            index === 1 ? "bg-slate-100 text-slate-600 border border-slate-200 shadow-inner" :
+                                                                index === 2 ? "bg-orange-100 text-orange-600 border border-orange-200 shadow-inner" :
+                                                                    "bg-slate-50 text-slate-400 border border-slate-100"
+                                                    )}>
+                                                        {index + 1}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{tech.name}</span>
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase italic leading-none mt-1">{tech.count} servicios</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-1">
+                                                    <div className="bg-[#FF7E5F]/10 text-[#FF7E5F] px-4 py-1.5 rounded-full text-[11px] font-black shadow-sm shadow-coral-500/5">
+                                                        $ {Number(tech.total).toLocaleString('es-CO')}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="py-20 text-center text-slate-300 font-bold italic text-[10px] uppercase tracking-widest">Sin técnica registrada en este periodo</div>
+                                )}
                             </div>
                         </Card>
+            
 
                         {/* Top Services Pie */}
                         <Card className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
@@ -655,31 +675,40 @@ export function DashboardClient() {
                                 <Users className="size-4 text-emerald-500" />
                                 <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Top Servicios</h3>
                             </div>
-                            <div className="p-6 h-[300px] w-full flex items-center">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={chartsData?.topServices || []}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={100}
-                                            paddingAngle={5}
-                                            dataKey="count"
-                                        >
-                                            {(chartsData?.topServices || []).map((entry: any, index: number) => (
-                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="white" strokeWidth={2} />
-                                            ))}
-                                        </Pie>
-                                        <RechartsTooltip />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                                <div className="w-1/3 space-y-2">
+                            <div className="p-0 h-[350px] w-full flex flex-col items-center justify-center">
+                                <div className="h-[220px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={chartsData?.topServices || []}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={80}
+                                                paddingAngle={8}
+                                                dataKey="count"
+                                                stroke="none"
+                                            >
+                                                {(chartsData?.topServices || []).map((entry: any, index: number) => (
+                                                    <Cell 
+                                                        key={`cell-${index}`} 
+                                                        fill={COLORS[index % COLORS.length]} 
+                                                        className="hover:opacity-80 transition-opacity cursor-pointer outline-none" 
+                                                    />
+                                                ))}
+                                            </Pie>
+                                            <RechartsTooltip 
+                                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="p-6 pt-0 w-full grid grid-cols-2 gap-x-4 gap-y-2">
                                     {(chartsData?.topServices || []).map((s: any, i: number) => (
-                                        <div key={i} className="flex items-center gap-2">
-                                            <div className="size-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                                            <span className="text-[10px] font-bold text-slate-600 uppercase truncate">{s.name}</span>
-                                            <span className="text-[10px] font-black text-slate-400 ml-auto tabular-nums">{s.count}</span>
+                                        <div key={i} className="flex items-center gap-2 bg-slate-50/80 px-3 py-2 rounded-xl border border-slate-100/50">
+                                            <div className="size-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                                            <span className="text-[9px] font-black text-slate-600 uppercase truncate flex-1 tracking-tight">{s.name}</span>
+                                            <span className="text-[10px] font-black text-[#FF7E5F] tabular-nums">{s.count}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -706,7 +735,6 @@ export function DashboardClient() {
                                 )}
                             </div>
                         </Card>
-                    </div>
                     </div>
                 </div>
             ) : (
@@ -782,7 +810,7 @@ export function DashboardClient() {
                                                             "px-2.5 py-1 rounded-full text-[10px] font-bold tracking-tight border",
                                                             f.FC_ESTADO === 'PAGADO' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
                                                                 f.FC_ESTADO === 'PENDIENTE' ? "bg-amber-50 text-amber-600 border-amber-100" :
-                                                                    "bg-rose-50 text-rose-600 border-rose-100"
+                                                                    "bg-red-50 text-red-600 border-red-100"
                                                         )}>
                                                             {f.FC_ESTADO}
                                                         </span>
@@ -810,7 +838,7 @@ export function DashboardClient() {
                                                                             setInvoiceToDelete(f)
                                                                             setIsAdminDeleteAuthOpen(true)
                                                                         }}
-                                                                        className="p-2 hover:bg-rose-50 text-rose-400 hover:text-rose-600 rounded-xl transition-all"
+                                                                        className="p-2 hover:bg-red-50 text-red-400 hover:text-red-500 rounded-xl transition-all"
                                                                         title="Eliminar factura"
                                                                     >
                                                                         <Trash2 className="size-4" />
@@ -869,7 +897,7 @@ export function DashboardClient() {
                                                         </TableCell>
                                                         <TableCell className="px-4 py-3 text-[11px] font-bold text-slate-900">{c.FC_NUMERO_FACTURA}</TableCell>
                                                         <TableCell className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase">{c.cliente_display}</TableCell>
-                                                        <TableCell className="px-4 py-3 text-[12px] font-black text-right text-rose-500 tabular-nums">$ {Number(c.CR_VALOR_PENDIENTE).toLocaleString('es-CO')}</TableCell>
+                                                        <TableCell className="px-4 py-3 text-[12px] font-black text-right text-orange-500 tabular-nums">$ {Number(c.CR_VALOR_PENDIENTE).toLocaleString('es-CO')}</TableCell>
                                                     </TableRow>
                                                 ))}
                                                 {(specificData?.creditos || []).length === 0 && (
@@ -1023,7 +1051,7 @@ export function DashboardClient() {
                                                                         </button>
                                                                         <button
                                                                             onClick={() => handleDeleteProductAction(p)}
-                                                                            className="p-1.5 hover:bg-rose-50 text-rose-500 hover:text-rose-600 rounded-xl transition-all"
+                                                                            className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-600 rounded-xl transition-all"
                                                                             title="Eliminar este producto"
                                                                         >
                                                                             <Trash2 className="size-4" />
@@ -1046,12 +1074,8 @@ export function DashboardClient() {
                             </div>
                         </Card>
                     </div>
-                </div >
-            )
-            }
-
-            {/* El modal de asociación de productos ya está más abajo */}
-
+                </div>
+            )}
 
             <BillingModal
                 isOpen={isBillingModalOpen}
@@ -1070,61 +1094,59 @@ export function DashboardClient() {
             />
 
             {/* Modal Autenticación Admin para Eliminar */}
-            {
-                isAdminDeleteAuthOpen && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-rose-950/20 backdrop-blur-sm p-4">
-                        <div className="bg-white dark:bg-slate-900 border-2 border-rose-200 dark:border-slate-800 p-6 w-full max-w-sm shadow-[8px_8px_0px_0px_rgba(255,134,162,0.2)]">
-                            <h3 className="text-sm font-black uppercase mb-4 tracking-tighter text-red-600 flex items-center gap-2">
-                                <Trash2 className="size-4" /> REQUERIDO ADMIN
-                            </h3>
-                            <p className="text-[10px] text-slate-500 mb-4 font-bold uppercase italic">Para eliminar definitivamente una factura debe autorizar como administrador.</p>
-                            <Input
-                                type="password"
-                                placeholder="CONTRASEÑA ADMINISTRADOR"
-                                value={adminPassword}
-                                onChange={(e) => setAdminPassword(e.target.value)}
-                                className="rounded-none border-rose-200 mb-4 font-black bg-white text-slate-900"
-                                autoFocus
-                                autoComplete="new-password"
-                                onKeyDown={(e) => e.key === 'Enter' && confirmDeleteInvoice()}
-                            />
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    className="flex-1 rounded-none border-rose-200 uppercase font-bold text-xs text-slate-400 hover:text-slate-900 hover:bg-rose-50"
-                                    onClick={() => {
-                                        setIsAdminDeleteAuthOpen(false)
-                                        setAdminPassword('')
-                                        setInvoiceToDelete(null)
-                                    }}
-                                >
-                                    CANCELAR
-                                </Button>
-                                <Button
-                                    className="flex-1 rounded-none bg-red-600 text-white hover:bg-red-700 uppercase font-black text-xs gap-2 shadow-[2px_2px_0_0_rgba(0,0,0,0.2)]"
-                                    onClick={confirmDeleteInvoice}
-                                    disabled={isDeleting}
-                                >
-                                    {isDeleting && <Loader2 className="size-3 animate-spin" />}
-                                    CONFIRMAR
-                                </Button>
-                            </div>
+            {isAdminDeleteAuthOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 w-full max-w-sm rounded-3xl shadow-2xl">
+                        <h3 className="text-sm font-black uppercase mb-4 tracking-tighter text-red-600 flex items-center gap-2">
+                            <Trash2 className="size-4" /> REQUERIDO ADMIN
+                        </h3>
+                        <p className="text-[10px] text-slate-500 mb-4 font-bold uppercase italic">Para eliminar definitivamente una factura debe autorizar como administrador.</p>
+                        <Input
+                            type="password"
+                            placeholder="CONTRASEÑA ADMINISTRADOR"
+                            value={adminPassword}
+                            onChange={(e) => setAdminPassword(e.target.value)}
+                             className="rounded-xl border-slate-200 focus:border-[#FF7E5F] mb-4 font-bold bg-slate-50 text-slate-900 h-12 transition-all"
+                            autoFocus
+                            autoComplete="new-password"
+                            onKeyDown={(e) => e.key === 'Enter' && confirmDeleteInvoice()}
+                        />
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                className="flex-1 rounded-xl border-slate-200 uppercase font-bold text-[10px] text-slate-500 hover:text-slate-900 hover:bg-slate-50 h-12"
+                                onClick={() => {
+                                    setIsAdminDeleteAuthOpen(false)
+                                    setAdminPassword('')
+                                    setInvoiceToDelete(null)
+                                }}
+                            >
+                                CANCELAR
+                            </Button>
+                            <Button
+                                className="flex-1 rounded-xl bg-red-600 text-white hover:bg-red-700 uppercase font-bold text-[10px] gap-2 shadow-lg shadow-red-500/20 h-12 border-none"
+                                onClick={confirmDeleteInvoice}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting && <Loader2 className="size-3 animate-spin" />}
+                                CONFIRMAR
+                            </Button>
                         </div>
                     </div>
-                )
-            }
+                </div>
+            )}
 
             {/* MODAL PARA AGREGAR PRODUCTO A FACTURA EXISTENTE */}
             <Dialog open={isAddProductModalOpen} onOpenChange={setIsAddProductModalOpen}>
-                <DialogContent className="max-w-md border-2 border-rose-200 rounded-none shadow-[8px_8px_0px_0px_rgba(255,134,162,0.15)] p-0 bg-white">
-                    <DialogHeader className="bg-gradient-to-r from-rose-400 to-rose-500 p-4 border-b-2 border-rose-300">
-                        <DialogTitle className="text-white font-black uppercase text-sm italic tracking-tighter">{apIsEdit ? "EDITAR ASOCIACIÓN" : "AGREGAR PRODUCTO A FACTURA"}</DialogTitle>
-                        <DialogDescription className="text-white/80 text-[10px] uppercase font-bold tracking-widest">{apIsEdit ? "Modifique los detalles de este producto." : "Asocie un producto con un servicio realizado en una factura."}</DialogDescription>
+                <DialogContent className="max-w-md border-none rounded-3xl shadow-2xl p-0 bg-white overflow-hidden">
+                    <DialogHeader className="bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] p-8">
+                        <DialogTitle className="text-white font-black uppercase text-xl italic tracking-tight">{apIsEdit ? "EDITAR ASOCIACIÓN" : "AGREGAR PRODUCTO"}</DialogTitle>
+                        <DialogDescription className="text-white/90 text-xs uppercase font-bold tracking-wider">{apIsEdit ? "Modifique los detalles de este producto." : "Asocie un producto con un servicio realizado."}</DialogDescription>
                     </DialogHeader>
 
                     <div className="p-6 space-y-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase text-rose-400 italic">1. SELECCIONAR FACTURA:</label>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">1. SELECCIONAR FACTURA:</label>
                             <ComboboxSearch
                                 options={(specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PENDIENTE').map((f: any) => ({
                                     label: `#${f.FC_NUMERO_FACTURA} - ${f.cliente_display}`,
@@ -1133,7 +1155,7 @@ export function DashboardClient() {
                                 value={apSelectedInvoiceId}
                                 onValueChange={(val) => fetchInvoiceForAssociation(val.toString())}
                                 placeholder="BUSQUE LA FACTURA..."
-                                className="w-full h-10 border-2 border-rose-200 rounded-none font-black text-xs uppercase focus:border-orange-400"
+                                className="w-full h-12 border border-slate-200 rounded-xl font-bold text-xs uppercase focus:border-[#FF7E5F]"
                             />
                         </div>
 
@@ -1144,15 +1166,15 @@ export function DashboardClient() {
                         )}
 
                         {apLoadingInvoice && (
-                            <div className="flex items-center justify-center py-4 gap-2 text-[10px] font-black text-rose-400 italic animate-pulse">
-                                <Loader2 className="size-4 animate-spin" /> CARGANDO SERVICIOS DE LA FACTURA...
+                            <div className="flex items-center justify-center py-4 gap-2 text-[10px] font-bold text-[#FF7E5F] italic animate-pulse">
+                                <Loader2 className="size-4 animate-spin" /> CARGANDO SERVICIOS...
                             </div>
                         )}
 
                         {apInvoiceDetails && (
                             <div className="grid grid-cols-1 gap-4 animate-in fade-in duration-300">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase text-rose-400 italic">2. PRODUCTO A CONSUMIR:</label>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">2. PRODUCTO A CONSUMIR:</label>
                                     <ComboboxSearch
                                         options={catalogData.products.map((p: any) => ({
                                             label: p.PR_NOMBRE,
@@ -1161,12 +1183,12 @@ export function DashboardClient() {
                                         value={apSelectedProductId}
                                         onValueChange={(val) => handleProductChange(val.toString())}
                                         placeholder="BUSCAR PRODUCTO..."
-                                        className="w-full h-10 border-2 border-rose-200 rounded-none font-black text-xs uppercase focus:border-orange-400 shadow-sm"
+                                        className="w-full h-12 border border-slate-200 rounded-xl font-bold text-xs uppercase focus:border-[#FF7E5F]"
                                     />
                                 </div>
 
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase text-rose-400 italic">3. SERVICIO DONDE SE USÓ:</label>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">3. SERVICIO DONDE SE USÓ:</label>
                                     <ComboboxSearch
                                         options={(apInvoiceDetails?.services || []).map((s: any) => ({
                                             label: `${catalogData.services.find((cs: any) => cs.SV_IDSERVICIO_PK === s.SV_IDSERVICIO_FK)?.SV_NOMBRE || 'Servicio'} - $${Number(s.FD_VALOR).toLocaleString()}`,
@@ -1175,25 +1197,25 @@ export function DashboardClient() {
                                         value={apSelectedServiceId}
                                         onValueChange={(val) => setApSelectedServiceId(val.toString())}
                                         placeholder="SELECCIONAR SERVICIO..."
-                                        className="w-full h-10 border-2 border-rose-200 rounded-none font-black text-xs uppercase bg-rose-50/10 focus:border-orange-400"
-                                        emptyText={(!apInvoiceDetails.services || apInvoiceDetails.services.length === 0) ? "NO HAY SERVICIOS EN ESTA FACTURA" : "NO SE ENCONTRÓ"}
+                                        className="w-full h-12 border border-slate-200 rounded-xl font-bold text-xs uppercase bg-slate-50 focus:border-[#FF7E5F]"
+                                        emptyText={(!apInvoiceDetails.services || apInvoiceDetails.services.length === 0) ? "SIN SERVICIOS EN FACTURA" : "NO SE ENCONTRÓ"}
                                     />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black uppercase text-rose-400 italic">VALOR:</label>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">VALOR:</label>
                                         <NumericFormat
                                             value={apValue}
                                             onValueChange={(vals) => setApValue(vals.floatValue || 0)}
                                             thousandSeparator="."
                                             decimalSeparator=","
                                             prefix="$ "
-                                            className="w-full h-10 border-2 border-rose-200 rounded-none px-3 font-black text-sm outline-none focus:bg-rose-50/50 focus:border-orange-400"
+                                            className="w-full h-12 border border-slate-200 rounded-xl px-4 font-black text-sm outline-none bg-slate-50 focus:bg-white focus:border-[#FF7E5F] transition-all"
                                         />
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black uppercase text-rose-400 italic">TÉCNICO:</label>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">TÉCNICO:</label>
                                         <ComboboxSearch
                                             options={catalogData.technicians.map((t: any) => ({
                                                 label: t.TR_NOMBRE,
@@ -1202,7 +1224,7 @@ export function DashboardClient() {
                                             value={apTechnicianId}
                                             onValueChange={(val) => setApTechnicianId(val.toString())}
                                             placeholder="TÉCNICO..."
-                                            className="w-full h-10 border-2 border-rose-200 rounded-none font-black text-xs uppercase focus:border-orange-400 shadow-sm"
+                                             className="w-full h-12 border border-slate-200 rounded-xl font-bold text-xs uppercase focus:border-[#FF7E5F] hover:border-[#FF7E5F]/30 transition-all"
                                         />
                                     </div>
                                 </div>
@@ -1210,18 +1232,18 @@ export function DashboardClient() {
                         )}
                     </div>
 
-                    <DialogFooter className="p-4 bg-rose-50/30 border-t-2 border-rose-100">
+                    <DialogFooter className="p-8 bg-slate-50 border-t border-slate-100">
                         <Button
-                            className="w-full h-12 rounded-none bg-orange-500 text-white font-black uppercase text-xs italic shadow-[4px_4px_0px_0px_rgba(249,115,22,0.3)] active:shadow-none translate-x-0 active:translate-x-[2px] active:translate-y-[2px] hover:bg-orange-600 border-2 border-orange-600"
+                            className="w-full h-14 rounded-2xl bg-[#FF7E5F] text-white font-black uppercase text-xs tracking-tight shadow-xl shadow-coral-500/20 active:scale-95 hover:bg-[#FF7E5F]/90 border-none transition-all"
                             onClick={handleAddProduct}
                             disabled={apIsSubmitting || !apSelectedInvoiceId || !apSelectedProductId}
                         >
                             {apIsSubmitting ? <Loader2 className="size-4 animate-spin mr-2" /> : <Package2 className="size-4 mr-2" />}
-                            {apIsEdit ? "ACTUALIZAR PRODUCTO" : "ASOCIAR PRODUCTO A FACTURA"}
+                            {apIsEdit ? "ACTUALIZAR PRODUCTO" : "ASOCIAR PRODUCTO"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div >
+        </div>
     )
 }

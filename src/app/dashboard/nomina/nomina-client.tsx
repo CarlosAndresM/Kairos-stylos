@@ -340,7 +340,7 @@ export default function NominaClient() {
             <Button
               onClick={() => setShowConfigForm(!showConfigForm)}
               className={cn(
-                "h-10 w-10 p-0 rounded-none border-2 border-white/20 transition-all",
+                "h-10 w-10 p-0 rounded-none border-2 border-input transition-all",
                 showConfigForm ? "bg-red-500 border-red-500 rotate-45" : "bg-emerald-600 border-emerald-600"
               )}
             >

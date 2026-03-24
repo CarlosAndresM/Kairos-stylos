@@ -521,8 +521,8 @@ export default function CreditsPage() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-                <div className="bg-rose-50 p-6 rounded-full">
-                  <History className="h-12 w-12 text-rose-200" />
+                <div className="bg-orange-50 p-6 rounded-full">
+                  <History className="h-12 w-12 text-orange-200" />
                 </div>
                 <div className="space-y-1">
                   <p className="text-[12px] font-black uppercase text-slate-400 italic">No hay abonos registrados todavía.</p>

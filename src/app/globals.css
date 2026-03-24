@@ -6,12 +6,12 @@
 
 :root {
   /* Paleta de colores Kyroy Stilos - DISEÑO CENTRALIZADO */
-  --brand-pink: #ff86a2;
-  --brand-pink-light: #fff1f2;
-  --brand-orange: #f97316;
-  --brand-orange-hover: #ea580c;
-  --brand-border: #fecdd3; /* rose-200 */
-  --brand-text: #475569;   /* slate-600 */
+  --brand-pink: #FF7E5F;       /* Coral Principal */
+  --brand-pink-light: #fff7ed; /* naranja muy claro (orange-50) */
+  --brand-orange: #FEB47B;      /* Melocotón/Naranja suave */
+  --brand-orange-hover: #f97316;
+  --brand-border: #e2e8f0;     /* slate-200, neutral */
+  --brand-text: #475569;       /* slate-600 */
 
   /* Mapeo a Estándares de UI (Shadcn/Tailwind) */
   --background: oklch(0.98 0 0);
@@ -32,7 +32,7 @@
   --destructive-foreground: #ffffff;
   --border: var(--brand-border);
   --input: var(--brand-border);
-  --ring: var(--brand-pink);
+  --ring: var(--brand-orange);
   --radius: 0.625rem;
 }
 

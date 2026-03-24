@@ -94,7 +94,7 @@ export function LoginForm() {
         {/* Username Field */}
         <Field>
           <FieldContent>
-            <InputGroup className="bg-white/50 dark:bg-black/20 border-white/20 h-11">
+            <InputGroup className="bg-white/50 dark:bg-black/20 border-input h-11">
               <InputGroupAddon>
                 <User className="text-[#FF7E5F] size-5" />
               </InputGroupAddon>
@@ -112,7 +112,7 @@ export function LoginForm() {
         {/* Password Field */}
         <Field>
           <FieldContent>
-            <InputGroup className="bg-white/50 dark:bg-black/20 border-white/20 h-11">
+            <InputGroup className="bg-white/50 dark:bg-black/20 border-input h-11">
               <InputGroupAddon>
                 <Lock className="text-[#FF7E5F] size-5" />
               </InputGroupAddon>
