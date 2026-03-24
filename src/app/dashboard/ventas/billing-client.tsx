@@ -213,13 +213,13 @@ export function BillingClient({
     <LoadingGate>
       <div className="space-y-4 md:space-y-6">
         {/* Date Navigation & Actions Header */}
-        <div className="flex flex-col xl:flex-row gap-3 xl:gap-4 xl:items-center justify-between bg-rose-50/50 dark:bg-slate-900/50 p-3 md:p-4 border-2 border-rose-100 shadow-sm rounded-none">
-          <div className="flex items-center gap-1 bg-white dark:bg-slate-950 border-2 border-rose-100 p-1 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-sm">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigateDay('prev')}
-              className="h-9 w-9 rounded-none hover:bg-rose-50 text-rose-400"
+              className="h-9 w-9 rounded-lg hover:bg-slate-100 text-slate-500"
             >
               <ChevronLeft className="size-5" />
             </Button>
@@ -228,13 +228,13 @@ export function BillingClient({
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="h-9 px-4 rounded-none font-black text-xs uppercase tracking-tighter flex gap-2 border-x border-rose-100/50 text-slate-700"
+                  className="h-9 px-4 rounded-lg font-semibold text-xs flex gap-2 text-slate-700"
                 >
-                  <CalendarIcon className="size-4 text-[#ff86a2]" />
+                  <CalendarIcon className="size-4 text-[#FF7E5F]" />
                   {format(currentDate, "EEEE, d 'de' MMMM", { locale: es })}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 rounded-none border-2 border-rose-200 shadow-xl" align="start">
+              <PopoverContent className="w-auto p-0 rounded-xl border border-slate-200 shadow-xl" align="start">
                 <Calendar
                   mode="single"
                   selected={currentDate}
@@ -249,7 +249,7 @@ export function BillingClient({
               variant="ghost"
               size="icon"
               onClick={() => navigateDay('next')}
-              className="h-9 w-9 rounded-none hover:bg-rose-50 text-rose-400"
+              className="h-9 w-9 rounded-lg hover:bg-slate-100 text-slate-500"
             >
               <ChevronRightIcon className="size-5" />
             </Button>
@@ -257,10 +257,10 @@ export function BillingClient({
 
           <div className="flex flex-col sm:flex-row gap-4 items-center flex-1 sm:justify-end">
             <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-rose-300" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
               <Input
-                placeholder="Filtro rápido..."
-                className="pl-10 h-10 border-2 border-rose-100 rounded-none shadow-sm bg-white dark:bg-slate-950 font-bold text-xs uppercase placeholder:text-rose-200"
+                placeholder="Buscar factura..."
+                className="pl-9 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 autoComplete="off"
@@ -269,7 +269,7 @@ export function BillingClient({
 
             <Button
               onClick={handleNewInvoice}
-              className="w-full sm:w-auto bg-[#f97316] hover:bg-[#ea580c] text-white font-black gap-2 rounded-none border-2 border-[#f97316] shadow-[4px_4px_0px_0px_rgba(234,88,12,0.2)] h-10 px-6 text-sm uppercase italic"
+              className="w-full sm:w-auto bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white shadow-lg shadow-[#FF7E5F]/20 rounded-xl gap-2"
             >
               <Plus className="size-4" />
               Nueva Venta
@@ -277,10 +277,10 @@ export function BillingClient({
           </div>
         </div>
 
-        <div className="border border-rose-100 bg-white/50 backdrop-blur-sm shadow-sm overflow-hidden max-h-[70vh] overflow-y-auto">
-          <div className="overflow-x-auto">
-            <Table className="border-collapse">
-              <TableHeader className="bg-[#fff1f2] sticky top-0 z-10 shadow-sm border-b-2 border-rose-100">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto max-h-[65vh] overflow-y-auto">
+            <Table>
+              <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10">
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="h-10 py-0 px-4 w-[110px]">
                     <TableFilter
@@ -315,7 +315,7 @@ export function BillingClient({
                     />
                   </TableHead>
                   <TableHead className="h-10 py-0 px-4 text-right w-[110px]">
-                    <span className="font-black uppercase tracking-widest text-[10px] text-[#ff86a2] pr-2">TOTAL</span>
+                    <span className="font-bold uppercase tracking-wider text-[10px] text-slate-500 pr-2">Total</span>
                   </TableHead>
                   <TableHead className="h-10 py-0 px-4 text-center w-[100px]">
                     <TableFilter
@@ -327,7 +327,7 @@ export function BillingClient({
                     />
                   </TableHead>
                   <TableHead className="h-10 py-0 px-4 text-right w-[60px]">
-                    <span className="font-black uppercase tracking-widest text-[10px] text-[#ff86a2]">ACCIÓN</span>
+                    <span className="font-bold uppercase tracking-wider text-[10px] text-slate-500">Acción</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -336,15 +336,15 @@ export function BillingClient({
                   filteredInvoices.map((invoice) => (
                     <TableRow
                       key={invoice.FC_IDFACTURA_PK}
-                      className="hover:bg-rose-50/50 transition-colors group border-b border-rose-50"
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
                     >
                       <TableCell className="py-2 px-4 font-bold text-slate-700 text-xs">
                         {invoice.FC_NUMERO_FACTURA}
                       </TableCell>
                       <TableCell className="py-2 px-4">
-                        <span className="text-[10px] font-black uppercase text-rose-400 italic bg-rose-50 px-1.5 py-0.5 border border-rose-100">
+                        <Badge variant="outline" className="text-[10px] uppercase font-bold">
                           {invoice.sucursal_nombre}
-                        </span>
+                        </Badge>
                       </TableCell>
                       <TableCell className="py-2 px-4">
                         <span className="text-xs font-bold text-slate-600 truncate max-w-[180px] block">
@@ -363,51 +363,55 @@ export function BillingClient({
                         </span>
                       </TableCell>
                       <TableCell className="py-2 px-4 text-center">
-                        <span className={cn(
-                          "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm border",
-                          invoice.FC_ESTADO === 'PAGADO' ? "bg-emerald-50 text-emerald-600 border-emerald-200" :
-                            invoice.FC_ESTADO === 'PENDIENTE' ? "bg-orange-50 text-orange-600 border-orange-200" :
-                              "bg-red-50 text-red-600 border-red-200"
+                        <Badge className={cn(
+                          "text-[10px] border-none",
+                          invoice.FC_ESTADO === 'PAGADO' ? "bg-green-500 hover:bg-green-600 text-white" :
+                            invoice.FC_ESTADO === 'PENDIENTE' ? "bg-amber-500 hover:bg-amber-600 text-white" :
+                              "bg-red-500 hover:bg-red-600 text-white"
                         )}>
                           {invoice.FC_ESTADO}
-                        </span>
+                        </Badge>
                       </TableCell>
                       <TableCell className="py-2 px-4 text-right">
-                        <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
+                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleOpenInvoice(invoice, true)}
-                            className="p-1.5 hover:bg-rose-50 text-rose-400 rounded-lg transition-all"
                             title="Ver detalles"
                           >
-                            <Eye className="size-3.5" />
-                          </button>
+                            <Eye className="size-4 text-slate-500" />
+                          </Button>
                           {(invoice.FC_ESTADO === 'PENDIENTE' || sessionUser?.role === 'ADMINISTRADOR_TOTAL') && (
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleOpenInvoice(invoice, false)}
-                              className="p-1.5 hover:bg-rose-50 text-rose-400 rounded-lg transition-all"
                               title="Editar factura"
                             >
-                              <Pencil className="size-3.5" />
-                            </button>
+                              <Pencil className="size-4 text-slate-500" />
+                            </Button>
                           )}
-                          <button
-                            onClick={() => {
-                              setInvoiceToDelete(invoice)
-                              setIsAdminDeleteAuthOpen(true)
-                            }}
-                            className="p-1.5 hover:bg-red-50 text-red-400 hover:text-red-600 rounded-lg transition-all"
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => { setInvoiceToDelete(invoice); setIsAdminDeleteAuthOpen(true) }}
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
                             title="Eliminar factura"
                           >
-                            <Trash2 className="size-3.5" />
-                          </button>
+                            <Trash2 className="size-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-slate-300 italic">
-                      No hay ventas registradas
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      <div className="flex flex-col items-center justify-center text-slate-500">
+                        <Receipt className="size-8 mb-2 opacity-20" />
+                        <p>No hay ventas registradas</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -431,18 +435,18 @@ export function BillingClient({
 
         {/* Modal Autenticación Admin para Eliminar */}
         {isAdminDeleteAuthOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-white border-2 border-rose-200 p-6 w-full max-w-sm shadow-xl">
-              <h3 className="text-sm font-black uppercase mb-4 tracking-tighter text-red-600 flex items-center gap-2">
-                <Trash2 className="size-4" /> REQUERIDO ADMIN
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-2xl p-6 w-full max-w-sm">
+              <h3 className="text-sm font-bold text-slate-900 mb-1 flex items-center gap-2">
+                <Trash2 className="size-4 text-red-500" /> Eliminar factura
               </h3>
-              <p className="text-[10px] text-slate-500 mb-4 font-bold uppercase italic">Para eliminar definitivamente una factura debe autorizar como administrador.</p>
+              <p className="text-xs text-slate-500 mb-4">Esta acción es permanente. Ingrese la contraseña de administrador para confirmar.</p>
               <Input
                 type="password"
-                placeholder="CONTRASEÑA ADMINISTRADOR"
+                placeholder="Contraseña administrador"
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
-                className="rounded-none border-rose-100 mb-4 font-black bg-white text-black"
+                className="mb-4"
                 autoFocus
                 autoComplete="new-password"
                 onKeyDown={(e) => e.key === 'Enter' && confirmDeleteInvoice()}
@@ -450,22 +454,22 @@ export function BillingClient({
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="flex-1 rounded-none border-rose-200 uppercase font-bold text-xs text-slate-600"
+                  className="flex-1"
                   onClick={() => {
                     setIsAdminDeleteAuthOpen(false)
                     setAdminPassword('')
                     setInvoiceToDelete(null)
                   }}
                 >
-                  CANCELAR
+                  Cancelar
                 </Button>
                 <Button
-                  className="flex-1 rounded-none bg-red-600 text-white hover:bg-red-700 uppercase font-black text-xs gap-2"
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white gap-2"
                   onClick={confirmDeleteInvoice}
                   disabled={isDeleting}
                 >
                   {isDeleting && <Loader2 className="size-3 animate-spin" />}
-                  CONFIRMAR ELIMINACIÓN
+                  Eliminar
                 </Button>
               </div>
             </div>

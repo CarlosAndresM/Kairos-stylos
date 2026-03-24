@@ -62,12 +62,12 @@ export function ClientClient({ initialClients }: ClientClientProps) {
   return (
     <LoadingGate>
       <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between bg-slate-100 dark:bg-slate-900/50 p-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-        <div className="relative w-full sm:w-64">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
           <Input 
-            placeholder="FILTRO RÁPIDO..."
-            className="pl-10 h-10 border-2 border-black rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white dark:bg-slate-950 font-bold text-xs uppercase"
+            placeholder="Buscar por cliente..."
+            className="pl-9 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             autoComplete="off"
@@ -75,10 +75,10 @@ export function ClientClient({ initialClients }: ClientClientProps) {
         </div>
       </div>
 
-      <div className="border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden max-h-[75vh] overflow-y-auto shadow-sm">
-        <div className="overflow-x-auto">
-        <Table className="border-collapse">
-          <TableHeader className="bg-slate-50 dark:bg-slate-900 sticky top-0 z-10 shadow-sm border-b-2 border-black">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
+        <Table>
+          <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10">
             <TableRow className="hover:bg-transparent">
               <TableHead className="h-10 py-0 px-4">
                 <TableFilter 
@@ -153,8 +153,11 @@ export function ClientClient({ initialClients }: ClientClientProps) {
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-slate-500 py-10 italic text-xs">
-                  No se encontraron clientes.
+                <TableCell colSpan={6} className="h-24 text-center">
+                  <div className="flex flex-col items-center justify-center text-slate-500">
+                    <User className="size-8 mb-2 opacity-20" />
+                    <p>No se encontraron clientes</p>
+                  </div>
                 </TableCell>
               </TableRow>
             )}

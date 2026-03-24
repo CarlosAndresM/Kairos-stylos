@@ -167,16 +167,16 @@ export default function NominaClient() {
           <Button
             variant="outline"
             onClick={() => setConfigOpen(true)}
-            className="border-slate-200 text-slate-600 font-bold text-[10px] tracking-widest uppercase h-9 rounded-none px-4"
+            className="gap-2"
           >
-            <Settings className="mr-2 h-4 w-4" />
-            Parametrizar N&oacute;mina
+            <Settings className="size-4" />
+            Parametrizar Nómina
           </Button>
         </div>
       </div>
 
       {/* Rango de Fechas */}
-      <div className="bg-white border border-slate-200 p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="p-2 bg-slate-100 rounded-full">
             <CalendarIcon className="h-5 w-5 text-slate-500" />
@@ -216,7 +216,7 @@ export default function NominaClient() {
           <Button
             disabled={loading}
             onClick={handleProcesar}
-            className="bg-[#f97316] hover:bg-[#ea580c] text-white font-black text-[10px] tracking-widest uppercase rounded-none px-6 h-9 shadow-[4px_4px_0px_0px_rgba(234,88,12,0.2)]"
+            className="bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white shadow-lg shadow-[#FF7E5F]/20 rounded-xl gap-2"
           >
             {loading ? <RefreshCw className="animate-spin mr-2 h-3.5 w-3.5" /> : <PlayCircle className="mr-2 h-4 w-4" />}
             PROCESAR NÓMINA
@@ -225,16 +225,16 @@ export default function NominaClient() {
       </div>
 
       {/* Tabla de Resultados */}
-      <div className="border border-rose-100 bg-white/50 backdrop-blur-sm overflow-hidden min-h-[400px] shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm min-h-[400px]">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-[#fff1f2] sticky top-0 z-10 border-b border-rose-100">
+            <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="font-black text-[#ff86a2] uppercase tracking-widest text-[10px] px-6">Trabajador</TableHead>
-                <TableHead className="font-black text-[#ff86a2] uppercase tracking-widest text-[10px] text-right">Base</TableHead>
-                <TableHead className="font-black text-[#ff86a2] uppercase tracking-widest text-[10px] text-right">Comisiones (Neto)</TableHead>
-                <TableHead className="font-black text-[#ff86a2] uppercase tracking-widest text-[10px] text-right">Deducciones Vales</TableHead>
-                <TableHead className="font-black text-[#ff86a2] uppercase tracking-widest text-[10px] text-right px-6">Total a Pagar</TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] px-6">Trabajador</TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Base</TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Comisiones (Neto)</TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Deducciones Vales</TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right px-6">Total a Pagar</TableHead>
                 <TableHead className="w-[80px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -259,8 +259,8 @@ export default function NominaClient() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="h-64 text-center py-10 italic text-slate-400">
-                    <div className="flex flex-col items-center gap-3">
-                      <AlertCircle className="h-8 w-8 opacity-20" />
+                    <div className="flex flex-col items-center justify-center text-slate-500">
+                        <AlertCircle className="h-8 w-8 opacity-20" />
                       {nominaBatch ? (
                         <>
                           <p className="text-xs font-medium">Esta n&oacute;mina se proces&oacute; pero result&oacute; vac&iacute;a.</p>
@@ -283,25 +283,25 @@ export default function NominaClient() {
 
       {/* Footer Acciones */}
       {nominaBatch && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between bg-[#fff1f2] border border-rose-100 text-[#ff86a2] p-4 md:p-6 shadow-sm mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 md:p-6 shadow-sm mb-6">
           <div className="flex flex-col">
-            <span className="text-[10px] font-black uppercase text-rose-300 tracking-widest">Total acumulado de la semana</span>
-            <span className="text-2xl font-black italic text-[#ff86a2]">$ {nominaData.reduce((acc, curr) => acc + curr.ND_TOTAL_NETO, 0).toLocaleString()}</span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total acumulado de la semana</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white">$ {nominaData.reduce((acc, curr) => acc + curr.ND_TOTAL_NETO, 0).toLocaleString()}</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 md:gap-3">
             <span className={cn(
-              "text-[10px] font-black px-3 py-1 border uppercase tracking-widest mr-4",
-              nominaBatch.NM_ESTADO === 'CONFIRMADA' ? "bg-emerald-500/20 border-emerald-500 text-emerald-400" : "bg-amber-500/20 border-amber-500 text-amber-400"
+              "text-[10px] font-bold px-3 py-1 rounded-full border uppercase tracking-wider mr-4",
+              nominaBatch.NM_ESTADO === 'CONFIRMADA' ? "bg-green-50 border-green-300 text-green-600" : "bg-amber-50 border-amber-300 text-amber-600"
             )}>
-              ESTADO: {nominaBatch.NM_ESTADO}
+              {nominaBatch.NM_ESTADO}
             </span>
 
             {nominaBatch.NM_ESTADO !== 'CONFIRMADA' && (
               <>
                 <Button
                   variant="ghost"
-                  className="text-red-400 hover:text-red-500 hover:bg-red-50 font-bold text-[10px] rounded-none h-11 px-4 uppercase"
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 gap-2"
                   onClick={handleBorrar}
                   disabled={loading}
                 >
@@ -309,7 +309,7 @@ export default function NominaClient() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="bg-white border-rose-200 text-[#ff86a2] hover:bg-rose-50 font-bold text-[10px] rounded-none h-11 px-6 uppercase"
+                  className="gap-2"
                   onClick={handleProcesar}
                   disabled={loading}
                 >
@@ -318,7 +318,7 @@ export default function NominaClient() {
                 <Button
                   onClick={handleConfirmar}
                   disabled={loading}
-                  className="bg-[#f97316] hover:bg-[#ea580c] text-white font-black text-[10px] tracking-widest uppercase rounded-none h-11 px-8 shadow-[4px_4px_0px_0px_rgba(234,88,12,0.2)]"
+                  className="bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white shadow-lg shadow-[#FF7E5F]/20 rounded-xl gap-2"
                 >
                   Confirmar Liquidación
                 </Button>
@@ -329,11 +329,11 @@ export default function NominaClient() {
       )}
       {/* Modal Configuración */}
       <Dialog open={configOpen} onOpenChange={(open) => { setConfigOpen(open); if (!open) setShowConfigForm(false); }}>
-        <DialogContent className="w-[1280px] max-w-[95vw] rounded-none border-2 border-[#ff86a2] p-0 overflow-hidden shadow-2xl bg-white">
-          <DialogHeader className="bg-[#fff1f2] text-[#ff86a2] p-6 border-b border-rose-100 flex-row items-center justify-between">
+        <DialogContent className="w-[1280px] max-w-[95vw] rounded-xl border border-slate-200 p-0 overflow-hidden shadow-2xl bg-white dark:bg-slate-900">
+          <DialogHeader className="p-6 border-b border-slate-100 flex-row items-center justify-between">
             <div className="flex items-center gap-3">
-              <Settings className="h-5 w-5 text-[#ff86a2]" />
-              <DialogTitle className="text-lg font-black uppercase tracking-widest">
+              <Settings className="h-5 w-5 text-[#FF7E5F]" />
+              <DialogTitle className="text-lg font-bold">
                 Parametrizar Nómina
               </DialogTitle>
             </div>
@@ -405,7 +405,7 @@ export default function NominaClient() {
 
             {/* Capa Superior (Overlay): Formulario */}
             {showConfigForm && (
-              <div className="absolute top-0 right-0 bottom-0 w-[400px] z-50 bg-white border-l-2 border-kyroy-pink shadow-[-15px_0_30px_-15px_rgba(255,134,162,0.15)] animate-in slide-in-from-right duration-300 h-full p-4 space-y-4">
+                <div className="absolute top-0 right-0 bottom-0 w-[400px] z-50 bg-white dark:bg-slate-900 border-l border-slate-200 shadow-xl animate-in slide-in-from-right duration-300 h-full p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nuevo Registro de Vigencia</h4>
                 </div>
@@ -426,7 +426,6 @@ export default function NominaClient() {
                         value={svcPercent}
                         onChange={(e) => setSvcPercent(e.target.value)}
                         placeholder="0.00"
-                        className="rounded-none border-kyroy-border focus:border-kyroy-pink font-black h-9 text-sm pl-3 bg-white transition-all shadow-sm"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 font-black text-slate-300 text-xs">%</span>
                     </div>
@@ -439,7 +438,6 @@ export default function NominaClient() {
                         value={prdPercent}
                         onChange={(e) => setPrdPercent(e.target.value)}
                         placeholder="0.00"
-                        className="rounded-none border-kyroy-border focus:border-kyroy-pink font-black h-9 text-sm pl-3 bg-white transition-all shadow-sm"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 font-black text-slate-300 text-xs">%</span>
                     </div>
@@ -453,14 +451,13 @@ export default function NominaClient() {
                     value={configStartDate}
                     onChange={(e) => setConfigStartDate(e.target.value)}
                     placeholder="dd/mm/aaaa"
-                    className="rounded-none border-kyroy-border focus:border-kyroy-pink font-black h-9 text-sm bg-white transition-all shadow-sm"
                   />
                 </div>
 
                 <div className="flex gap-2 pt-4 border-t border-slate-200">
                   <Button
                     onClick={handleSaveConfig}
-                    className="w-full bg-kyroy-orange hover:bg-kyroy-orange-hover text-white font-black text-xs rounded-none h-11 uppercase tracking-widest shadow-[4px_4px_0px_0px_rgba(249,115,22,0.2)] active:shadow-none"
+                    className="w-full bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white shadow-lg shadow-[#FF7E5F]/20 rounded-xl"
                   >
                     AGREGAR VIGENCIA
                   </Button>
