@@ -22,51 +22,40 @@ export default function LoginPage() {
           className="object-cover transition-opacity duration-1000"
           priority
         />
-        <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[8px]" />
       </div>
 
       {/* Decorative Blur Elements */}
-      <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-orange-200/30 blur-[100px]" />
-      <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-rose-200/30 blur-[100px]" />
+      <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-orange-400/20 blur-[120px]" />
+      <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-rose-400/20 blur-[120px]" />
 
       <div className="relative z-10 w-full max-w-md transition-all duration-500 animate-in fade-in zoom-in slide-in-from-bottom-8">
         {/* Logo/Header */}
-        <div className="mb-4 flex flex-col items-center">
-             <div className="bg-white/80 p-2 rounded-xl shadow-lg backdrop-blur-md mb-2">
+        <div className="mb-6 flex flex-col items-center">
+             <div className="bg-white p-3 rounded-2xl shadow-2xl mb-4 border border-white/50">
                 <Image 
                     src="/LOGO.png" 
                     alt="Kyroy Stilos" 
-                    width={50} 
-                    height={50}
+                    width={60} 
+                    height={60}
                     className="object-contain"
                 />
              </div>
-             <h1 className="text-white text-2xl font-extrabold tracking-tight drop-shadow-md">
+             <h1 className="text-white text-3xl font-black tracking-tight drop-shadow-lg italic uppercase">
                 Kyroy Stilos
              </h1>
-             <p className="text-white/90 text-xs font-semibold tracking-wide drop-shadow-sm uppercase">by Karen Ovalle</p>
+             <p className="text-[#FEB47B] text-[10px] font-black tracking-[0.2em] drop-shadow-sm uppercase mt-1">by Karen Ovalle</p>
         </div>
 
-        <Card className="bg-white/30 dark:bg-black/20 border-white/40 shadow-2xl backdrop-blur-2xl rounded-[2rem] overflow-hidden">
-          <CardHeader className="pt-6 pb-4 text-center">
-            <CardTitle className="text-[#4A4A4A] dark:text-white text-2xl font-bold tracking-tight">
+        <Card className="bg-white/95 dark:bg-slate-900/95 border-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-[2.5rem] overflow-hidden">
+          <CardHeader className="pt-10 pb-4 text-center">
+            <CardTitle className="text-slate-900 dark:text-white text-2xl font-black tracking-tight uppercase">
               Bienvenido a tu Espacio Kyroy
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-6 pb-6">
+          <CardContent className="px-8 pb-10">
             <LoginForm />
             
-            <div className="mt-6 text-center text-sm">
-              <p className="text-[#4A4A4A] dark:text-gray-300 font-medium">
-                ¿No tienes cuenta?{' '}
-                <Link
-                  href="/auth/register"
-                  className="text-[#FF7E5F] hover:text-[#FEB47B] font-bold transition-colors underline underline-offset-4"
-                >
-                  Regístrate aquí.
-                </Link>
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
