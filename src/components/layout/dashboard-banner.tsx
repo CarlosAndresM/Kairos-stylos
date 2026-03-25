@@ -16,11 +16,11 @@ export function DashboardBanner({ title, subtitle, extra }: DashboardBannerProps
                 <img
                     src="/BANNER-KAIROS-STYLOS.png"
                     alt="Banner Background"
-                    className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-[40s] ease-linear"
+                    className="w-full h-full object-cover opacity-100 group-hover:scale-105 transition-transform duration-[40s] ease-linear"
                 />
-                {/* Gradient Fades for typical Web Banner feel */}
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent z-10" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/20 z-10" />
+                {/* Gradient Fades for typical Web Banner feel - Lightened */}
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/60 via-slate-950/30 to-transparent z-10" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent z-10" />
             </div>
 
             <div className="relative z-20 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
