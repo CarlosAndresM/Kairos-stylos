@@ -1,6 +1,6 @@
 // S3StorageProvider.ts
 import { S3Client, PutObjectCommand, DeleteObjectCommand, CopyObjectCommand } from '@aws-sdk/client-s3';
-import { IStorageProvider } from './types';
+import { IStorageProvider } from '../types';
 
 export class S3StorageProvider implements IStorageProvider {
     private client: S3Client;

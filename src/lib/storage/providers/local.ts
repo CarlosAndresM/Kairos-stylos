@@ -1,7 +1,7 @@
 // LocalStorageProvider.ts
 import { rename, unlink, mkdir, writeFile, access } from 'fs/promises';
 import { join, dirname } from 'path';
-import { IStorageProvider } from './types';
+import { IStorageProvider } from '../types';
 
 export class LocalStorageProvider implements IStorageProvider {
     private publicDir = join(process.cwd(), 'public');
