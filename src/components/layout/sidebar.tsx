@@ -195,7 +195,7 @@ export function Sidebar({ role = 'ADMINISTRADOR_TOTAL' }: SidebarProps) {
       {isMobile && !isMobileOpen && (
         <button
           onClick={() => setIsMobileOpen(true)}
-          className="fixed top-4 left-4 z-50 size-10 rounded-full bg-[#FF7E5F] border-2 border-white/20 flex items-center justify-center text-white shadow-xl md:hidden"
+          className="fixed top-4 left-4 z-50 size-10 rounded-full bg-[#ffcdd4] border-2 border-rose-200 flex items-center justify-center text-rose-900 shadow-xl md:hidden"
           title="Abrir menú"
         >
           <Menu className="size-5" />
@@ -204,7 +204,7 @@ export function Sidebar({ role = 'ADMINISTRADOR_TOTAL' }: SidebarProps) {
 
       <aside
         className={cn(
-          "flex flex-col bg-gradient-to-b from-[#FF7E5F] to-[#FF6B6B] text-white border-r border-white/10 shadow-xl transition-all duration-300",
+          "flex flex-col bg-[#ffcdd4] text-rose-950 border-r border-rose-200 shadow-xl transition-all duration-300",
           // Desktop: ocupa h-screen de forma normal en el flex layout
           !isMobile && "relative h-screen",
           // Desktop collapse
@@ -215,12 +215,12 @@ export function Sidebar({ role = 'ADMINISTRADOR_TOTAL' }: SidebarProps) {
         )}
       >
         {/* Logo Area */}
-        <div className="flex items-center h-16 px-4 border-b border-white/10"> {/* Reduced height from 20 to 16 */}
+        <div className="flex items-center h-16 px-4 border-b border-rose-200/50"> {/* Reduced height from 20 to 16 */}
           <div className={cn(
             "flex items-center gap-2 transition-all duration-300",
             isCollapsed ? "mx-auto" : "px-1"
           )}>
-            <div className="relative size-10 flex-shrink-0 animate-in fade-in zoom-in duration-500 bg-white/30 rounded-xl p-1.5 border border-white/40 shadow-inner backdrop-blur-md">
+            <div className="relative size-10 flex-shrink-0 animate-in fade-in zoom-in duration-500 bg-white/50 rounded-xl p-1.5 border border-rose-200 shadow-inner backdrop-blur-md">
               <Image
                 src="/LOGO.png"
                 alt="kairos Stylos Logo"
@@ -231,10 +231,10 @@ export function Sidebar({ role = 'ADMINISTRADOR_TOTAL' }: SidebarProps) {
             </div>
             {!isCollapsed && (
               <div className="flex flex-col animate-in fade-in slide-in-from-left-2 duration-300">
-                <span className="text-base font-black tracking-tight text-white leading-tight drop-shadow-sm">
+                <span className="text-base font-black tracking-tight text-rose-950 leading-tight drop-shadow-sm">
                   kairos Stylos
                 </span>
-                <span className="text-[9px] uppercase tracking-widest text-white/90 font-black">
+                <span className="text-[9px] uppercase tracking-widest text-rose-800/80 font-black">
                   by Karen Ovalle
                 </span>
               </div>
@@ -247,7 +247,7 @@ export function Sidebar({ role = 'ADMINISTRADOR_TOTAL' }: SidebarProps) {
           {filteredGroups.map((group) => (
             <div key={group.label} className="space-y-1">
               {!isCollapsed && (
-                <h3 className="px-3 text-[10px] font-bold uppercase tracking-widest text-white/60 mb-2">
+                <h3 className="px-3 text-[10px] font-bold uppercase tracking-widest text-rose-800/40 mb-2">
                   {group.label}
                 </h3>
               )}
@@ -261,27 +261,27 @@ export function Sidebar({ role = 'ADMINISTRADOR_TOTAL' }: SidebarProps) {
                       className={cn(
                         "group flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 relative overflow-hidden",
                         isActive
-                          ? "bg-white/20 text-white shadow-lg shadow-black/5"
-                          : "hover:bg-white/10 text-white/70 hover:text-white"
+                          ? "bg-white/60 text-rose-950 shadow-md border border-rose-200/50"
+                          : "hover:bg-white/30 text-rose-900/70 hover:text-rose-950"
                       )}
                     >
                       {isActive && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full" />
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500 rounded-r-full" />
                       )}
                       <item.icon className={cn(
                         "size-4.5 transition-transform group-hover:scale-110 duration-200",
-                        isActive ? "text-white" : "text-white/40 group-hover:text-white/80"
+                        isActive ? "text-rose-600" : "text-rose-400 group-hover:text-rose-600"
                       )} />
                       {!isCollapsed && (
                         <span className={cn(
                           "text-sm font-bold transition-colors",
-                          isActive ? "text-white" : "text-white/70 group-hover:text-white"
+                          isActive ? "text-rose-950" : "text-rose-900/70 group-hover:text-rose-950"
                         )}>
                           {item.title}
                         </span>
                       )}
                       {isActive && !isCollapsed && (
-                        <ChevronRight className="ml-auto size-3.5 text-white/50" />
+                        <ChevronRight className="ml-auto size-3.5 text-rose-400" />
                       )}
                     </Link>
                   )
@@ -297,7 +297,7 @@ export function Sidebar({ role = 'ADMINISTRADOR_TOTAL' }: SidebarProps) {
         {!isMobile && (
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="absolute -right-4 top-20 size-8 rounded-full bg-white border-2 border-[#FF7E5F] flex items-center justify-center text-[#FF7E5F] hover:bg-[#FF7E5F] hover:text-white shadow-xl transition-all hover:scale-110 cursor-pointer group/toggle z-50"
+            className="absolute -right-4 top-20 size-8 rounded-full bg-white border-2 border-rose-200 flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white shadow-xl transition-all hover:scale-110 cursor-pointer group/toggle z-50"
             title={isCollapsed ? "Mostrar menú" : "Esconder menú"}
           >
             <Menu className={cn("size-4 transition-transform", isCollapsed ? "rotate-180" : "rotate-0")} />
@@ -308,7 +308,7 @@ export function Sidebar({ role = 'ADMINISTRADOR_TOTAL' }: SidebarProps) {
         {isMobile && (
           <button
             onClick={() => setIsMobileOpen(false)}
-            className="absolute top-4 right-4 size-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all"
+            className="absolute top-4 right-4 size-8 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-500 hover:text-rose-700 transition-all"
             title="Cerrar menú"
           >
             <X className="size-4" />

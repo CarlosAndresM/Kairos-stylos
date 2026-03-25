@@ -91,7 +91,7 @@ export function DashboardClient() {
     const [sedes, setSedes] = React.useState<any[]>([])
     const [selectedSede, setSelectedSede] = React.useState<number>(-1) // -1 for GLOBAL
     const [currentDate, setCurrentDate] = React.useState<Date>(new Date())
-    const [viewMode, setViewMode] = React.useState<'GENERAL' | 'ESPECIFICO'>('GENERAL')
+    const [viewMode, setViewMode] = React.useState<'GENERAL' | 'ESPECIFICO'>('ESPECIFICO')
     const [periods, setPeriods] = React.useState<any[]>([])
     const [periodPopoverOpen, setPeriodPopoverOpen] = React.useState(false)
     const [selectedPeriod, setSelectedPeriod] = React.useState<string>('')
