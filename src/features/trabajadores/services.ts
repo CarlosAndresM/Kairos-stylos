@@ -113,10 +113,10 @@ export async function deleteWorker(workerId: number, adminPassword: string): Pro
 
     // 2. Verify admin password
     const [admins]: any = await db.execute(
-      `SELECT t.tr_idtrabajador_pk, t.tr_password 
-         FROM ks_trabajadores t
-         JOIN ks_roles r ON t.rl_idrol_fk = r.rl_idrol_pk
-         WHERE r.rl_nombre = 'ADMINISTRADOR_TOTAL'`
+      `SELECT t.TR_IDTRABAJADOR_PK as tr_idtrabajador_pk, t.TR_PASSWORD as tr_password 
+         FROM KS_TRABAJADORES t
+         JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+         WHERE r.RL_NOMBRE = 'ADMINISTRADOR_TOTAL'`
     );
 
     let isValidAdmin = false;
@@ -191,10 +191,10 @@ export async function deleteSede(sedeId: number, adminPassword: string): Promise
   try {
     // 1. Verify admin password
     const [admins]: any = await db.execute(
-      `SELECT t.tr_idtrabajador_pk, t.tr_password
-       FROM ks_trabajadores t
-       JOIN ks_roles r ON t.rl_idrol_fk = r.rl_idrol_pk
-       WHERE r.rl_nombre = 'ADMINISTRADOR_TOTAL'`
+      `SELECT t.TR_IDTRABAJADOR_PK as tr_idtrabajador_pk, t.TR_PASSWORD as tr_password
+       FROM KS_TRABAJADORES t
+       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+       WHERE r.RL_NOMBRE = 'ADMINISTRADOR_TOTAL'`
     );
 
     let isValidAdmin = false;

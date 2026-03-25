@@ -30,7 +30,11 @@ export async function decrypt(token: string): Promise<any> {
     });
     return payload;
   } catch (error) {
-    console.error('JWT Verification Error:', error);
+    // Only log error if it's NOT a standard verification failure (to avoid noise)
+    const errorCode = (error as any)?.code;
+    if (errorCode !== 'ERR_JWS_INVALID' && errorCode !== 'ERR_JWT_EXPIRED') {
+      console.error('Unexpected JWT Verification Error:', error);
+    }
     return null;
   }
 }

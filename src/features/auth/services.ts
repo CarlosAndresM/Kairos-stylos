@@ -13,10 +13,15 @@ export async function login(data: LoginFormData): Promise<ApiResponse> {
 
     // 1. Fetch user by username only
     const [rows] = await db.execute(
-      `SELECT t.*, r.rl_nombre 
-       FROM ks_trabajadores t
-       JOIN ks_roles r ON t.rl_idrol_fk = r.rl_idrol_pk
-       WHERE t.tr_nombre = ? AND t.tr_activo = 1`,
+      `SELECT 
+        t.TR_IDTRABAJADOR_PK as tr_idtrabajador_pk, 
+        t.TR_NOMBRE as tr_nombre, 
+        t.TR_PASSWORD as tr_password, 
+        t.SC_IDSUCURSAL_FK as sc_idsucursal_fk,
+        r.RL_NOMBRE as rl_nombre 
+       FROM KS_TRABAJADORES t
+       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+       WHERE t.TR_NOMBRE = ? AND t.TR_ACTIVO = 1`,
       [data.username]
     );
 
