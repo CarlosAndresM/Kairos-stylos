@@ -13,7 +13,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         unstyled: true,
         classNames: {
-          toast: 'group-[.toaster]:bg-transparent group-[.toaster]:border-none group-[.toaster]:shadow-none group-[.toaster]:p-0 group-[.toaster]:m-0 group-[.toaster]:w-full',
+          toast: 'group-[.toaster]:bg-transparent group-[.toaster]:border-none group-[.toaster]:shadow-none group-[.toaster]:p-0 group-[.toaster]:m-0 group-[.toaster]:flex group-[.toaster]:justify-end',
         },
       }}
       {...props}
