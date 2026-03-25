@@ -1,5 +1,5 @@
-import { rename, unlink, mkdir, access } from 'fs/promises';
-import { join, dirname } from 'path';
+import { join } from 'path';
+import { getStorageProvider } from './storage';
 
 /**
  * Mueve un archivo de la carpeta temporal a la carpeta permanente de uploads.
@@ -7,25 +7,17 @@ import { join, dirname } from 'path';
  * @returns Nueva URL relativa permanente
  */
 export async function finalizeUpload(tempUrl: string, invoiceNumber: string): Promise<string> {
-  if (!tempUrl || !tempUrl.includes('/temp/')) return tempUrl;
+  if (!tempUrl || !tempUrl.includes('/temp')) return tempUrl;
 
-  const fileName = tempUrl.split('/').pop() || '';
-  const oldPath = join(process.cwd(), 'public', 'uploads', 'temp', fileName);
-
+  const storage = getStorageProvider();
+  
   // Sanitizar el número de factura para usarlo en el nombre de la carpeta
   const sanitizedInvoice = invoiceNumber.toString().replace(/[^a-zA-Z0-9]/g, '_');
   const invoiceFolder = `invoice-${sanitizedInvoice}`;
-  const relativePath = join('uploads', invoiceFolder, fileName);
-  const newPath = join(process.cwd(), 'public', relativePath);
 
   try {
-    // Asegurar que el directorio de la factura existe
-    await mkdir(dirname(newPath), { recursive: true });
-
-    // Mover el archivo
-    await rename(oldPath, newPath);
-
-    return `/${relativePath.replace(/\\/g, '/')}`;
+    // Mover el archivo usando la abstracción de almacenamiento
+    return await storage.move(tempUrl, invoiceFolder);
   } catch (error) {
     console.error(`Error al finalizar upload para ${tempUrl}:`, error);
     return tempUrl; // Devolver el original si falla
@@ -37,15 +29,13 @@ export async function finalizeUpload(tempUrl: string, invoiceNumber: string): Pr
  * @param tempUrl URL relativa del archivo (ej: /uploads/temp/file.jpg)
  */
 export async function deleteTempFile(tempUrl: string): Promise<void> {
-  if (!tempUrl || !tempUrl.includes('/temp/')) return;
+  if (!tempUrl || !tempUrl.includes('/temp')) return;
 
-  const fileName = tempUrl.split('/').pop() || '';
-  const path = join(process.cwd(), 'public', 'uploads', 'temp', fileName);
+  const storage = getStorageProvider();
 
   try {
-    await access(path);
-    await unlink(path);
+    await storage.delete(tempUrl);
   } catch (error) {
-    // El archivo no existe o no se puede borrar, ignoramos
+    // Falló pero ignoramos para no romper el flujo
   }
 }

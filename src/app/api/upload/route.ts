@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir, unlink, access } from 'fs/promises';
-import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { getStorageProvider } from '@/lib/storage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,15 +17,9 @@ export async function POST(request: NextRequest) {
     // Generar nombre de archivo único
     const extension = file.name.split('.').pop() || 'jpg';
     const fileName = `${uuidv4()}.${extension}`;
-    const uploadDir = join(process.cwd(), 'public', 'uploads', 'temp');
     
-    // Asegurar que el directorio temporal existe
-    await mkdir(uploadDir, { recursive: true });
-    
-    const path = join(uploadDir, fileName);
-
-    await writeFile(path, buffer);
-    const url = `/uploads/temp/${fileName}`;
+    const storage = getStorageProvider();
+    const url = await storage.upload(buffer, fileName, 'temp');
 
     return NextResponse.json({ success: true, url });
   } catch (error) {
@@ -44,18 +37,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'URL inválida o no es temporal' }, { status: 400 });
     }
 
-    const fileName = url.split('/').pop();
-    const path = join(process.cwd(), 'public', 'uploads', 'temp', fileName!);
+    const storage = getStorageProvider();
 
     try {
-      await access(path);
-      await unlink(path);
-      return NextResponse.json({ success: true, message: 'Archivo eliminado de temp' });
+      await storage.delete(url);
+      return NextResponse.json({ success: true, message: 'Archivo eliminado' });
     } catch (e) {
-      return NextResponse.json({ success: true, message: 'El archivo ya no existe' });
+      return NextResponse.json({ success: true, message: 'El archivo ya no existe o error al borrar' });
     }
   } catch (error) {
-    console.error('Error deleting temp file:', error);
+    console.error('Error deleting file:', error);
     return NextResponse.json({ success: false, error: 'Error al eliminar archivo' }, { status: 500 });
   }
 }
