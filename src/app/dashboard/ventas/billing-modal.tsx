@@ -138,7 +138,7 @@ export function BillingModal({
   })
 
   const currentStatus = useWatch({ control: form.control, name: "FC_ESTADO" })
-  const isLockedByStatus = (currentStatus === 'PAGADO' || currentStatus === 'CANCELADO') && sessionUser?.role !== 'ADMINISTRADOR_TOTAL'
+  const isLockedByStatus = (invoice?.FC_ESTADO === 'PAGADO' || invoice?.FC_ESTADO === 'CANCELADO') && sessionUser?.role !== 'ADMINISTRADOR_TOTAL'
   const isPaid = isViewOnly || isLockedByStatus
 
   const cleanupTempFiles = React.useCallback(async (urls?: string[]) => {
@@ -230,7 +230,7 @@ export function BillingModal({
           FP_VALOR: Number(p.FP_VALOR),
           FD_IDDETALLE_FK: p.FD_IDDETALLE_FK
         }))
-        
+
         return {
           ...s,
           tempId: s.tempId || uuidv4(),
@@ -240,11 +240,11 @@ export function BillingModal({
 
       // Productos independientes (si quedara alguno)
       const standaloneProducts = (invoice.products || []).filter((p: any) => !p.FD_IDDETALLE_FK).map((p: any) => ({
-          FP_IDFACTURA_PRODUCTO_PK: p.FP_IDFACTURA_PRODUCTO_PK,
-          PR_IDPRODUCTO_FK: p.PR_IDPRODUCTO_FK,
-          TR_IDTECNICO_FK: p.TR_IDTECNICO_FK,
-          FP_VALOR: Number(p.FP_VALOR),
-          FD_IDDETALLE_FK: null
+        FP_IDFACTURA_PRODUCTO_PK: p.FP_IDFACTURA_PRODUCTO_PK,
+        PR_IDPRODUCTO_FK: p.PR_IDPRODUCTO_FK,
+        TR_IDTECNICO_FK: p.TR_IDTECNICO_FK,
+        FP_VALOR: Number(p.FP_VALOR),
+        FD_IDDETALLE_FK: null
       }))
 
       form.reset({
