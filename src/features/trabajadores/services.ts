@@ -14,7 +14,7 @@ import { WorkerFormData, SedeFormData } from "./schema";
 export async function getTrabajadores(): Promise<ApiResponse> {
   try {
     const [rows] = await (db as any).execute(`
-      SELECT t.*, r.RL_NOMBRE as TR_CARGO_NOMBRE, s.SC_NOMBRE as TR_SEDE_NOMBRE
+      SELECT t.*, r.RL_NOMBRE, s.SC_NOMBRE
       FROM KS_TRABAJADORES t
       LEFT JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
       LEFT JOIN KS_SUCURSALES s ON t.SC_IDSUCURSAL_FK = s.SC_IDSUCURSAL_PK
@@ -57,14 +57,14 @@ export async function getSedes(): Promise<ApiResponse> {
  * Guardar o actualizar un trabajador
  */
 export async function saveTrabajador(data: WorkerFormData): Promise<ApiResponse> {
-  const { 
-    TR_IDTRABAJADOR_PK: id, 
-    TR_NOMBRE: nombre, 
+  const {
+    TR_IDTRABAJADOR_PK: id,
+    TR_NOMBRE: nombre,
     TR_TELEFONO: telefono,
-    TR_PASSWORD: password, 
-    RL_IDROL_FK: cargoId, 
-    SC_IDSUCURSAL_FK: sedeId, 
-    TR_ACTIVO: activo 
+    TR_PASSWORD: password,
+    RL_IDROL_FK: cargoId,
+    SC_IDSUCURSAL_FK: sedeId,
+    TR_ACTIVO: activo
   } = data;
 
   try {
