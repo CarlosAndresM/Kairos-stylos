@@ -14,7 +14,7 @@ export function DashboardBanner({ title, subtitle, extra }: DashboardBannerProps
             {/* Background Banner with Dark Overlay Filter */}
             <div className="absolute inset-0 z-0 overflow-hidden">
                 <img
-                    src="/BANNER-kairos-STYLOS.png"
+                    src="/BANNER-KAIROS-STYLOS.png"
                     alt="Banner Background"
                     className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-[40s] ease-linear"
                 />
