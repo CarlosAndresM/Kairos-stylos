@@ -52,11 +52,43 @@ async function migrate() {
     }
 
     console.log('✨ Migraciones completadas.');
+
+    // --- 4. Hashear contraseñas (Post-Migración) ---
+    console.log('🔐 Verificando seguridad de contraseñas...');
+    const bcrypt = await import('bcrypt');
+    const SALT_ROUNDS = 10;
+
+    // Función para detectar si ya es un hash de bcrypt
+    const isHashed = (p: string) => /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(p);
+
+    const [workers]: any = await connection.query('SELECT tr_idtrabajador_pk, tr_nombre, tr_password FROM ks_trabajadores');
+    let hashedCount = 0;
+
+    for (const worker of workers) {
+      if (worker.tr_password && !isHashed(worker.tr_password)) {
+        console.log(`- Hasheando contraseña para: ${worker.tr_nombre}...`);
+        const hash = await bcrypt.hash(worker.tr_password, SALT_ROUNDS);
+        await connection.execute(
+          'UPDATE ks_trabajadores SET tr_password = ? WHERE tr_idtrabajador_pk = ?',
+          [hash, worker.tr_idtrabajador_pk]
+        );
+        hashedCount++;
+      }
+    }
+
+    if (hashedCount > 0) {
+      console.log(`✅ ${hashedCount} contraseñas fueron protegidas con éxito.`);
+    } else {
+      console.log('✅ Todas las contraseñas ya están seguras.');
+    }
+
+    console.log('🚀 Proceso finalizado exitosamente.');
+
   } catch (error) {
     console.error('❌ Error durante la migración:', error);
     process.exit(1);
   } finally {
-    await connection.end();
+    if (connection) await connection.end();
   }
 }
 
