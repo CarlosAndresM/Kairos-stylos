@@ -226,17 +226,17 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                       </TableCell>
                     )}
                     <TableCell className="py-2 px-4 text-center">
-                      <span className="text-xs font-black text-slate-900 dark:text-white">{worker.servicios_count}</span>
+                      <span className="text-xs font-black text-slate-900 dark:text-white">{worker.servicios_count || 0}</span>
                     </TableCell>
                     <TableCell className="py-2 px-4 text-center">
-                      <span className="text-xs font-black text-emerald-600">${worker.total_vales.toLocaleString()}</span>
+                      <span className="text-xs font-black text-emerald-600">${(worker.total_vales || 0).toLocaleString()}</span>
                     </TableCell>
                     <TableCell className="py-2 px-4 text-center">
                       <span className={cn(
                         "text-xs font-black",
-                        worker.vales_pendientes > 0 ? "text-red-600" : "text-slate-400"
+                        (worker.vales_pendientes || 0) > 0 ? "text-red-600" : "text-slate-400"
                       )}>
-                        {worker.vales_pendientes}
+                        {worker.vales_pendientes || 0}
                       </span>
                     </TableCell>
                     <TableCell className="py-2 px-4 text-center">
@@ -301,6 +301,8 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
           editingWorker={editingWorker}
           roles={roles}
           sedes={sedes}
+          isTotalAdmin={isTotalAdmin}
+          sucursalId={sucursalId}
         />
 
         <DeleteConfirmModal

@@ -264,6 +264,7 @@ export default function AdminClient({ initialAdmins, roles, sedes }: AdminClient
           editingWorker={editingAdmin}
           roles={roles}
           sedes={sedes}
+          isTotalAdmin={true}
         />
 
         <DeleteConfirmModal
