@@ -10,7 +10,7 @@ export class S3StorageProvider implements IStorageProvider {
     constructor() {
         this.endpoint = process.env.DO_SPACES_ENDPOINT || '';
         this.bucket = process.env.DO_SPACES_BUCKET || '';
-        
+
         this.client = new S3Client({
             endpoint: this.endpoint.startsWith('http') ? this.endpoint : `https://${this.endpoint}`,
             region: 'us-east-1', // DO ignores region but it's required by the SDK
@@ -23,7 +23,7 @@ export class S3StorageProvider implements IStorageProvider {
 
     async upload(file: Buffer, fileName: string, folder: string): Promise<string> {
         const key = `${folder}/${fileName}`.replace(/\/+/g, '/');
-        
+
         await this.client.send(new PutObjectCommand({
             Bucket: this.bucket,
             Key: key,
@@ -55,7 +55,7 @@ export class S3StorageProvider implements IStorageProvider {
         // Copy object to new location
         await this.client.send(new CopyObjectCommand({
             Bucket: this.bucket,
-            CopySource: `${this.bucket}/${oldKey}`,
+            CopySource: `/${this.bucket}/${oldKey}`,
             Key: newKey,
             ACL: 'public-read',
         }));
