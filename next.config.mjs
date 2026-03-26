@@ -3,6 +3,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // 1. Mueve la propiedad aquí afuera
+  outputFileTracingRoot: process.cwd(),
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -16,7 +18,7 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'sfo3.digitaloceanspaces.com',
         port: '',
-        pathname: '/kairos-stylos-storage-bucket/**',
+        pathname: '/kairos-stylos-storage/**',
       },
     ],
   },

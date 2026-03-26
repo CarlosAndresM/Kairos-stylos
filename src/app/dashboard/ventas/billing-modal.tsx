@@ -352,7 +352,6 @@ export function BillingModal({
     if (isOpen && invoice) {
       form.reset(mapInvoiceToForm(invoice))
     } else if (isOpen && !invoice) {
-    } else if (isOpen && !invoice) {
       form.reset({
         FC_CLIENTE_NOMBRE: '',
         FC_CLIENTE_TELEFONO: '',
@@ -372,7 +371,7 @@ export function BillingModal({
         FC_EVIDENCIA_FISICA_URL: null
       })
     }
-  }, [isOpen, invoice, form])
+  }, [isOpen, invoice, form, sessionUser])
 
   const { fields: serviceFields, append: appendService, remove: removeService } = useFieldArray({
     control: form.control,
@@ -509,12 +508,25 @@ export function BillingModal({
   }, [form.watch("isVale"), clientType, total, paymentMethods, form])
 
   const onInvalid = (errors: any) => {
-    console.error("Form Validation Errors:", errors);
+    console.error("Form Validation Errors (RAW):", JSON.stringify(errors, null, 2));
+    console.log("Current Form Values:", form.getValues());
     toast.error('Datos incompletos', 'Por favor revise los campos marcados en rojo.');
 
-    const firstError = Object.values(errors)[0] as any;
-    if (firstError?.message) {
-      toast.error('Error detallado', firstError.message);
+    // FunciÃ³n para encontrar el primer mensaje de error recursivamente en objetos anidados
+    const findFirstErrorMessage = (obj: any): string | null => {
+      if (!obj || typeof obj !== 'object') return null;
+      if (obj.message && typeof obj.message === 'string') return obj.message;
+      
+      for (const key in obj) {
+        const result = findFirstErrorMessage(obj[key]);
+        if (result) return result;
+      }
+      return null;
+    }
+
+    const errorMessage = findFirstErrorMessage(errors);
+    if (errorMessage) {
+      toast.error('Error detallado', errorMessage);
     }
   }
 
@@ -844,16 +856,26 @@ export function BillingModal({
                           <tr key={sField.id} className="hover:bg-slate-50/50 transition-colors group">
                             <td className="px-4 py-3">
                               <FormField control={form.control} name={`services.${index}.SV_IDSERVICIO_FK`} render={({ field }) => (
-                                <ComboboxSearch options={serviceOptions} value={field.value} disabled={isPaid}
-                                  onValueChange={(val) => { field.onChange(val); const sel = services.find(s => s.SV_IDSERVICIO_PK === val); if (sel) form.setValue(`services.${index}.FD_VALOR`, sel.SV_VALOR || 0) }}
-                                  placeholder="Elegir servicio..." className="h-9 text-xs" />
+                                <FormItem>
+                                  <FormControl>
+                                    <ComboboxSearch options={serviceOptions} value={field.value} disabled={isPaid}
+                                      onValueChange={(val) => { field.onChange(val); const sel = services.find(s => s.SV_IDSERVICIO_PK === val); if (sel) form.setValue(`services.${index}.FD_VALOR`, sel.SV_VALOR || 0) }}
+                                      placeholder="Elegir servicio..." className="h-9 text-xs" />
+                                  </FormControl>
+                                  <FormMessage className="text-[10px]" />
+                                </FormItem>
                               )} />
                             </td>
                             <td className="px-4 py-3">
                               <FormField control={form.control} name={`services.${index}.TR_IDTECNICO_FK`} render={({ field }) => (
-                                <ComboboxSearch options={technicianOptions} value={field.value} disabled={isPaid}
-                                  onValueChange={(val) => field.onChange(val)}
-                                  placeholder="Tecnico..." className="h-9 text-xs" />
+                                <FormItem>
+                                  <FormControl>
+                                    <ComboboxSearch options={technicianOptions} value={field.value} disabled={isPaid}
+                                      onValueChange={(val) => field.onChange(val)}
+                                      placeholder="Tecnico..." className="h-9 text-xs" />
+                                  </FormControl>
+                                  <FormMessage className="text-[10px]" />
+                                </FormItem>
                               )} />
                             </td>
                             <td className="px-4 py-3">
@@ -885,9 +907,14 @@ export function BillingModal({
                             </td>
                             <td className="px-4 py-3 text-right">
                               <FormField control={form.control} name={`services.${index}.FD_VALOR`} render={({ field }) => (
-                                <NumericFormat value={field.value} disabled={isPaid} onValueChange={(values) => { const v = values.floatValue ?? 0; if (v !== field.value) field.onChange(v) }}
-                                  thousandSeparator="." decimalSeparator="," prefix="$ " allowNegative={false}
-                                  className="w-28 h-9 bg-white border border-slate-200 rounded-md text-right text-sm text-slate-900 px-3 focus:outline-none focus:ring-2 focus:ring-[#FF7E5F]/30 focus:border-[#FF7E5F] disabled:bg-slate-50 disabled:text-slate-400 transition-colors" />
+                                <FormItem className="space-y-0">
+                                  <FormControl>
+                                    <NumericFormat value={field.value} disabled={isPaid} onValueChange={(values) => { const v = values.floatValue ?? 0; if (v !== field.value) field.onChange(v) }}
+                                      thousandSeparator="." decimalSeparator="," prefix="$ " allowNegative={false}
+                                      className="w-28 h-9 bg-white border border-slate-200 rounded-md text-right text-sm text-slate-900 px-3 focus:outline-none focus:ring-2 focus:ring-[#FF7E5F]/30 focus:border-[#FF7E5F] disabled:bg-slate-50 disabled:text-slate-400 transition-colors" />
+                                  </FormControl>
+                                  <FormMessage className="text-[10px]" />
+                                </FormItem>
                               )} />
                             </td>
                             <td className="px-2 py-3">
@@ -964,9 +991,14 @@ export function BillingModal({
                                 {method?.MP_NOMBRE === 'VALE' ? 'Vale' : method?.MP_NOMBRE}
                               </span>
                               <FormField control={form.control} name={`payments.${idx}.PF_VALOR`} render={({ field }) => (
-                                <NumericFormat value={field.value} disabled={isPaid} onValueChange={(values) => { const v = values.floatValue ?? 0; if (v !== field.value) field.onChange(v) }}
-                                  thousandSeparator="." decimalSeparator="," prefix="$ " allowNegative={false}
-                                  className="w-32 h-8 bg-white border border-slate-200 rounded-md text-right text-xs text-slate-900 px-2 focus:outline-none focus:ring-2 focus:ring-[#FF7E5F]/30 focus:border-[#FF7E5F] disabled:text-slate-400 transition-colors" />
+                                <FormItem className="space-y-0">
+                                  <FormControl>
+                                    <NumericFormat value={field.value} disabled={isPaid} onValueChange={(values) => { const v = values.floatValue ?? 0; if (v !== field.value) field.onChange(v) }}
+                                      thousandSeparator="." decimalSeparator="," prefix="$ " allowNegative={false}
+                                      className="w-32 h-8 bg-white border border-slate-200 rounded-md text-right text-xs text-slate-900 px-2 focus:outline-none focus:ring-2 focus:ring-[#FF7E5F]/30 focus:border-[#FF7E5F] disabled:text-slate-400 transition-colors" />
+                                  </FormControl>
+                                  <FormMessage className="text-[10px]" />
+                                </FormItem>
                               )} />
                               <div className="flex items-center gap-1">
                                 <input type="file" accept="image/*" className="hidden" ref={el => { fileInputRefs.current[`${idx}`] = el }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(idx, f) }} />

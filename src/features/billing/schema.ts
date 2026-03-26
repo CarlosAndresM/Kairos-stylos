@@ -12,7 +12,7 @@ export const invoiceServiceSchema = z.object({
     PR_IDPRODUCTO_FK: z.number({ required_error: 'Seleccione un producto' }),
     TR_IDTECNICO_FK: z.number({ required_error: 'Seleccione un técnico' }),
     FP_VALOR: z.coerce.number().min(0, 'El valor no puede ser negativo'),
-    FD_IDDETALLE_FK: z.number().optional().nullable(), // FK al servicio
+    FD_IDDETALLE_FK: z.any().optional().nullable(), // FK al servicio (puede ser string tempId o number PK)
   })).optional().default([]),
 });
 
