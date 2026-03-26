@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getStorageProvider } from '@/lib/storage';
+import sharp from 'sharp';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,15 +15,26 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Generar nombre de archivo único
-    const extension = file.name.split('.').pop() || 'jpg';
-    const fileName = `${uuidv4()}.${extension}`;
-    
+    // Procesar imagen con sharp para estandarizar a JPEG
+    let processedBuffer: Buffer;
+    try {
+      processedBuffer = await sharp(buffer)
+        .jpeg({ quality: 80, force: true })
+        .toBuffer();
+    } catch (err) {
+      console.warn('Sharp processing failed, using original buffer:', err);
+      processedBuffer = buffer;
+    }
+
+    // Generar nombre de archivo único siempre con extensión .jpg
+    const fileName = `${uuidv4()}.jpg`;
+
     const storage = getStorageProvider();
-    const url = await storage.upload(buffer, fileName, 'temp');
+    const url = await storage.upload(processedBuffer, fileName, 'temp');
 
     return NextResponse.json({ success: true, url });
   } catch (error) {
+
     console.error('Error uploading file:', error);
     return NextResponse.json({ success: false, error: 'Error interno al subir el archivo' }, { status: 500 });
   }

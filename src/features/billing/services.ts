@@ -497,7 +497,7 @@ export async function getInvoicesByFilter(filters: { sucursalId?: number, date?:
   }
 }
 
-export async function getRecentInvoices(sucursalId: number): Promise<ApiResponse> {
+export async function getRecentInvoices(sucursalId?: number): Promise<ApiResponse> {
   return getInvoicesByFilter({ sucursalId, date: new Date().toISOString().split('T')[0] });
 }
 

@@ -84,6 +84,7 @@ import { NumericFormat } from 'react-number-format'
 import { TechnicianView } from './technician-view'
 import { DashboardBanner } from '@/components/layout/dashboard-banner'
 import { UserProfileDropdown } from '@/components/layout/user-profile-dropdown'
+import { ProductAssociationModal } from './product-association-modal'
 
 const COLORS = ['#FF7E5F', '#FEB47B', '#FFD200', '#F7971E', '#FFDF00'];
 
@@ -126,16 +127,8 @@ export function DashboardClient() {
 
     // Estados para Agregar Producto a Factura (AP)
     const [isAddProductModalOpen, setIsAddProductModalOpen] = React.useState(false)
-    const [apSelectedInvoiceId, setApSelectedInvoiceId] = React.useState<string>('')
-    const [apInvoiceDetails, setApInvoiceDetails] = React.useState<any>(null)
-    const [apSelectedProductId, setApSelectedProductId] = React.useState<string>('')
-    const [apSelectedServiceId, setApSelectedServiceId] = React.useState<string>('')
-    const [apTechnicianId, setApTechnicianId] = React.useState<string>('')
-    const [apValue, setApValue] = React.useState<number>(0)
-    const [apLoadingInvoice, setApLoadingInvoice] = React.useState(false)
-    const [apIsSubmitting, setApIsSubmitting] = React.useState(false)
-    const [apIsEdit, setApIsEdit] = React.useState(false)
-    const [apProductInvoiceId, setApProductInvoiceId] = React.useState<number | null>(null)
+    const [apInitialInvoiceId, setApInitialInvoiceId] = React.useState<string>('')
+    const [apEditData, setApEditData] = React.useState<any>(null)
 
     // Metric Details Modal
     const [isDetailModalOpen, setIsDetailModalOpen] = React.useState(false)
@@ -229,90 +222,23 @@ export function DashboardClient() {
         setCurrentDate(prev => dir === 'prev' ? subDays(prev, 1) : addDays(prev, 1))
     }
 
-    const handleProductChange = (productId: string) => {
-        setApSelectedProductId(productId)
-    }
 
-    const fetchInvoiceForAssociation = async (invoiceId: string) => {
-        setApSelectedInvoiceId(invoiceId)
-        if (!invoiceId) return
-
-        setApLoadingInvoice(true)
-        try {
-            const res = await getInvoiceById(Number(invoiceId))
-            if (res.success) {
-                setApInvoiceDetails(res.data)
-                // Default values if possible
-                if (res.data.services?.length > 0) {
-                    setApSelectedServiceId(res.data.services[0].FD_IDDETALLE_PK.toString())
-                }
-            }
-        } catch (err) {
-            toast.error("Error al cargar servicios de la factura")
-        } finally {
-            setApLoadingInvoice(false)
-        }
-    }
-
-    const handleAddProduct = async () => {
-        if (!apSelectedInvoiceId || !apSelectedProductId || !apTechnicianId || apValue <= 0) {
-            toast.error("Datos incompletos", "Por favor llene todos los campos obligatorios.")
-            return
-        }
-
-        setApIsSubmitting(true)
-        try {
-            const res = apIsEdit && apProductInvoiceId
-                ? await updateProductInInvoice(
-                    apProductInvoiceId,
-                    Number(apSelectedProductId),
-                    Number(apTechnicianId),
-                    apValue,
-                    apSelectedServiceId ? Number(apSelectedServiceId) : undefined
-                )
-                : await addProductToInvoice(
-                    Number(apSelectedInvoiceId),
-                    Number(apSelectedProductId),
-                    Number(apTechnicianId),
-                    apValue,
-                    apSelectedServiceId ? Number(apSelectedServiceId) : undefined
-                )
-
-            if (res.success) {
-                toast.success(apIsEdit ? "Producto actualizado" : "Producto agregado", "Se ha procesado la asociación correctamente.")
-                setIsAddProductModalOpen(false)
-                fetchData()
-            } else {
-                toast.error("Ups", res.error || "No se pudo procesar la solicitud.")
-            }
-        } catch (err) {
-            toast.error("Error de sistema")
-        } finally {
-            setApIsSubmitting(false)
-        }
-    }
 
     const handleOpenAddProduct = (invoice: any) => {
-        setApIsEdit(false)
-        setApProductInvoiceId(null)
-        setApSelectedInvoiceId(invoice.FC_IDFACTURA_PK.toString())
-        fetchInvoiceForAssociation(invoice.FC_IDFACTURA_PK.toString())
-        setApSelectedProductId('')
-        setApSelectedServiceId('')
-        setApTechnicianId('')
-        setApValue(0)
+        setApEditData(null)
+        setApInitialInvoiceId(invoice.FC_IDFACTURA_PK.toString())
         setIsAddProductModalOpen(true)
     }
 
-    const handleEditProductAction = (productRow: any) => {
-        setApIsEdit(true)
-        setApProductInvoiceId(productRow.FP_IDFACTURA_PRODUCTO_PK)
-        setApSelectedInvoiceId(productRow.FC_IDFACTURA_FK.toString())
-        fetchInvoiceForAssociation(productRow.FC_IDFACTURA_FK.toString())
-        setApSelectedProductId(productRow.PR_IDPRODUCTO_FK.toString())
-        setApSelectedServiceId(productRow.FD_IDDETALLE_FK ? productRow.FD_IDDETALLE_FK.toString() : '')
-        setApTechnicianId(productRow.TR_IDTECNICO_FK.toString())
-        setApValue(Number(productRow.FP_VALOR))
+    const handleEditProduct = (p: any) => {
+        setApEditData({
+            id: p.FP_IDFACTURA_PRODUCTO_PK,
+            invoiceId: p.FC_IDFACTURA_FK.toString(),
+            productId: p.PR_IDPRODUCTO_FK.toString(),
+            serviceId: p.FD_IDDETALLE_FK?.toString() || '',
+            technicianId: p.TR_IDTECNICO_FK.toString(),
+            value: Number(p.FP_VALOR)
+        })
         setIsAddProductModalOpen(true)
     }
 
@@ -1059,11 +985,8 @@ export function DashboardClient() {
                                 <Button
                                     size="sm"
                                     onClick={() => {
-                                        setApSelectedInvoiceId('')
-                                        setApInvoiceDetails(null)
-                                        setApSelectedProductId('')
-                                        setApSelectedServiceId('')
-                                        setApValue(0)
+                                        setApInitialInvoiceId('')
+                                        setApEditData(null)
                                         setIsAddProductModalOpen(true)
                                     }}
                                     className="h-9 px-4 bg-[#FF7E5F] text-white hover:bg-[#FF7E5F]/90 rounded-xl border-none font-bold text-xs shadow-md shadow-coral-500/10 active:scale-95 transition-all"
@@ -1127,7 +1050,7 @@ export function DashboardClient() {
                                                                 {(p.FC_ESTADO === 'PENDIENTE' || user?.role === 'ADMINISTRADOR_TOTAL') && (
                                                                     <>
                                                                         <button
-                                                                            onClick={() => handleEditProductAction(p)}
+                                                                            onClick={() => handleEditProduct(p)}
                                                                             className="p-1.5 hover:bg-amber-50 text-amber-500 hover:text-amber-600 rounded-xl transition-all"
                                                                             title="Editar este producto"
                                                                         >
@@ -1383,113 +1306,15 @@ export function DashboardClient() {
                     }
 
                     {/* MODAL PARA AGREGAR PRODUCTO A FACTURA EXISTENTE */}
-                    <Dialog open={isAddProductModalOpen} onOpenChange={setIsAddProductModalOpen}>
-                        <DialogContent className="max-w-md border-none rounded-3xl shadow-2xl p-0 bg-white overflow-hidden">
-                            <DialogHeader className="bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] p-8">
-                                <DialogTitle className="text-white font-black uppercase text-xl italic tracking-tight">{apIsEdit ? "EDITAR ASOCIACIÓN" : "AGREGAR PRODUCTO"}</DialogTitle>
-                                <DialogDescription className="text-white/90 text-xs uppercase font-bold tracking-wider">{apIsEdit ? "Modifique los detalles de este producto." : "Asocie un producto con un servicio realizado."}</DialogDescription>
-                            </DialogHeader>
-
-                            <div className="p-6 space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">1. SELECCIONAR FACTURA:</label>
-                                    <ComboboxSearch
-                                        options={(specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PENDIENTE').map((f: any) => ({
-                                            label: `#${f.FC_NUMERO_FACTURA} - ${f.cliente_display}`,
-                                            value: f.FC_IDFACTURA_PK.toString()
-                                        }))}
-                                        value={apSelectedInvoiceId}
-                                        onValueChange={(val) => fetchInvoiceForAssociation(val.toString())}
-                                        placeholder="BUSQUE LA FACTURA..."
-                                        className="w-full h-12 border border-slate-200 rounded-xl font-bold text-xs uppercase focus:border-[#FF7E5F]"
-                                    />
-                                </div>
-
-                                {(specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PENDIENTE').length === 0 && (
-                                    <div className="mx-6 p-3 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold uppercase rounded-lg italic">
-                                        No hay facturas PENDIENTES. Si desea agregar productos a una factura PAGADA, cámbiela primero a PENDIENTE (desde el Registro de Ventas).
-                                    </div>
-                                )}
-
-                                {apLoadingInvoice && (
-                                    <div className="flex items-center justify-center py-4 gap-2 text-[10px] font-bold text-[#FF7E5F] italic animate-pulse">
-                                        <Loader2 className="size-4 animate-spin" /> CARGANDO SERVICIOS...
-                                    </div>
-                                )}
-
-                                {apInvoiceDetails && (
-                                    <div className="grid grid-cols-1 gap-4 animate-in fade-in duration-300">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">2. PRODUCTO A CONSUMIR:</label>
-                                            <ComboboxSearch
-                                                options={catalogData.products.map((p: any) => ({
-                                                    label: p.PR_NOMBRE,
-                                                    value: p.PR_IDPRODUCTO_PK.toString()
-                                                }))}
-                                                value={apSelectedProductId}
-                                                onValueChange={(val) => handleProductChange(val.toString())}
-                                                placeholder="BUSCAR PRODUCTO..."
-                                                className="w-full h-12 border border-slate-200 rounded-xl font-bold text-xs uppercase focus:border-[#FF7E5F]"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">3. SERVICIO DONDE SE USÓ:</label>
-                                            <ComboboxSearch
-                                                options={(apInvoiceDetails?.services || []).map((s: any) => ({
-                                                    label: `${catalogData.services.find((cs: any) => cs.SV_IDSERVICIO_PK === s.SV_IDSERVICIO_FK)?.SV_NOMBRE || 'Servicio'} - $${(Number(s.FD_VALOR) || 0).toLocaleString('es-CO')}`,
-                                                    value: s.FD_IDDETALLE_PK.toString()
-                                                }))}
-                                                value={apSelectedServiceId}
-                                                onValueChange={(val) => setApSelectedServiceId(val.toString())}
-                                                placeholder="SELECCIONAR SERVICIO..."
-                                                className="w-full h-12 border border-slate-200 rounded-xl font-bold text-xs uppercase bg-slate-50 focus:border-[#FF7E5F]"
-                                                emptyText={(!apInvoiceDetails.services || apInvoiceDetails.services.length === 0) ? "SIN SERVICIOS EN FACTURA" : "NO SE ENCONTRÓ"}
-                                            />
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">VALOR:</label>
-                                                <NumericFormat
-                                                    value={apValue}
-                                                    onValueChange={(vals) => setApValue(vals.floatValue || 0)}
-                                                    thousandSeparator="."
-                                                    decimalSeparator=","
-                                                    prefix="$ "
-                                                    className="w-full h-12 border border-slate-200 rounded-xl px-4 font-black text-sm outline-none bg-slate-50 focus:bg-white focus:border-[#FF7E5F] transition-all"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">TÉCNICO:</label>
-                                                <ComboboxSearch
-                                                    options={catalogData.technicians.map((t: any) => ({
-                                                        label: t.TR_NOMBRE,
-                                                        value: t.TR_IDTRABAJADOR_PK.toString()
-                                                    }))}
-                                                    value={apTechnicianId}
-                                                    onValueChange={(val) => setApTechnicianId(val.toString())}
-                                                    placeholder="TÉCNICO..."
-                                                    className="w-full h-12 border border-slate-200 rounded-xl font-bold text-xs uppercase focus:border-[#FF7E5F] hover:border-[#FF7E5F]/30 transition-all"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <DialogFooter className="p-8 bg-slate-50 border-t border-slate-100">
-                                <Button
-                                    className="w-full h-14 rounded-2xl bg-[#FF7E5F] text-white font-black uppercase text-xs tracking-tight shadow-xl shadow-coral-500/20 active:scale-95 hover:bg-[#FF7E5F]/90 border-none transition-all"
-                                    onClick={handleAddProduct}
-                                    disabled={apIsSubmitting || !apSelectedInvoiceId || !apSelectedProductId}
-                                >
-                                    {apIsSubmitting ? <Loader2 className="size-4 animate-spin mr-2" /> : <Package2 className="size-4 mr-2" />}
-                                    {apIsEdit ? "ACTUALIZAR PRODUCTO" : "ASOCIAR PRODUCTO"}
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <ProductAssociationModal
+                        isOpen={isAddProductModalOpen}
+                        onClose={() => setIsAddProductModalOpen(false)}
+                        onSuccess={fetchData}
+                        catalogData={catalogData}
+                        pendingInvoices={(specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PENDIENTE')}
+                        initialInvoiceId={apInitialInvoiceId}
+                        editData={apEditData}
+                    />
 
                 </>
             )}

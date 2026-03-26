@@ -14,11 +14,13 @@ import {
   Check,
   Calendar as CalendarIcon,
   Loader2,
-  Eye
+  Eye,
+  Pencil
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { v4 as uuidv4 } from 'uuid'
+import { ProductAssociationModal } from '@/features/dashboard/product-association-modal'
 import {
   Dialog,
   DialogContent,
@@ -109,6 +111,9 @@ export function BillingModal({
   const [uploadingPhysical, setUploadingPhysical] = React.useState(false)
   const physicalInvoiceInputRef = React.useRef<HTMLInputElement>(null)
   const [allClients, setAllClients] = React.useState<any[]>([])
+  const [isProductModalOpen, setIsProductModalOpen] = React.useState(false)
+  const [pendingInvoices, setPendingInvoices] = React.useState<any[]>([])
+  const [manualEditData, setManualEditData] = React.useState<any>(null)
 
 
   const isEditing = !!invoice
@@ -219,13 +224,125 @@ export function BillingModal({
 
 
 
+  // Mapping logic extracted for reuse
+  const mapInvoiceToForm = React.useCallback((inv: any) => {
+    const mappedServices = (inv.services || []).map((s: any) => {
+      const serviceProds = (inv.products || []).filter((p: any) =>
+        p.FD_IDDETALLE_FK && String(p.FD_IDDETALLE_FK) === String(s.FD_IDDETALLE_PK)
+      ).map((p: any) => ({
+        FP_IDFACTURA_PRODUCTO_PK: p.FP_IDFACTURA_PRODUCTO_PK,
+        PR_IDPRODUCTO_FK: p.PR_IDPRODUCTO_FK,
+        TR_IDTECNICO_FK: p.TR_IDTECNICO_FK,
+        FP_VALOR: Number(p.FP_VALOR),
+        FD_IDDETALLE_FK: p.FD_IDDETALLE_FK
+      }))
+
+      return {
+        ...s,
+        tempId: s.tempId || uuidv4(),
+        products: serviceProds
+      }
+    })
+
+    const standaloneProducts = (inv.products || []).filter((p: any) => !p.FD_IDDETALLE_FK).map((p: any) => ({
+      FP_IDFACTURA_PRODUCTO_PK: p.FP_IDFACTURA_PRODUCTO_PK,
+      PR_IDPRODUCTO_FK: p.PR_IDPRODUCTO_FK,
+      TR_IDTECNICO_FK: p.TR_IDTECNICO_FK,
+      FP_VALOR: Number(p.FP_VALOR),
+      FD_IDDETALLE_FK: null
+    }))
+
+    return {
+      FC_IDFACTURA_PK: inv.FC_IDFACTURA_PK,
+      FC_NUMERO_FACTURA: inv.FC_NUMERO_FACTURA,
+      FC_FECHA: new Date(inv.FC_FECHA),
+      FC_TIPO_CLIENTE: inv.FC_TIPO_CLIENTE,
+      TR_IDCLIENTE_FK: inv.TR_IDCLIENTE_FK,
+      isVale: inv.isVale,
+      VL_NUMERO_CUOTAS: inv.VL_NUMERO_CUOTAS || 1,
+      VL_FECHA_INICIO_COBRO: inv.VL_FECHA_INICIO_COBRO ? new Date(inv.VL_FECHA_INICIO_COBRO) : null,
+      FC_CLIENTE_NOMBRE: inv.FC_CLIENTE_NOMBRE,
+      FC_CLIENTE_TELEFONO: inv.FC_CLIENTE_TELEFONO,
+      SC_IDSUCURSAL_FK: inv.SC_IDSUCURSAL_FK,
+      TR_IDCAJERO_FK: inv.TR_IDCAJERO_FK,
+      services: mappedServices,
+      products: standaloneProducts,
+      payments: inv.payments || [],
+      FC_ESTADO: inv.FC_ESTADO,
+      FC_TOTAL: Number(inv.FC_TOTAL),
+      FC_EVIDENCIA_FISICA_URL: inv.FC_EVIDENCIA_FISICA_URL
+    }
+  }, [])
+
+  const handleAddProductManual = (productData: any) => {
+    if (!productData) return
+
+    const currentServices = form.getValues('services')
+
+    // If it's an update, we might need to remove from old service if changed
+    if (manualEditData !== null && manualEditData.sourceServiceIndex !== undefined) {
+      const oldSIdx = manualEditData.sourceServiceIndex
+      const oldProds = currentServices[oldSIdx].products || []
+      const filtered = oldProds.filter((_: any, i: number) => i !== manualEditData.manualIndex)
+      form.setValue(`services.${oldSIdx}.products`, filtered)
+    }
+
+    const serviceIndex = currentServices.findIndex((s: any) =>
+      (s.FD_IDDETALLE_PK && String(s.FD_IDDETALLE_PK) === String(productData.FD_IDDETALLE_FK)) ||
+      (s.tempId && String(s.tempId) === String(productData.FD_IDDETALLE_FK))
+    )
+
+    if (serviceIndex !== -1) {
+      // Fetch latest prods because we might have just updated them in the removal step above
+      const updatedServices = form.getValues('services')
+      const existingProducts = updatedServices[serviceIndex].products || []
+      
+      form.setValue(`services.${serviceIndex}.products`, [
+        ...existingProducts,
+        {
+          PR_IDPRODUCTO_FK: productData.PR_IDPRODUCTO_FK,
+          TR_IDTECNICO_FK: productData.TR_IDTECNICO_FK,
+          FP_VALOR: productData.FP_VALOR,
+          FD_IDDETALLE_FK: productData.FD_IDDETALLE_FK
+        }
+      ])
+      toast.success(manualEditData ? "Producto actualizado" : "Producto añadido")
+    } else {
+      toast.error("No se pudo asociar el producto al servicio seleccionado")
+    }
+    setManualEditData(null)
+  }
+
+  const handleEditProductManual = (sIdx: number, pIdx: number, product: any) => {
+    setManualEditData({
+      productId: product.PR_IDPRODUCTO_FK.toString(),
+      serviceId: product.FD_IDDETALLE_FK ? product.FD_IDDETALLE_FK.toString() : (watchedServices[sIdx].FD_IDDETALLE_PK?.toString() || watchedServices[sIdx].tempId),
+      technicianId: product.TR_IDTECNICO_FK.toString(),
+      value: Number(product.FP_VALOR),
+      manualIndex: pIdx,
+      sourceServiceIndex: sIdx
+    })
+    setIsProductModalOpen(true)
+  }
+
+  const handleRemoveProductManual = (sIdx: number, pIdx: number) => {
+    const currentProds = form.getValues(`services.${sIdx}.products`) || []
+    const updated = currentProds.filter((_: any, i: number) => i !== pIdx)
+    form.setValue(`services.${sIdx}.products`, updated)
+    toast.success("Producto quitado")
+  }
+
   // Cargar clientes del historial al abrir el modal para búsqueda instantánea
   React.useEffect(() => {
     if (isOpen) {
       const loadClients = async () => {
-        const res = await getClients()
-        if (res.success) {
-          setAllClients(res.data)
+        const [clientsRes, invoicesRes] = await Promise.all([
+          getClients(),
+          getRecentInvoices()
+        ])
+        if (clientsRes.success) setAllClients(clientsRes.data)
+        if (invoicesRes.success) {
+          setPendingInvoices(invoicesRes.data.filter((f: any) => f.FC_ESTADO === 'PENDIENTE'))
         }
       }
       loadClients()
@@ -235,54 +352,8 @@ export function BillingModal({
   // Cargar datos si estamos editando
   React.useEffect(() => {
     if (isOpen && invoice) {
-      // Re-estructurar datos: mapear productos a sus servicios correspondientes basados en FD_IDDETALLE_FK
-      const mappedServices = (invoice.services || []).map((s: any) => {
-        const serviceProds = (invoice.products || []).filter((p: any) =>
-          p.FD_IDDETALLE_FK && String(p.FD_IDDETALLE_FK) === String(s.FD_IDDETALLE_PK)
-        ).map((p: any) => ({
-          FP_IDFACTURA_PRODUCTO_PK: p.FP_IDFACTURA_PRODUCTO_PK,
-          PR_IDPRODUCTO_FK: p.PR_IDPRODUCTO_FK,
-          TR_IDTECNICO_FK: p.TR_IDTECNICO_FK,
-          FP_VALOR: Number(p.FP_VALOR),
-          FD_IDDETALLE_FK: p.FD_IDDETALLE_FK
-        }))
-
-        return {
-          ...s,
-          tempId: s.tempId || uuidv4(),
-          products: serviceProds
-        }
-      })
-
-      // Productos independientes (si quedara alguno)
-      const standaloneProducts = (invoice.products || []).filter((p: any) => !p.FD_IDDETALLE_FK).map((p: any) => ({
-        FP_IDFACTURA_PRODUCTO_PK: p.FP_IDFACTURA_PRODUCTO_PK,
-        PR_IDPRODUCTO_FK: p.PR_IDPRODUCTO_FK,
-        TR_IDTECNICO_FK: p.TR_IDTECNICO_FK,
-        FP_VALOR: Number(p.FP_VALOR),
-        FD_IDDETALLE_FK: null
-      }))
-
-      form.reset({
-        FC_IDFACTURA_PK: invoice.FC_IDFACTURA_PK,
-        FC_NUMERO_FACTURA: invoice.FC_NUMERO_FACTURA,
-        FC_FECHA: new Date(invoice.FC_FECHA),
-        FC_TIPO_CLIENTE: invoice.FC_TIPO_CLIENTE,
-        TR_IDCLIENTE_FK: invoice.TR_IDCLIENTE_FK,
-        isVale: invoice.isVale,
-        VL_NUMERO_CUOTAS: invoice.VL_NUMERO_CUOTAS || 1,
-        VL_FECHA_INICIO_COBRO: invoice.VL_FECHA_INICIO_COBRO ? new Date(invoice.VL_FECHA_INICIO_COBRO) : null,
-        FC_CLIENTE_NOMBRE: invoice.FC_CLIENTE_NOMBRE,
-        FC_CLIENTE_TELEFONO: invoice.FC_CLIENTE_TELEFONO,
-        SC_IDSUCURSAL_FK: invoice.SC_IDSUCURSAL_FK,
-        TR_IDCAJERO_FK: invoice.TR_IDCAJERO_FK,
-        services: mappedServices,
-        products: standaloneProducts,
-        payments: invoice.payments || [],
-        FC_ESTADO: invoice.FC_ESTADO,
-        FC_TOTAL: Number(invoice.FC_TOTAL),
-        FC_EVIDENCIA_FISICA_URL: invoice.FC_EVIDENCIA_FISICA_URL
-      })
+      form.reset(mapInvoiceToForm(invoice))
+    } else if (isOpen && !invoice) {
     } else if (isOpen && !invoice) {
       form.reset({
         FC_CLIENTE_NOMBRE: '',
@@ -744,11 +815,18 @@ export function BillingModal({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Servicios</h3>
-                  <Button type="button" variant="outline" size="sm" disabled={isPaid}
-                    onClick={() => appendService({ tempId: uuidv4(), SV_IDSERVICIO_FK: undefined as any, TR_IDTECNICO_FK: undefined as any, FD_VALOR: 0, products: [] })}
-                    className="gap-2 text-xs">
-                    <PlusCircle className="size-3.5" /> Agregar servicio
-                  </Button>
+<div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" size="sm" disabled={isPaid}
+                      onClick={() => setIsProductModalOpen(true)}
+                      className="gap-2 text-xs border-blue-200 text-blue-600 hover:bg-blue-50">
+                      <PlusCircle className="size-3.5" /> Agregar producto
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" disabled={isPaid}
+                      onClick={() => appendService({ tempId: uuidv4(), SV_IDSERVICIO_FK: undefined as any, TR_IDTECNICO_FK: undefined as any, FD_VALOR: 0, products: [] })}
+                      className="gap-2 text-xs">
+                      <PlusCircle className="size-3.5" /> Agregar servicio
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -781,16 +859,31 @@ export function BillingModal({
                               )} />
                             </td>
                             <td className="px-4 py-3">
-                              <span className="text-xs text-slate-400 font-medium italic">
-                                {(watchedServices[index]?.products || []).length > 0
-                                  ? watchedServices[index].products.map((p: any, pIdx: number) => {
-                                    const pName = products.find(cp => cp.PR_IDPRODUCTO_PK === p.PR_IDPRODUCTO_FK)?.PR_NOMBRE || 'Producto'
-                                    return <span key={pIdx} className="inline-block bg-slate-100 rounded px-1.5 py-0.5 mr-1 mb-1 not-italic text-slate-600 font-bold border border-slate-200">
-                                      {pName} (${(Number(p.FP_VALOR || 0)).toLocaleString('es-CO')})
-                                    </span>
+                              <div className="flex flex-wrap gap-1.5 min-h-[2.5rem]">
+                                {watchedServices[index]?.products && watchedServices[index].products.length > 0 ? (
+                                  watchedServices[index].products.map((p: any, pIdx: number) => {
+                                    const pName = products.find(cp => cp.PR_IDPRODUCTO_PK === p.PR_IDPRODUCTO_FK)?.PR_NOMBRE || 'Prod'
+                                    return (
+                                      <div key={pIdx} className="bg-blue-50/70 border border-blue-100 rounded-lg px-2 py-1 flex items-center gap-2 group/prod">
+                                        <div className="flex flex-col">
+                                          <span className="text-[10px] font-black text-blue-900 uppercase leading-none">{pName}</span>
+                                          <span className="text-[8px] font-bold text-blue-500 tabular-nums">${Number(p.FP_VALOR).toLocaleString('es-CO')}</span>
+                                        </div>
+                                        <div className="flex items-center gap-0.5 ml-1 opacity-0 group-hover/prod:opacity-100 transition-opacity">
+                                          <button type="button" onClick={() => handleEditProductManual(index, pIdx, p)} className="p-0.5 hover:bg-blue-200 rounded transition-colors text-blue-600">
+                                            <Pencil className="size-2.5" />
+                                          </button>
+                                          <button type="button" onClick={() => handleRemoveProductManual(index, pIdx)} className="p-0.5 hover:bg-red-100 rounded transition-colors text-red-500">
+                                            <Trash2 className="size-2.5" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )
                                   })
-                                  : 'Sin productos'}
-                              </span>
+                                ) : (
+                                  <span className="text-[10px] text-slate-300 italic uppercase font-bold">Sin productos</span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-3 text-right">
                               <FormField control={form.control} name={`services.${index}.FD_VALOR`} render={({ field }) => (
@@ -940,6 +1033,21 @@ export function BillingModal({
           </form>
         </Form>
       </DialogContent>
+
+      <ProductAssociationModal
+        isOpen={isProductModalOpen}
+        onClose={() => {
+          setIsProductModalOpen(false)
+          setManualEditData(null)
+        }}
+        onSuccess={handleAddProductManual}
+        catalogData={{ services, technicians, products }}
+        pendingInvoices={pendingInvoices}
+        mode="manual"
+        manualServices={form.watch('services')}
+        initialInvoiceId={invoice?.FC_NUMERO_FACTURA?.toString()}
+        editData={manualEditData}
+      />
     </Dialog>
   )
 }
