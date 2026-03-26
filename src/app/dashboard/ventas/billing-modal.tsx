@@ -4,19 +4,13 @@ import * as React from 'react'
 import { useForm, useFieldArray, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
-  Plus,
   Trash2,
   Receipt,
   User,
   Phone,
-  Scissors,
-  Package,
-  DollarSign,
   PlusCircle,
   X,
   Camera,
-  FileText,
-  Save,
   Check,
   Calendar as CalendarIcon,
   Loader2,
@@ -65,7 +59,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { NumericFormat } from 'react-number-format'
 import { invoiceSchema, type InvoiceFormData } from '@/features/billing/schema'
-import { getRecentInvoices, getWorkers, getPaymentMethods, saveInvoice, getNextInvoiceNumber } from "@/features/billing/services";
+import { getRecentInvoices, getPaymentMethods, saveInvoice } from "@/features/billing/services";
+import { getClients } from "@/features/clients/services";
 import { toast } from '@/lib/toast-helper'
 import { cn } from '@/lib/utils'
 import { ComboboxSearch } from '@/components/ui/combobox-search'
@@ -75,6 +70,8 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card"
+import { ClientAutocomplete } from '@/components/ui/client-autocomplete'
+
 
 interface BillingModalProps {
   isOpen: boolean
@@ -102,7 +99,6 @@ export function BillingModal({
   isViewOnly = false
 }: BillingModalProps) {
   const [isLoading, setIsLoading] = React.useState(false)
-  const [nextInvoiceNum, setNextInvoiceNum] = React.useState<string>('')
   const [uploadingIndexes, setUploadingIndexes] = React.useState<number[]>([])
   const fileInputRefs = React.useRef<{ [key: string]: HTMLInputElement | null }>({})
   const uploadedTempFiles = React.useRef<string[]>([])
@@ -112,8 +108,11 @@ export function BillingModal({
   const [pendingStatusChange, setPendingStatusChange] = React.useState<string | null>(null)
   const [uploadingPhysical, setUploadingPhysical] = React.useState(false)
   const physicalInvoiceInputRef = React.useRef<HTMLInputElement>(null)
+  const [allClients, setAllClients] = React.useState<any[]>([])
+
 
   const isEditing = !!invoice
+
 
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),
@@ -217,6 +216,21 @@ export function BillingModal({
       setUploadingIndexes(prev => prev.filter(i => i !== index))
     }
   }
+
+
+
+  // Cargar clientes del historial al abrir el modal para búsqueda instantánea
+  React.useEffect(() => {
+    if (isOpen) {
+      const loadClients = async () => {
+        const res = await getClients()
+        if (res.success) {
+          setAllClients(res.data)
+        }
+      }
+      loadClients()
+    }
+  }, [isOpen])
 
   // Cargar datos si estamos editando
   React.useEffect(() => {
@@ -557,24 +571,50 @@ export function BillingModal({
                     </Select>
                   </div>
 
-                  {clientType === 'CLIENTE' ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <FormField control={form.control} name="FC_CLIENTE_NOMBRE" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nombre *</FormLabel>
-                          <Input {...field} value={field.value || ''} disabled={isPaid} placeholder="Nombre completo" />
-                          <FormMessage className="text-xs" />
-                        </FormItem>
-                      )} />
-                      <FormField control={form.control} name="FC_CLIENTE_TELEFONO" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Teléfono *</FormLabel>
-                          <Input {...field} value={field.value || ''} disabled={isPaid} placeholder="300 000 0000" />
-                          <FormMessage className="text-xs" />
-                        </FormItem>
-                      )} />
+                  {clientType === 'CLIENTE' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="FC_CLIENTE_NOMBRE" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-400">Nombre del Cliente *</FormLabel>
+                            <ClientAutocomplete
+                              value={field.value || ''}
+                              onValueChange={field.onChange}
+                              clients={allClients}
+                              onClientSelect={(client) => {
+                                form.setValue('FC_CLIENTE_NOMBRE', client.CL_NOMBRE)
+                                form.setValue('FC_CLIENTE_TELEFONO', client.CL_TELEFONO)
+                              }}
+                              disabled={isPaid}
+                              placeholder="Escribe para buscar o agregar..."
+                              icon="user"
+                            />
+                            <FormMessage className="text-[10px]" />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="FC_CLIENTE_TELEFONO" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-400">Teléfono *</FormLabel>
+                            <ClientAutocomplete
+                              value={field.value || ''}
+                              onValueChange={field.onChange}
+                              clients={allClients}
+                              onClientSelect={(client) => {
+                                form.setValue('FC_CLIENTE_NOMBRE', client.CL_NOMBRE)
+                                form.setValue('FC_CLIENTE_TELEFONO', client.CL_TELEFONO)
+                              }}
+                              disabled={isPaid}
+                              placeholder="Celular..."
+                              icon="phone"
+                            />
+                            <FormMessage className="text-[10px]" />
+                          </FormItem>
+                        )} />
+                      </div>
                     </div>
-                  ) : (
+                  )}
+
+                  {clientType === 'TECNICO' && (
                     <FormField control={form.control} name="TR_IDCLIENTE_FK" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Trabajador *</FormLabel>
@@ -583,6 +623,7 @@ export function BillingModal({
                       </FormItem>
                     )} />
                   )}
+
 
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Evidencia física</label>
@@ -788,119 +829,119 @@ export function BillingModal({
               </div>
 
               {/* ── SECCIÓN PAGOS ── */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Métodos de pago</h3>
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Métodos de pago</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Selección de métodos */}
-                  <div className="space-y-2">
-                    <p className="text-xs text-slate-500">Seleccione uno o varios métodos:</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {paymentMethods
-                        .filter(method => {
-                          const nameMatch = method.MP_NOMBRE?.toUpperCase();
-                          if (clientType === 'CLIENTE') {
-                            return nameMatch !== 'VALE' && nameMatch !== 'SERVICIO DE TRABAJADOR';
-                          }
-                          return true;
-                        })
-                        .map(method => {
-                          const isSelected = !!watchedPayments.find(p => p.MP_IDMETODO_FK === method.MP_IDMETODO_PK)
-                          return (
-                            <div key={method.MP_IDMETODO_PK}
-                              onClick={() => !isPaid && handlePaymentToggle(method, !isSelected)}
-                              className={cn("flex items-center gap-2.5 p-3 border rounded-lg cursor-pointer select-none transition-all",
-                                isPaid ? "cursor-not-allowed opacity-60" : "",
-                                isSelected ? "border-[#FF7E5F] bg-[#FF7E5F]/5" : "border-slate-200 bg-white hover:border-slate-300")}>
-                              <div className={cn("size-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all",
-                                isSelected ? "border-[#FF7E5F] bg-[#FF7E5F]" : "border-slate-300 bg-white")}>
-                                {isSelected && <Check className="size-2.5 text-white" strokeWidth={3} />}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Selección de métodos */}
+                    <div className="space-y-2">
+                      <p className="text-xs text-slate-500">Seleccione uno o varios métodos:</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {paymentMethods
+                          .filter(method => {
+                            const nameMatch = method.MP_NOMBRE?.toUpperCase();
+                            if (clientType === 'CLIENTE') {
+                              return nameMatch !== 'VALE' && nameMatch !== 'SERVICIO DE TRABAJADOR';
+                            }
+                            return true;
+                          })
+                          .map(method => {
+                            const isSelected = !!watchedPayments.find(p => p.MP_IDMETODO_FK === method.MP_IDMETODO_PK)
+                            return (
+                              <div key={method.MP_IDMETODO_PK}
+                                onClick={() => !isPaid && handlePaymentToggle(method, !isSelected)}
+                                className={cn("flex items-center gap-2.5 p-3 border rounded-lg cursor-pointer select-none transition-all",
+                                  isPaid ? "cursor-not-allowed opacity-60" : "",
+                                  isSelected ? "border-[#FF7E5F] bg-[#FF7E5F]/5" : "border-slate-200 bg-white hover:border-slate-300")}>
+                                <div className={cn("size-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all",
+                                  isSelected ? "border-[#FF7E5F] bg-[#FF7E5F]" : "border-slate-300 bg-white")}>
+                                  {isSelected && <Check className="size-2.5 text-white" strokeWidth={3} />}
+                                </div>
+                                <span className="text-xs font-semibold text-slate-700">
+                                  {method.MP_NOMBRE === 'VALE' ? 'Vale trabajador' : method.MP_NOMBRE}
+                                </span>
                               </div>
-                              <span className="text-xs font-semibold text-slate-700">
-                                {method.MP_NOMBRE === 'VALE' ? 'Vale trabajador' : method.MP_NOMBRE}
-                              </span>
-                            </div>
-                          )
-                        })}
+                            )
+                          })}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Distribución y balance */}
-                  <div className="space-y-3">
-                    {watchedPayments.length > 0 && (
-                      <div className="space-y-2">
-                        {watchedPayments.map((payment, idx) => {
-                          const method = paymentMethods.find(m => m.MP_IDMETODO_PK === payment.MP_IDMETODO_FK)
-                          return (
-                            <div key={`${payment.MP_IDMETODO_FK}-${idx}`} className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
-                              <span className="text-xs font-semibold text-slate-600 flex-1 min-w-0 truncate">
-                                {method?.MP_NOMBRE === 'VALE' ? 'Vale' : method?.MP_NOMBRE}
-                              </span>
-                              <FormField control={form.control} name={`payments.${idx}.PF_VALOR`} render={({ field }) => (
-                                <NumericFormat value={field.value} disabled={isPaid} onValueChange={(values) => { const v = values.floatValue ?? 0; if (v !== field.value) field.onChange(v) }}
-                                  thousandSeparator="." decimalSeparator="," prefix="$ " allowNegative={false}
-                                  className="w-32 h-8 bg-white border border-slate-200 rounded-md text-right text-xs text-slate-900 px-2 focus:outline-none focus:ring-2 focus:ring-[#FF7E5F]/30 focus:border-[#FF7E5F] disabled:text-slate-400 transition-colors" />
-                              )} />
-                              <div className="flex items-center gap-1">
-                                <input type="file" accept="image/*" className="hidden" ref={el => { fileInputRefs.current[`${idx}`] = el }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(idx, f) }} />
-                                <button type="button" disabled={uploadingIndexes.includes(idx) || isPaid} onClick={(e) => { e.stopPropagation(); fileInputRefs.current[`${idx}`]?.click() }}
-                                  className={cn("p-1.5 rounded border text-xs transition-all",
-                                    uploadingIndexes.includes(idx) ? "border-slate-200 text-slate-300" :
-                                      payment.PF_EVIDENCIA_URL ? "border-green-300 bg-green-50 text-green-600" : "border-slate-200 hover:border-slate-300 text-slate-400")}>
-                                  {uploadingIndexes.includes(idx) ? <Loader2 className="size-3.5 animate-spin" /> : <Camera className="size-3.5" />}
-                                </button>
-                                {payment.PF_EVIDENCIA_URL && (
-                                  <a href={payment.PF_EVIDENCIA_URL} target="_blank" rel="noreferrer" className="p-1.5 rounded border border-slate-200 text-slate-400 hover:text-[#FF7E5F]">
-                                    <Eye className="size-3.5" />
-                                  </a>
-                                )}
+                    {/* Distribución y balance */}
+                    <div className="space-y-3">
+                      {watchedPayments.length > 0 && (
+                        <div className="space-y-2">
+                          {watchedPayments.map((payment, idx) => {
+                            const method = paymentMethods.find(m => m.MP_IDMETODO_PK === payment.MP_IDMETODO_FK)
+                            return (
+                              <div key={`${payment.MP_IDMETODO_FK}-${idx}`} className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                                <span className="text-xs font-semibold text-slate-600 flex-1 min-w-0 truncate">
+                                  {method?.MP_NOMBRE === 'VALE' ? 'Vale' : method?.MP_NOMBRE}
+                                </span>
+                                <FormField control={form.control} name={`payments.${idx}.PF_VALOR`} render={({ field }) => (
+                                  <NumericFormat value={field.value} disabled={isPaid} onValueChange={(values) => { const v = values.floatValue ?? 0; if (v !== field.value) field.onChange(v) }}
+                                    thousandSeparator="." decimalSeparator="," prefix="$ " allowNegative={false}
+                                    className="w-32 h-8 bg-white border border-slate-200 rounded-md text-right text-xs text-slate-900 px-2 focus:outline-none focus:ring-2 focus:ring-[#FF7E5F]/30 focus:border-[#FF7E5F] disabled:text-slate-400 transition-colors" />
+                                )} />
+                                <div className="flex items-center gap-1">
+                                  <input type="file" accept="image/*" className="hidden" ref={el => { fileInputRefs.current[`${idx}`] = el }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(idx, f) }} />
+                                  <button type="button" disabled={uploadingIndexes.includes(idx) || isPaid} onClick={(e) => { e.stopPropagation(); fileInputRefs.current[`${idx}`]?.click() }}
+                                    className={cn("p-1.5 rounded border text-xs transition-all",
+                                      uploadingIndexes.includes(idx) ? "border-slate-200 text-slate-300" :
+                                        payment.PF_EVIDENCIA_URL ? "border-green-300 bg-green-50 text-green-600" : "border-slate-200 hover:border-slate-300 text-slate-400")}>
+                                    {uploadingIndexes.includes(idx) ? <Loader2 className="size-3.5 animate-spin" /> : <Camera className="size-3.5" />}
+                                  </button>
+                                  {payment.PF_EVIDENCIA_URL && (
+                                    <a href={payment.PF_EVIDENCIA_URL} target="_blank" rel="noreferrer" className="p-1.5 rounded border border-slate-200 text-slate-400 hover:text-[#FF7E5F]">
+                                      <Eye className="size-3.5" />
+                                    </a>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-
-                    {/* Balance */}
-                    <div className={cn("p-3 rounded-lg border",
-                      Math.abs(totalPaid - total) < 0.01 && total > 0 ? "bg-green-50 border-green-200" :
-                        totalPaid > total ? "bg-amber-50 border-amber-200" :
-                          "bg-slate-50 border-slate-200")}>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="font-semibold text-slate-500">Total venta</span>
-                        <span className="font-black text-slate-900">$ {(total || 0).toLocaleString('es-CO')}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs mt-1">
-                        <span className="font-semibold text-slate-500">Pagado</span>
-                        <span className="font-bold text-slate-700">$ {(totalPaid || 0).toLocaleString('es-CO')}</span>
-                      </div>
-                      {Math.abs(totalPaid - total) > 0.01 && (
-                        <div className="flex justify-between items-center text-xs mt-1 pt-1 border-t border-slate-200">
-                          <span className="font-bold text-amber-600">{totalPaid > total ? 'Exceso' : 'Pendiente'}</span>
-                          <span className="font-black text-amber-600">$ {Math.abs((totalPaid || 0) - (total || 0)).toLocaleString('es-CO')}</span>
+                            )
+                          })}
                         </div>
                       )}
+
+                      {/* Balance */}
+                      <div className={cn("p-3 rounded-lg border",
+                        Math.abs(totalPaid - total) < 0.01 && total > 0 ? "bg-green-50 border-green-200" :
+                          totalPaid > total ? "bg-amber-50 border-amber-200" :
+                            "bg-slate-50 border-slate-200")}>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-semibold text-slate-500">Total venta</span>
+                          <span className="font-black text-slate-900">$ {(total || 0).toLocaleString('es-CO')}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs mt-1">
+                          <span className="font-semibold text-slate-500">Pagado</span>
+                          <span className="font-bold text-slate-700">$ {(totalPaid || 0).toLocaleString('es-CO')}</span>
+                        </div>
+                        {Math.abs(totalPaid - total) > 0.01 && (
+                          <div className="flex justify-between items-center text-xs mt-1 pt-1 border-t border-slate-200">
+                            <span className="font-bold text-amber-600">{totalPaid > total ? 'Exceso' : 'Pendiente'}</span>
+                            <span className="font-black text-amber-600">$ {Math.abs((totalPaid || 0) - (total || 0)).toLocaleString('es-CO')}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* ── FOOTER ── */}
-            <div className="flex-shrink-0 border-t border-slate-100 px-6 py-4 flex gap-3 bg-white">
-              <Button type="button" variant="outline" onClick={handleClose} className="flex-1">
-                {isViewOnly ? 'Cerrar' : 'Cancelar'}
-              </Button>
-              {!isPaid && (
-                <Button type="submit"
-                  disabled={isLoading || uploadingPhysical || uploadingIndexes.length > 0 || Math.abs(totalPaid - total) > 0.01 || total <= 0}
-                  className="flex-[2] bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white shadow-lg shadow-[#FF7E5F]/20">
-                  {isLoading ? <><Loader2 className="size-4 animate-spin mr-2" />Guardando...</> :
-                    (uploadingPhysical || uploadingIndexes.length > 0) ? 'Subiendo imagen...' :
-                      isEditing ? 'Guardar cambios' : 'Registrar venta'}
+        {/* ── FOOTER ── */}
+              <div className="flex-shrink-0 border-t border-slate-100 px-6 py-4 flex gap-3 bg-white">
+                <Button type="button" variant="outline" onClick={handleClose} className="flex-1">
+                  {isViewOnly ? 'Cerrar' : 'Cancelar'}
                 </Button>
-              )}
-            </div>
+                {!isPaid && (
+                  <Button type="submit"
+                    disabled={isLoading || uploadingPhysical || uploadingIndexes.length > 0 || Math.abs(totalPaid - total) > 0.01 || total <= 0}
+                    className="flex-[2] bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white shadow-lg shadow-[#FF7E5F]/20">
+                    {isLoading ? <><Loader2 className="size-4 animate-spin mr-2" />Guardando...</> :
+                      (uploadingPhysical || uploadingIndexes.length > 0) ? 'Subiendo imagen...' :
+                        isEditing ? 'Guardar cambios' : 'Registrar venta'}
+                  </Button>
+                )}
+              </div>
           </form>
         </Form>
       </DialogContent>

@@ -147,6 +147,7 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
       fizUrl = await finalizeUpload(fizUrl, data.FC_NUMERO_FACTURA || `${Date.now()}`);
     }
 
+
     if (isUpdate) {
       // ACTUALIZAR FACTURA BASE
       await (connection as any).execute(
@@ -170,6 +171,7 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
           fizUrl || null,
           invoiceId
         ]
+
       );
 
       // Limpiar detalles
@@ -224,6 +226,7 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
           data.FC_TIPO_CLIENTE === 'TECNICO' ? data.TR_IDCLIENTE_FK : null,
           fizUrl || null
         ]
+
       );
       invoiceId = invoiceResult.insertId;
     }

@@ -6,11 +6,12 @@ interface DashboardBannerProps {
     title: React.ReactNode
     subtitle?: React.ReactNode
     extra?: React.ReactNode
+    actions?: React.ReactNode
 }
 
-export function DashboardBanner({ title, subtitle, extra }: DashboardBannerProps) {
+export function DashboardBanner({ title, subtitle, extra, actions }: DashboardBannerProps) {
     return (
-        <div className="relative overflow-hidden p-10 md:p-14 border-b border-slate-200 dark:border-slate-800 shadow-2xl group -mx-4 md:-mx-8 mb-8 bg-slate-950">
+        <div className="relative overflow-hidden p-8 md:p-12 border-b border-slate-200 dark:border-slate-800 shadow-2xl group bg-slate-950 min-h-[240px] flex flex-col justify-end">
             {/* Background Banner with Dark Overlay Filter */}
             <div className="absolute inset-0 z-0 overflow-hidden">
                 <img
@@ -22,6 +23,13 @@ export function DashboardBanner({ title, subtitle, extra }: DashboardBannerProps
                 <div className="absolute inset-0 bg-gradient-to-r from-slate-950/60 via-slate-950/30 to-transparent z-10" />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent z-10" />
             </div>
+
+            {/* Top Bar inside Banner */}
+            {actions && (
+                <div className="absolute top-6 right-6 md:top-8 md:right-8 z-30">
+                    {actions}
+                </div>
+            )}
 
             <div className="relative z-20 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 <div className="flex flex-col gap-3">

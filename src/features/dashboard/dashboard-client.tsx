@@ -83,6 +83,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { NumericFormat } from 'react-number-format'
 import { TechnicianView } from './technician-view'
 import { DashboardBanner } from '@/components/layout/dashboard-banner'
+import { UserProfileDropdown } from '@/components/layout/user-profile-dropdown'
 
 const COLORS = ['#FF7E5F', '#FEB47B', '#FFD200', '#F7971E', '#FFDF00'];
 
@@ -387,50 +388,54 @@ export function DashboardClient() {
     }
 
     return (
-        <div className="space-y-4 md:space-y-8 animate-in fade-in duration-500">
+        <div className="animate-in fade-in duration-500 pb-10">
             <DashboardBanner
                 title={
                     <>¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B]">{user?.username || 'Admin'}</span>! 👋</>
                 }
-                subtitle={
-                    <>Resumen de {filterType === 'DIA' ? `el día ${format(currentDate, 'd MMM', { locale: es })}` : 'el periodo seleccionado'} en <span className="text-[#FF7E5F] font-black italic">kairos Stylos</span>.</>
+                subtitle="Dia 24 de marzo"
+                actions={
+                    <UserProfileDropdown userName={user?.username || 'Admin'} userRole={user?.role || 'ADMINISTRADOR'} />
                 }
                 extra={
-                    !(user?.role === 'ADMINISTRADOR_PUNTO' && user?.branchId) ? (
-                        <div className="flex items-center gap-3 p-2 bg-black/50 border border-white/10 shadow-3xl rounded-xl self-start w-full sm:w-auto backdrop-blur-md">
-                            <div className="px-3 py-1.5 flex items-center gap-2 text-[10px] font-black uppercase text-[#FF7E5F] tracking-widest">
-                                <MapPin className="size-4 animate-pulse" />
-                                Sucursal:
+                    <div className="flex flex-col gap-4">
+                        {!(user?.role === 'ADMINISTRADOR_PUNTO' && user?.branchId) ? (
+                            <div className="flex items-center gap-3 p-2 bg-black/50 border border-white/10 shadow-3xl rounded-xl self-start w-full sm:w-auto backdrop-blur-md">
+                                <div className="px-3 py-1.5 flex items-center gap-2 text-[10px] font-black uppercase text-[#FF7E5F] tracking-widest">
+                                    <MapPin className="size-4 animate-pulse" />
+                                    Sucursal:
+                                </div>
+                                <select
+                                    className="bg-transparent font-black text-xs uppercase pr-10 outline-none cursor-pointer text-white h-10 border-l border-white/20 pl-4"
+                                    value={selectedSede}
+                                    onChange={(e) => setSelectedSede(Number(e.target.value))}
+                                >
+                                    <option value="-1" className="bg-slate-900">GENERAL (TODAS)</option>
+                                    {sedes.map(s => (
+                                        <option key={s.SC_IDSUCURSAL_PK} value={s.SC_IDSUCURSAL_PK} className="bg-slate-900">{s.SC_NOMBRE}</option>
+                                    ))}
+                                </select>
                             </div>
-                            <select
-                                className="bg-transparent font-black text-xs uppercase pr-10 outline-none cursor-pointer text-white h-10 border-l border-white/20 pl-4"
-                                value={selectedSede}
-                                onChange={(e) => setSelectedSede(Number(e.target.value))}
-                            >
-                                <option value="-1" className="bg-slate-900">GENERAL (TODAS)</option>
-                                {sedes.map(s => (
-                                    <option key={s.SC_IDSUCURSAL_PK} value={s.SC_IDSUCURSAL_PK} className="bg-slate-900">{s.SC_NOMBRE}</option>
-                                ))}
-                            </select>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-3 p-2 bg-black/50 border border-white/10 shadow-3xl rounded-xl self-start w-full sm:w-auto backdrop-blur-md">
-                            <div className="px-3 py-1.5 flex items-center gap-2 text-[10px] font-black uppercase text-[#FF7E5F] tracking-widest">
-                                <MapPin className="size-4 animate-pulse" />
-                                Sucursal Asignada:
+                        ) : (
+                            <div className="flex items-center gap-3 p-2 bg-black/50 border border-white/10 shadow-3xl rounded-xl self-start w-full sm:w-auto backdrop-blur-md">
+                                <div className="px-3 py-1.5 flex items-center gap-2 text-[10px] font-black uppercase text-[#FF7E5F] tracking-widest">
+                                    <MapPin className="size-4 animate-pulse" />
+                                    Sucursal Asignada:
+                                </div>
+                                <div className="px-4 py-1.5 h-10 flex items-center border-l border-white/20">
+                                    <span className="font-black text-xs uppercase text-[#FF7E5F] tracking-wider truncate max-w-[200px]">
+                                        {sedes.find(s => s.SC_IDSUCURSAL_PK === user.branchId)?.SC_NOMBRE || 'Cargando...'}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="px-4 py-1.5 h-10 flex items-center border-l border-white/20">
-                                <span className="font-black text-xs uppercase text-[#FF7E5F] tracking-wider truncate max-w-[200px]">
-                                    {sedes.find(s => s.SC_IDSUCURSAL_PK === user.branchId)?.SC_NOMBRE || 'Cargando...'}
-                                </span>
-                            </div>
-                        </div>
-                    )
+                        )}
+                    </div>
                 }
             />
 
-            {/* Filters Bar */}
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center justify-between bg-white/50 dark:bg-slate-900 p-4 border border-slate-200 shadow-sm rounded-2xl backdrop-blur-sm">
+            <div className="px-4 md:px-10 space-y-6 md:space-y-10 -mt-6 relative z-30">
+                {/* Filters Bar */}
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center justify-between bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 shadow-xl rounded-3xl backdrop-blur-sm">
                 <div className="flex flex-wrap items-center gap-2 md:gap-4">
                     {/* Selector de Tipo de Filtro */}
                     <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
@@ -1485,8 +1490,10 @@ export function DashboardClient() {
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
+
                 </>
             )}
+            </div>
         </div>
     )
 }

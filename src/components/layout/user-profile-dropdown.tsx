@@ -47,16 +47,16 @@ export function UserProfileDropdown({ userName, userRole }: UserProfileDropdownP
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <div className="flex items-center gap-2 md:gap-3 pl-1 md:pl-2 group cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 p-1 rounded-full transition-colors outline-none">
+        <div className="flex items-center gap-2 md:gap-3 pl-1 md:pl-2 group cursor-pointer bg-black/20 backdrop-blur-sm border border-white/10 hover:bg-black/30 p-1.5 md:p-2 rounded-2xl transition-all outline-none shadow-lg">
           <div className="text-right hidden sm:block">
             <div className="flex items-center justify-end gap-1">
-              <p className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-none">{userName}</p>
-              <ChevronDown className="size-3 text-slate-400 group-hover:text-[#FF7E5F] transition-colors" />
+              <p className="text-sm font-black text-white leading-none drop-shadow-md">{userName}</p>
+              <ChevronDown className="size-3 text-white/70 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter mt-1">{userRole}</p>
+            <p className="text-[10px] text-white/50 font-bold uppercase tracking-tighter mt-1 leading-none">{userRole}</p>
           </div>
-          <div className="size-9 md:size-10 rounded-full bg-gradient-to-br from-[#FF7E5F] to-[#FEB47B] flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-sm group-hover:scale-105 transition-transform">
-            <User className="size-5 md:size-6 text-white" />
+          <div className="size-9 md:size-11 rounded-xl bg-gradient-to-br from-[#FF7E5F] to-[#FEB47B] flex items-center justify-center border-2 border-white/20 shadow-xl group-hover:scale-105 transition-transform">
+            <User className="size-5 md:size-7 text-white" />
           </div>
         </div>
       </DropdownMenuTrigger>
