@@ -499,11 +499,11 @@ export function DashboardClient() {
                                         },
                                         {
                                             title: 'SERVICIO TRABAJADOR',
-                                            value: `$ ${(stats?.metodos_pago?.['SERVICIO DE TRABAJADOR'] || 0).toLocaleString('es-CO')}`,
+                                            value: `$ ${(stats?.vales_total || 0).toLocaleString('es-CO')}`,
                                             sub: 'SERVICIOS ENTRE TÉCNICOS',
                                             icon: Ticket,
                                             color: 'from-slate-600 to-slate-450',
-                                            count: stats?.metodos_count?.['SERVICIO DE TRABAJADOR'] || 0
+                                            count: stats?.vales_count || 0
                                         },
                                         {
                                             title: 'ABONO A DEUDAS',
@@ -1169,19 +1169,19 @@ export function DashboardClient() {
                                             ))}
 
                                             {['EFECTIVO', 'TRANSFERENCIA', 'DATAFONO', 'CREDITO', 'SERVICIO TRABAJADOR'].includes(detailType) && (() => {
-                                                // Map the UI card name to the DB method name
-                                                const methodMap: Record<string, string> = {
-                                                    'EFECTIVO': 'EFECTIVO',
-                                                    'TRANSFERENCIA': 'TRANSFERENCIA',
-                                                    'DATAFONO': 'DATAFONO',
-                                                    'CREDITO': 'CREDITO',
-                                                    'SERVICIO TRABAJADOR': 'SERVICIO DE TRABAJADOR',
+                                                // Map the UI card names to DB method names
+                                                const methodMap: Record<string, string[]> = {
+                                                    'EFECTIVO': ['EFECTIVO'],
+                                                    'TRANSFERENCIA': ['TRANSFERENCIA'],
+                                                    'DATAFONO': ['DATAFONO', 'TARJETA'],
+                                                    'CREDITO': ['CREDITO'],
+                                                    'SERVICIO TRABAJADOR': ['SERVICIO DE TRABAJADOR', 'VALE', 'SERVICIO TRABAJADOR'],
                                                 }
-                                                const dbMethod = methodMap[detailType] || detailType.toUpperCase()
+                                                const dbMethods = methodMap[detailType] || [detailType.toUpperCase()]
 
                                                 // Find all payments matching this method
                                                 const matchingPayments = (specificData?.pagos || []).filter(
-                                                    (p: any) => p.metodo?.toUpperCase() === dbMethod
+                                                    (p: any) => dbMethods.includes(p.metodo?.toUpperCase())
                                                 )
 
                                                 if (matchingPayments.length === 0) {
@@ -1219,7 +1219,7 @@ export function DashboardClient() {
                                                             <TableCell className="text-right font-black text-xs text-orange-600">$ {(Number(v.AD_MONTO) || 0).toLocaleString('es-CO')}</TableCell>
                                                         </TableRow>
                                                     ))}
-                                                    {(specificData?.pagos || []).filter((p: any) => p.metodo?.toUpperCase() === 'VALE').map((pago: any, idx: number) => {
+                                                    {(specificData?.pagos || []).filter((p: any) => ['VALE', 'SERVICIO DE TRABAJADOR', 'SERVICIO TRABAJADOR'].includes(p.metodo?.toUpperCase())).map((pago: any, idx: number) => {
                                                         const factura = (specificData?.facturas || []).find((f: any) => f.FC_IDFACTURA_PK === pago.FC_IDFACTURA_FK)
                                                         return (
                                                             <TableRow key={`vale-pago-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">

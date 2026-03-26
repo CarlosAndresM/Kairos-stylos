@@ -23,7 +23,8 @@ import {
     getTechnicianStats,
     getTechnicianCharts,
     getTechnicianServices,
-    getTechnicianPayrollHistory
+    getTechnicianPayrollHistory,
+    getTechnicianDeudas
 } from '@/features/dashboard/services'
 import {
     BarChart,
@@ -60,6 +61,7 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
     const [chartsData, setChartsData] = React.useState<any[]>([])
     const [services, setServices] = React.useState<any[]>([])
     const [payrollHistory, setPayrollHistory] = React.useState<any[]>([])
+    const [deudas, setDeudas] = React.useState<any>({ vales: [], adelantos: [] })
     const [isLoading, setIsLoading] = React.useState(true)
     const [activeTab, setActiveTab] = React.useState('resumen')
 
@@ -67,17 +69,19 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
         if (!user?.id) return
         setIsLoading(true)
         try {
-            const [statsRes, chartsRes, servicesRes, payrollRes] = await Promise.all([
+            const [statsRes, chartsRes, servicesRes, payrollRes, deudasRes] = await Promise.all([
                 getTechnicianStats(user.id, dateFrom, dateTo),
                 getTechnicianCharts(user.id, dateFrom, dateTo),
                 getTechnicianServices(user.id, dateFrom, dateTo),
-                getTechnicianPayrollHistory(user.id)
+                getTechnicianPayrollHistory(user.id),
+                getTechnicianDeudas(user.id)
             ])
 
             if (statsRes.success) setStats(statsRes.data)
             if (chartsRes.success) setChartsData(chartsRes.data)
             if (servicesRes.success) setServices(servicesRes.data)
             if (payrollRes.success) setPayrollHistory(payrollRes.data)
+            if (deudasRes.success) setDeudas(deudasRes.data)
         } catch (error) {
             toast.error("Error al cargar datos del técnico")
         } finally {
@@ -130,12 +134,12 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                         count: 0
                     },
                     {
-                        title: 'Prod. Realizados',
-                        value: stats?.services_count || 0,
-                        sub: 'En el periodo',
-                        icon: TrendingUp,
-                        color: 'from-purple-600 to-indigo-500',
-                        count: stats?.services_count || 0
+                        title: 'Deudas Pendientes',
+                        value: `$${(Number(stats?.vales_pendiente || 0) + Number(stats?.adelantos_pendiente || 0)).toLocaleString('es-CO')}`,
+                        sub: 'Vales + Adelantos',
+                        icon: DollarSign,
+                        color: 'from-amber-600 to-yellow-500',
+                        count: 0
                     }
                 ].map((stat, i) => (
                     <Card key={i} className="border border-slate-200 rounded-2xl shadow-sm overflow-hidden relative group bg-white dark:bg-slate-900">
@@ -165,6 +169,7 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                 <TabsList className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl mb-6">
                     <TabsTrigger value="resumen" className="rounded-lg text-[10px] font-black uppercase px-6">Mi Desempeño</TabsTrigger>
                     <TabsTrigger value="servicios" className="rounded-lg text-[10px] font-black uppercase px-6">Detalle Servicios</TabsTrigger>
+                    <TabsTrigger value="deudas" className="rounded-lg text-[10px] font-black uppercase px-6">Deudas/Vales</TabsTrigger>
                     <TabsTrigger value="pagos" className="rounded-lg text-[10px] font-black uppercase px-6">Volantes de Pago</TabsTrigger>
                 </TabsList>
 
@@ -254,6 +259,85 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                                         <TableRow>
                                             <TableCell colSpan={5} className="h-32 text-center text-slate-400 italic text-xs uppercase tracking-widest">
                                                 Sin actividad registrada en este periodo
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="deudas" className="space-y-6 mt-0">
+                    <Card className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
+                        <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="text-xs font-black uppercase text-slate-500 tracking-wider">Mis Deudas Pendientes</h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader className="bg-slate-50/20">
+                                    <TableRow>
+                                        <TableHead className="text-[9px] font-black uppercase tracking-widest px-6 py-3">Tipo</TableHead>
+                                        <TableHead className="text-[9px] font-black uppercase tracking-widest py-3">Concepto/Factura</TableHead>
+                                        <TableHead className="text-[9px] font-black uppercase tracking-widest py-3 text-center">F. Cobro</TableHead>
+                                        <TableHead className="text-[9px] font-black uppercase tracking-widest py-3 text-right pr-6">Monto Cuota/Total</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {/* Muestras de Vales (Cuotas) */}
+                                    {deudas.vales.map((v: any, idx: number) => (
+                                        <TableRow key={`v-${idx}`} className="group hover:bg-slate-50/50">
+                                            <TableCell className="px-6 py-3">
+                                                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 uppercase">Vale</span>
+                                            </TableCell>
+                                            <TableCell className="py-3">
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-black text-slate-900">CUOTA #{v.STC_NUMERO_CUOTA}</span>
+                                                    <span className="text-[10px] text-slate-400 font-bold uppercase">FACTURA {v.FC_NUMERO_FACTURA}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="py-3 text-center">
+                                                <span className="text-[10px] font-bold text-slate-500">{format(new Date(v.STC_FECHA_COBRO), 'dd/MM/yyyy')}</span>
+                                            </TableCell>
+                                            <TableCell className="py-3 text-right pr-6">
+                                                <span className="text-xs font-black text-red-600">$ {(Number(v.STC_VALOR_CUOTA) || 0).toLocaleString('es-CO')}</span>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+
+                                    {/* Muestras de Adelantos */}
+                                    {deudas.adelantos.map((ad: any, idx: number) => {
+                                        const cuotaValor = ad.AD_MONTO / ad.AD_CUOTAS;
+                                        const pagado = cuotaValor * ad.AD_CUOTAS_PAGADAS;
+                                        const pendiente = ad.AD_MONTO - pagado;
+                                        return (
+                                            <TableRow key={`ad-${idx}`} className="group hover:bg-slate-100/30">
+                                                <TableCell className="px-6 py-3">
+                                                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-100 text-red-600 uppercase">Adelanto</span>
+                                                </TableCell>
+                                                <TableCell className="py-3">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-black text-slate-900">ADELANTO NÓMINA</span>
+                                                        <span className="text-[10px] text-slate-400 font-bold uppercase">{ad.AD_CUOTAS_PAGADAS}/{ad.AD_CUOTAS} CUOTAS</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="py-3 text-center">
+                                                    <span className="text-[10px] font-bold text-slate-500">{format(new Date(ad.AD_FECHA), 'dd/MM/yyyy')}</span>
+                                                </TableCell>
+                                                <TableCell className="py-3 text-right pr-6">
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-xs font-black text-red-600">$ {pendiente.toLocaleString('es-CO')}</span>
+                                                        <span className="text-[9px] text-slate-400 font-bold uppercase">Total Adelantado: $ {Number(ad.AD_MONTO).toLocaleString('es-CO')}</span>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
+
+                                    {deudas.vales.length === 0 && deudas.adelantos.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="h-40 text-center py-10 text-slate-400 font-bold italic text-xs uppercase tracking-widest">
+                                                No tienes deudas pendientes
                                             </TableCell>
                                         </TableRow>
                                     )}
