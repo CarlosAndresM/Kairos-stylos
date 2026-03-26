@@ -40,7 +40,7 @@ import { ComboboxSearch } from '@/components/ui/combobox-search'
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { format, addDays, subDays } from 'date-fns'
+import { format, addDays, subDays, startOfWeek, endOfWeek } from 'date-fns'
 import { es } from 'date-fns/locale'
 import {
     getDashboardInitialData,
@@ -97,8 +97,8 @@ export function DashboardClient() {
     const [selectedPeriod, setSelectedPeriod] = React.useState<string>('')
     const [filterType, setFilterType] = React.useState<'DIA' | 'PERIODO' | 'RANGO'>('DIA')
     const [dateRange, setDateRange] = React.useState<{ from: Date; to: Date | undefined }>({
-        from: subDays(new Date(), 7),
-        to: new Date()
+        from: startOfWeek(new Date(), { weekStartsOn: 0 }),
+        to: endOfWeek(new Date(), { weekStartsOn: 0 })
     })
 
     // Custom Table States
@@ -174,8 +174,8 @@ export function DashboardClient() {
 
             if (filterType === 'PERIODO') {
                 if (selectedPeriod === '7dias') {
-                    from = format(subDays(new Date(), 7), 'yyyy-MM-dd')
-                    to = format(new Date(), 'yyyy-MM-dd')
+                    from = format(startOfWeek(new Date(), { weekStartsOn: 0 }), 'yyyy-MM-dd')
+                    to = format(endOfWeek(new Date(), { weekStartsOn: 0 }), 'yyyy-MM-dd')
                 } else {
                     const period = periods.find(p => p.NM_IDNOMINA_PK.toString() === selectedPeriod)
                     if (period) {
@@ -578,7 +578,7 @@ export function DashboardClient() {
                                         {
                                             title: 'VALES',
                                             value: `$ ${(stats?.adelantos_total || 0).toLocaleString('es-CO')}`,
-                                            sub: 'DEUDA GENERADA HOY',
+                                            sub: 'SERVICIOS ENTRE TÉCNICOS',
                                             icon: Zap,
                                             color: 'from-orange-500 to-yellow-500',
                                             count: stats?.adelantos_count || 0
@@ -586,7 +586,7 @@ export function DashboardClient() {
                                         {
                                             title: 'SERVICIO TRABAJADOR',
                                             value: `$ ${(stats?.vales_total || 0).toLocaleString('es-CO')}`,
-                                            sub: 'SERVICIOS ENTRE TÉCNICOS',
+                                            sub: 'DEUDA GENERADA HOY (ADELANTOS)',
                                             icon: Ticket,
                                             color: 'from-slate-600 to-slate-450',
                                             count: stats?.vales_count || 0

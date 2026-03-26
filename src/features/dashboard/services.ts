@@ -212,10 +212,10 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
         total_abonos: totalAbonosRecibidos,
         abonos_count: totalAbonosCount,
         clientes_nuevos: Number(clientsResult[0]?.total || 0),
-        vales_total: totalServicioTrabajadorCard,
-        vales_count: totalServicioTrabajadorCount,
-        adelantos_total: totalValesCard,
-        adelantos_count: totalValesCount,
+        vales_total: totalValesCard,
+        vales_count: totalValesCount,
+        adelantos_total: totalServicioTrabajadorCard,
+        adelantos_count: totalServicioTrabajadorCount,
       },
       error: null
     };

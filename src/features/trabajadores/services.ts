@@ -9,17 +9,29 @@ import { decrypt } from "@/lib/jwt-utils";
 import { WorkerFormData, SedeFormData } from "./schema";
 
 /**
- * Obtener todos los trabajadores y sus cargos
+ * Obtener todos los trabajadores y sus cargos con estadísticas (servicios, vales)
  */
-export async function getTrabajadores(): Promise<ApiResponse> {
+export async function getTrabajadores(sucursalId?: number): Promise<ApiResponse> {
   try {
-    const [rows] = await (db as any).execute(`
-      SELECT t.*, r.RL_NOMBRE, s.SC_NOMBRE
+    let query = `
+      SELECT t.*, r.RL_NOMBRE, s.SC_NOMBRE,
+      (SELECT COUNT(*) FROM KS_FACTURA_DETALLES WHERE TR_IDTECNICO_FK = t.TR_IDTRABAJADOR_PK) as servicios_count,
+      (SELECT COALESCE(SUM(AD_MONTO), 0) FROM KS_ADELANTOS WHERE TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK AND AD_ESTADO != 'ANULADO') as total_vales,
+      (SELECT COUNT(*) FROM KS_ADELANTOS WHERE TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK AND AD_ESTADO = 'PENDIENTE') as vales_pendientes
       FROM KS_TRABAJADORES t
       LEFT JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
       LEFT JOIN KS_SUCURSALES s ON t.SC_IDSUCURSAL_FK = s.SC_IDSUCURSAL_PK
-      ORDER BY t.TR_NOMBRE ASC
-    `);
+    `;
+    
+    const params: any[] = [];
+    if (sucursalId) {
+      query += " WHERE t.SC_IDSUCURSAL_FK = ?";
+      params.push(sucursalId);
+    }
+    
+    query += " ORDER BY t.TR_NOMBRE ASC";
+
+    const [rows] = await (db as any).execute(query, params);
     return { success: true, data: rows, error: null };
   } catch (error) {
     console.error("Error fetching trabajadores:", error);

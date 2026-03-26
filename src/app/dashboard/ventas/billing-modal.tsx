@@ -435,8 +435,8 @@ export function BillingModal({
 
   const getWeekRange = React.useCallback((date: Date | null) => {
     if (!date) return null;
-    const start = startOfWeek(date, { weekStartsOn: 1 });
-    const end = endOfWeek(date, { weekStartsOn: 1 });
+    const start = startOfWeek(date, { weekStartsOn: 0 });
+    const end = endOfWeek(date, { weekStartsOn: 0 });
     return `Semana del ${format(start, 'dd MMM', { locale: es })} al ${format(end, 'dd MMM', { locale: es })}`;
   }, []);
 
@@ -464,7 +464,7 @@ export function BillingModal({
       const filteredPayments = currentPayments.filter(p => p.MP_IDMETODO_FK !== method.MP_IDMETODO_PK)
 
       form.setValue("payments", filteredPayments)
-      
+
       // Check if any other vale-related method remains
       const anyOtherVale = filteredPayments.some(p => {
         const m = paymentMethods.find(pm => pm.MP_IDMETODO_PK === p.MP_IDMETODO_FK)
@@ -540,7 +540,7 @@ export function BillingModal({
     const findFirstErrorMessage = (obj: any): string | null => {
       if (!obj || typeof obj !== 'object') return null;
       if (obj.message && typeof obj.message === 'string') return obj.message;
-      
+
       for (const key in obj) {
         const result = findFirstErrorMessage(obj[key]);
         if (result) return result;
@@ -795,7 +795,7 @@ export function BillingModal({
                           <PopoverContent className="w-auto p-0" align="start">
                             <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus
                               modifiers={{
-                                week: (date) => field.value ? isSameWeek(date, field.value, { weekStartsOn: 1 }) : false
+                                week: (date) => field.value ? isSameWeek(date, field.value, { weekStartsOn: 0 }) : false
                               }}
                               modifiersClassNames={{
                                 week: "bg-[#FF7E5F]/15 font-bold rounded-none"
@@ -842,7 +842,7 @@ export function BillingModal({
                               <PopoverContent className="w-auto p-0" align="start">
                                 <Calendar mode="single" selected={field.value || undefined} onSelect={field.onChange} initialFocus
                                   modifiers={{
-                                    week: (date) => field.value ? isSameWeek(date, field.value, { weekStartsOn: 1 }) : false
+                                    week: (date) => field.value ? isSameWeek(date, field.value, { weekStartsOn: 0 }) : false
                                   }}
                                   modifiersClassNames={{
                                     week: "bg-[#FF7E5F]/15 font-bold rounded-none"
