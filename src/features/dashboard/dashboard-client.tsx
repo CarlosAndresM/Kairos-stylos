@@ -95,7 +95,11 @@ export function DashboardClient() {
     const [periods, setPeriods] = React.useState<any[]>([])
     const [periodPopoverOpen, setPeriodPopoverOpen] = React.useState(false)
     const [selectedPeriod, setSelectedPeriod] = React.useState<string>('')
-    const [filterType, setFilterType] = React.useState<'DIA' | 'PERIODO'>('DIA')
+    const [filterType, setFilterType] = React.useState<'DIA' | 'PERIODO' | 'RANGO'>('DIA')
+    const [dateRange, setDateRange] = React.useState<{ from: Date; to: Date | undefined }>({
+        from: subDays(new Date(), 7),
+        to: new Date()
+    })
 
     // Custom Table States
     const [searchTerm, setSearchTerm] = React.useState('')
@@ -179,6 +183,9 @@ export function DashboardClient() {
                         to = format(new Date(period.NM_FECHA_FIN), 'yyyy-MM-dd')
                     }
                 }
+            } else if (filterType === 'RANGO') {
+                from = format(dateRange.from, 'yyyy-MM-dd')
+                to = format(dateRange.to || dateRange.from, 'yyyy-MM-dd')
             }
 
             const res = await getDashboardFullData(selectedSede, from, to)
@@ -193,7 +200,7 @@ export function DashboardClient() {
         } finally {
             setIsLoading(false)
         }
-    }, [selectedSede, currentDate, selectedPeriod, viewMode, periods])
+    }, [selectedSede, currentDate, selectedPeriod, dateRange, filterType, viewMode, periods])
 
     React.useEffect(() => {
         if (mounted) fetchData()
@@ -302,7 +309,15 @@ export function DashboardClient() {
                 title={
                     <>¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B]">{user?.username || 'Admin'}</span>! 👋</>
                 }
-                subtitle="Dia 24 de marzo"
+                subtitle={
+                    filterType === 'DIA'
+                        ? format(currentDate, "EEEE, d 'de' MMMM", { locale: es })
+                        : filterType === 'RANGO'
+                            ? `${format(dateRange.from, "d 'de' MMMM", { locale: es })} - ${dateRange.to ? format(dateRange.to, "d 'de' MMMM", { locale: es }) : ''}`
+                            : periods.find(p => p.NM_IDNOMINA_PK.toString() === selectedPeriod)
+                                ? `${format(new Date(periods.find(p => p.NM_IDNOMINA_PK.toString() === selectedPeriod).NM_FECHA_INICIO), "d 'de' MMMM", { locale: es })} - ${format(new Date(periods.find(p => p.NM_IDNOMINA_PK.toString() === selectedPeriod).NM_FECHA_FIN), "d 'de' MMMM", { locale: es })}`
+                                : "Resumen"
+                }
                 actions={
                     <UserProfileDropdown userName={user?.username || 'Admin'} userRole={user?.role || 'ADMINISTRADOR'} />
                 }
@@ -368,6 +383,15 @@ export function DashboardClient() {
                                     POR PERIODO
                                 </button>
                             )}
+                            <button
+                                onClick={() => setFilterType('RANGO')}
+                                className={cn(
+                                    "px-5 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-lg",
+                                    filterType === 'RANGO' ? "bg-[#FF7E5F] text-white shadow-md shadow-coral-500/20" : "text-slate-500 hover:text-slate-700"
+                                )}
+                            >
+                                POR RANGO
+                            </button>
                         </div>
 
                         <div className="h-6 w-px bg-slate-200 hidden md:block" />
@@ -409,6 +433,44 @@ export function DashboardClient() {
                                     />
                                 </div>
                             </div>
+                        ) : filterType === 'RANGO' ? (
+                            <div className="flex items-center gap-1 bg-white dark:bg-slate-950 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="ghost" className="h-9 px-4 rounded-none font-bold text-[11px] uppercase tracking-tight flex gap-2 text-slate-700 hover:bg-slate-50">
+                                            <CalendarIcon className="size-4 text-[#FF7E5F]" />
+                                            {dateRange.from ? (
+                                                dateRange.to ? (
+                                                    <>
+                                                        {format(dateRange.from, "d MMM", { locale: es })} - {format(dateRange.to, "d MMM", { locale: es })}
+                                                    </>
+                                                ) : (
+                                                    format(dateRange.from, "d 'de' MMMM", { locale: es })
+                                                )
+                                            ) : (
+                                                <span>Seleccionar rango</span>
+                                            )}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0 border border-slate-200 rounded-2xl shadow-xl" align="start">
+                                        <Calendar
+                                            initialFocus
+                                            mode="range"
+                                            defaultMonth={dateRange.from}
+                                            selected={{
+                                                from: dateRange.from,
+                                                to: dateRange.to
+                                            } as any}
+                                            onSelect={(range: any) => {
+                                                if (range?.from) {
+                                                    setDateRange({ from: range.from, to: range.to });
+                                                }
+                                            }}
+                                            numberOfMonths={2}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
                         ) : null}
                     </div>
 
@@ -439,8 +501,24 @@ export function DashboardClient() {
                 {user?.role === 'TECNICO' ? (
                     <TechnicianView
                         user={user}
-                        dateFrom={filterType === 'DIA' ? format(currentDate, 'yyyy-MM-dd') : (periods.find(p => p.NM_IDNOMINA_PK.toString() === selectedPeriod)?.NM_FECHA_INICIO ? format(new Date(periods.find(p => p.NM_IDNOMINA_PK.toString() === selectedPeriod).NM_FECHA_INICIO), 'yyyy-MM-dd') : format(currentDate, 'yyyy-MM-dd'))}
-                        dateTo={filterType === 'DIA' ? format(currentDate, 'yyyy-MM-dd') : (periods.find(p => p.NM_IDNOMINA_PK.toString() === selectedPeriod)?.NM_FECHA_FIN ? format(new Date(periods.find(p => p.NM_IDNOMINA_PK.toString() === selectedPeriod).NM_FECHA_FIN), 'yyyy-MM-dd') : format(currentDate, 'yyyy-MM-dd'))}
+                        dateFrom={
+                            filterType === 'DIA'
+                                ? format(currentDate, 'yyyy-MM-dd')
+                                : filterType === 'RANGO'
+                                    ? format(dateRange.from, 'yyyy-MM-dd')
+                                    : (periods.find(p => p.NM_IDNOMINA_PK.toString() === selectedPeriod)?.NM_FECHA_INICIO
+                                        ? format(new Date(periods.find(p => p.NM_IDNOMINA_PK.toString() === selectedPeriod).NM_FECHA_INICIO), 'yyyy-MM-dd')
+                                        : format(currentDate, 'yyyy-MM-dd'))
+                        }
+                        dateTo={
+                            filterType === 'DIA'
+                                ? format(currentDate, 'yyyy-MM-dd')
+                                : filterType === 'RANGO'
+                                    ? format(dateRange.to || dateRange.from, 'yyyy-MM-dd')
+                                    : (periods.find(p => p.NM_IDNOMINA_PK.toString() === selectedPeriod)?.NM_FECHA_FIN
+                                        ? format(new Date(periods.find(p => p.NM_IDNOMINA_PK.toString() === selectedPeriod).NM_FECHA_FIN), 'yyyy-MM-dd')
+                                        : format(currentDate, 'yyyy-MM-dd'))
+                        }
                     />
                 ) : (
                     <>
@@ -498,6 +576,14 @@ export function DashboardClient() {
                                             count: stats?.metodos_count?.['CREDITO'] || 0
                                         },
                                         {
+                                            title: 'VALES',
+                                            value: `$ ${(stats?.adelantos_total || 0).toLocaleString('es-CO')}`,
+                                            sub: 'DEUDA GENERADA HOY',
+                                            icon: Zap,
+                                            color: 'from-orange-500 to-yellow-500',
+                                            count: stats?.adelantos_count || 0
+                                        },
+                                        {
                                             title: 'SERVICIO TRABAJADOR',
                                             value: `$ ${(stats?.vales_total || 0).toLocaleString('es-CO')}`,
                                             sub: 'SERVICIOS ENTRE TÉCNICOS',
@@ -520,14 +606,6 @@ export function DashboardClient() {
                                             icon: CreditCard,
                                             color: 'from-indigo-600 to-violet-500',
                                             count: stats?.metodos_count?.['DATAFONO'] || 0
-                                        },
-                                        {
-                                            title: 'VALES',
-                                            value: `$ ${(stats?.adelantos_total || 0).toLocaleString('es-CO')}`,
-                                            sub: 'ADELANTOS DE NÓMINA HOY',
-                                            icon: Zap,
-                                            color: 'from-orange-500 to-yellow-500',
-                                            count: stats?.adelantos_count || 0
                                         },
                                     ].filter(stat => stat.title !== 'DATAFONO').map((stat, i) => (
                                         <Card
@@ -1175,7 +1253,7 @@ export function DashboardClient() {
                                                     'TRANSFERENCIA': ['TRANSFERENCIA'],
                                                     'DATAFONO': ['DATAFONO', 'TARJETA'],
                                                     'CREDITO': ['CREDITO'],
-                                                    'SERVICIO TRABAJADOR': ['SERVICIO DE TRABAJADOR', 'VALE', 'SERVICIO TRABAJADOR'],
+                                                    'SERVICIO TRABAJADOR': ['SERVICIO DE TRABAJADOR', 'SERVICIO TRABAJADOR'],
                                                 }
                                                 const dbMethods = methodMap[detailType] || [detailType.toUpperCase()]
 
@@ -1184,29 +1262,37 @@ export function DashboardClient() {
                                                     (p: any) => dbMethods.includes(p.metodo?.toUpperCase())
                                                 )
 
-                                                if (matchingPayments.length === 0) {
-                                                    return (
-                                                        <TableRow>
-                                                            <TableCell colSpan={4} className="py-20 text-center text-slate-300 font-bold italic text-[10px] uppercase tracking-widest">No se encontraron registros</TableCell>
-                                                        </TableRow>
-                                                    )
-                                                }
-
-                                                return matchingPayments.map((pago: any, idx: number) => {
-                                                    const factura = (specificData?.facturas || []).find((f: any) => f.FC_IDFACTURA_PK === pago.FC_IDFACTURA_FK)
-                                                    return (
-                                                        <TableRow key={`pago-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
-                                                            <TableCell className="font-bold text-xs">Factura {factura?.FC_NUMERO_FACTURA || pago.FC_IDFACTURA_FK}</TableCell>
-                                                            <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">
-                                                                {factura ? format(new Date(factura.FC_FECHA), 'dd/MM/yyyy') : '---'}
-                                                            </TableCell>
-                                                            <TableCell className="text-[10px] font-bold uppercase text-slate-700">
-                                                                {factura?.cliente_display || 'GENERAL'}
-                                                            </TableCell>
-                                                            <TableCell className="text-right font-black text-xs text-[#FF7E5F]">$ {(Number(pago.PF_VALOR) || 0).toLocaleString('es-CO')}</TableCell>
-                                                        </TableRow>
-                                                    )
-                                                })
+                                                return (
+                                                    <>
+                                                        {detailType === 'SERVICIO TRABAJADOR' && (specificData?.serviciosReal || []).map((s: any, idx: number) => (
+                                                            <TableRow key={`st-real-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
+                                                                <TableCell className="font-bold text-xs uppercase text-slate-800">Servicio Trabajador</TableCell>
+                                                                <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">
+                                                                    {s.ST_FECHA ? format(new Date(s.ST_FECHA), 'dd/MM/yyyy') : '---'}
+                                                                </TableCell>
+                                                                <TableCell className="text-[10px] font-bold uppercase text-slate-700">
+                                                                    {s.trabajador_nombre} {s.FC_NUMERO_FACTURA ? `(Fact. ${s.FC_NUMERO_FACTURA})` : ''}
+                                                                </TableCell>
+                                                                <TableCell className="text-right font-black text-xs text-slate-900">$ {(Number(s.ST_VALOR_TOTAL) || 0).toLocaleString('es-CO')}</TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                        {matchingPayments.map((pago: any, idx: number) => {
+                                                            const factura = (specificData?.facturas || []).find((f: any) => f.FC_IDFACTURA_PK === pago.FC_IDFACTURA_FK)
+                                                            return (
+                                                                <TableRow key={`pago-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
+                                                                    <TableCell className="font-bold text-xs">Factura {factura?.FC_NUMERO_FACTURA || pago.FC_IDFACTURA_FK}</TableCell>
+                                                                    <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">
+                                                                        {factura ? format(new Date(factura.FC_FECHA), 'dd/MM/yyyy') : '---'}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-[10px] font-bold uppercase text-slate-700">
+                                                                        {factura?.cliente_display || 'GENERAL'}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-right font-black text-xs text-[#FF7E5F]">$ {(Number(pago.PF_VALOR) || 0).toLocaleString('es-CO')}</TableCell>
+                                                                </TableRow>
+                                                            )
+                                                        })}
+                                                    </>
+                                                )
                                             })()}
 
                                             {detailType === 'VALES' && (
@@ -1219,7 +1305,7 @@ export function DashboardClient() {
                                                             <TableCell className="text-right font-black text-xs text-orange-600">$ {(Number(v.AD_MONTO) || 0).toLocaleString('es-CO')}</TableCell>
                                                         </TableRow>
                                                     ))}
-                                                    {(specificData?.pagos || []).filter((p: any) => ['VALE', 'SERVICIO DE TRABAJADOR', 'SERVICIO TRABAJADOR'].includes(p.metodo?.toUpperCase())).map((pago: any, idx: number) => {
+                                                    {(specificData?.pagos || []).filter((p: any) => p.metodo?.toUpperCase() === 'VALE').map((pago: any, idx: number) => {
                                                         const factura = (specificData?.facturas || []).find((f: any) => f.FC_IDFACTURA_PK === pago.FC_IDFACTURA_FK)
                                                         return (
                                                             <TableRow key={`vale-pago-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">

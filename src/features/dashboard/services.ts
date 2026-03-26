@@ -146,13 +146,13 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
         metodos['CREDITO'] += Number(row.total || 0);
         metodosCount['CREDITO'] += Number(row.count || 0);
       }
-      else if (metodo === 'SERVICIO DE TRABAJADOR') {
+      else if (metodo === 'SERVICIO DE TRABAJADOR' || metodo === 'SERVICIO TRABAJADOR') {
         metodos['SERVICIO DE TRABAJADOR'] += Number(row.total || 0);
         metodosCount['SERVICIO DE TRABAJADOR'] += Number(row.count || 0);
       }
       else if (metodo === 'VALE') {
-        metodos['VALE'] = Number(row.total || 0);
-        metodosCount['VALE'] = Number(row.count || 0);
+        metodos['VALE'] += Number(row.total || 0);
+        metodosCount['VALE'] += Number(row.count || 0);
       }
     });
 
@@ -449,6 +449,19 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
       sucursalId !== -1 ? [...baseParams, sucursalId] : baseParams
     );
 
+    // 9. Servicios de Trabajador REALES (vouchers entre técnicos)
+    const serviciosRealQuery = `
+      SELECT st.*, t.TR_NOMBRE as trabajador_nombre, f.FC_NUMERO_FACTURA, f.FC_FECHA
+      FROM KS_SERVICIOS_TRABAJADOR st
+      JOIN KS_TRABAJADORES t ON st.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK
+      LEFT JOIN KS_FACTURAS f ON st.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+      WHERE DATE(st.ST_FECHA) BETWEEN ? AND ?
+      ${sucursalId !== -1 ? 'AND (f.SC_IDSUCURSAL_FK = ? OR (f.FC_IDFACTURA_PK IS NULL AND t.SC_IDSUCURSAL_FK = ?))' : ''}
+      ORDER BY st.ST_FECHA DESC
+    `;
+    const serviciosRealParams = sucursalId !== -1 ? [dateFrom, dateTo, sucursalId, sucursalId] : [dateFrom, dateTo];
+    const [serviciosReal]: any = await db.execute(serviciosRealQuery, serviciosRealParams);
+
     return {
       success: true,
       data: {
@@ -459,7 +472,8 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
         abonos: (abonos || []).map((a: any) => ({ ...a, AB_VALOR: Number(a.AB_VALOR || 0), cr_valor_pendiente: Number(a.cr_valor_pendiente || 0) })),
         adelantos: (adelantos || []).map((a: any) => ({ ...a, AD_MONTO: Number(a.AD_MONTO || 0) })),
         pagos: (pagos || []).map((p: any) => ({ ...p, PF_VALOR: Number(p.PF_VALOR || 0) })),
-        serviciosDetalle: (serviciosDetalle || []).map((s: any) => ({ ...s, FD_VALOR: Number(s.FD_VALOR || 0) }))
+        serviciosDetalle: (serviciosDetalle || []).map((s: any) => ({ ...s, FD_VALOR: Number(s.FD_VALOR || 0) })),
+        serviciosReal: (serviciosReal || []).map((s: any) => ({ ...s, ST_VALOR_TOTAL: Number(s.ST_VALOR_TOTAL || 0) }))
       },
       error: null
     };
