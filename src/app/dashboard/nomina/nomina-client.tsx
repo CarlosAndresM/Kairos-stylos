@@ -316,10 +316,7 @@ export default function NominaClient() {
               {nominaData.length > 0 ? (
                 nominaData.map((item, idx) => (
                   <TableRow key={idx} className="hover:bg-slate-50 transition-colors border-b border-slate-100 group">
-                    <TableCell 
-                      className="font-black text-[#00CED1] text-xs px-6 uppercase tracking-tight border border-slate-200"
-                      style={{ WebkitTextStroke: '0.4px black', letterSpacing: '0.1em' }}
-                    >
+                    <TableCell className="font-black text-[#00CED1] text-xs px-6 uppercase tracking-tight border border-slate-200">
                       {item.TR_NOMBRE}
                     </TableCell>
                     <TableCell className="text-right font-bold text-xs text-emerald-600 border border-slate-200">$ {item.ND_COMISIONES.toLocaleString('es-CO')}</TableCell>

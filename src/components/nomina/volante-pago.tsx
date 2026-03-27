@@ -275,15 +275,11 @@ function InfoRow({ label, value, bold }: { label: string, value: string, bold?: 
   return (
     <div className="flex flex-col">
       <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-0.5">{label}</span>
-      <span 
+      <span
         className={cn(
           "text-[11px] uppercase tracking-tight leading-tight",
           bold ? (label === 'Colaborador' ? 'font-black text-[#00CED1]' : 'font-black text-slate-900') : 'font-bold text-slate-600'
         )}
-        style={label === 'Colaborador' ? { 
-          WebkitTextStroke: '0.4px black', 
-          letterSpacing: '0.1em' 
-        } : undefined}
       >
         {value}
       </span>

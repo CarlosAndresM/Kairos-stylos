@@ -376,10 +376,7 @@ export function BillingClient({
                         </Badge>
                       </TableCell>
                       <TableCell className="py-2 px-4 border border-slate-200">
-                        <span 
-                          className="text-[10px] font-black text-slate-500 tabular-nums uppercase"
-                          style={{ WebkitTextStroke: '0.4px black', letterSpacing: '0.1em' }}
-                        >
+                        <span className="text-[10px] font-black text-slate-500 tabular-nums uppercase">
                           {invoice.FC_CLIENTE_TELEFONO || '--'}
                         </span>
                       </TableCell>
@@ -409,9 +406,8 @@ export function BillingClient({
                         </div>
                       </TableCell>
                       <TableCell className="py-2 px-4 border border-slate-200">
-                        <span 
-                          className="text-[10px] font-black text-indigo-500 uppercase tracking-tight block" 
-                          style={{ WebkitTextStroke: '0.4px black', letterSpacing: '0.1em' }}
+                        <span
+                          className="text-[10px] font-black text-[#00CED1] uppercase tracking-tight block"
                           title={invoice.tecnicos}
                         >
                           {invoice.tecnicos || '--'}
