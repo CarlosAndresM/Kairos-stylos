@@ -82,6 +82,8 @@ import { TechnicianView } from './technician-view'
 import { DashboardBanner } from '@/components/layout/dashboard-banner'
 import { UserProfileDropdown } from '@/components/layout/user-profile-dropdown'
 import { ProductAssociationModal } from './product-association-modal'
+import { getPeriodRange } from '@/lib/date-utils'
+import { isWithinInterval } from 'date-fns'
 
 const COLORS = ['#FF7E5F', '#FEB47B', '#FFD200', '#F7971E', '#FFDF00'];
 
@@ -463,10 +465,21 @@ export function DashboardClient() {
                                             } as any}
                                             onSelect={(range: any) => {
                                                 if (range?.from) {
-                                                    setDateRange({ from: range.from, to: range.to });
+                                                    // Snap to period instead of literal range selection
+                                                    const period = getPeriodRange(range.from, user?.role || 'TECNICO');
+                                                    setDateRange({ from: period.start, to: period.end });
                                                 }
                                             }}
                                             numberOfMonths={2}
+                                            modifiers={{
+                                                selectedPeriod: (date) => {
+                                                    if (!dateRange.from || !dateRange.to) return false;
+                                                    return isWithinInterval(date, { start: dateRange.from, end: dateRange.to });
+                                                }
+                                            }}
+                                            modifiersClassNames={{
+                                                selectedPeriod: "bg-[#FF7E5F]/15 font-bold rounded-none first:rounded-l-md last:rounded-r-md"
+                                            }}
                                         />
                                     </PopoverContent>
                                 </Popover>
@@ -529,23 +542,23 @@ export function DashboardClient() {
                                     {[
                                         {
                                             title: 'VENTAS',
-                                            value: `$ ${(stats?.ventas_total || 0).toLocaleString('es-CO')}`,
+                                            value: `$ ${(stats?.ventas_total || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                                             sub: 'FACTURAS PAGADAS HOY',
                                             icon: TrendingUp,
                                             color: 'from-[#FF7E5F] to-[#FEB47B]',
                                             count: stats?.ventas_count || 0
                                         },
                                         {
-                                            title: 'POR COBRAR',
-                                            value: `$ ${(stats?.por_cobrar_total || 0).toLocaleString('es-CO')}`,
-                                            sub: 'VENTAS PENDIENTES HOY',
-                                            icon: HandCoins,
-                                            color: 'from-red-500 to-rose-400',
-                                            count: stats?.por_cobrar_count || 0
+                                            title: 'SERVICIOS EN CURSO',
+                                            value: (stats?.por_cobrar_count || 0).toString(),
+                                            sub: 'SERVICIOS PENDIENTES POR PAGAR',
+                                            icon: History,
+                                            color: 'from-amber-600 to-orange-400',
+                                            count: 0
                                         },
                                         {
                                             title: 'TOTAL EN CAJA',
-                                            value: `$ ${(stats?.total_caja || 0).toLocaleString('es-CO')}`,
+                                            value: `$ ${(stats?.total_caja || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                                             sub: 'DIRECTO + ABONOS DE DEUDA',
                                             icon: Wallet,
                                             color: 'from-emerald-600 to-teal-500',
@@ -553,7 +566,7 @@ export function DashboardClient() {
                                         },
                                         {
                                             title: 'EFECTIVO',
-                                            value: `$ ${(stats?.metodos_pago?.['EFECTIVO'] || 0).toLocaleString('es-CO')}`,
+                                            value: `$ ${(stats?.metodos_pago?.['EFECTIVO'] || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                                             sub: 'SUMA DE VENTAS PAGADAS',
                                             icon: DollarSign,
                                             color: 'from-green-600 to-emerald-500',
@@ -561,7 +574,7 @@ export function DashboardClient() {
                                         },
                                         {
                                             title: 'TRANSFERENCIA',
-                                            value: `$ ${(stats?.metodos_pago?.['TRANSFERENCIA'] || 0).toLocaleString('es-CO')}`,
+                                            value: `$ ${(stats?.metodos_pago?.['TRANSFERENCIA'] || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                                             sub: 'NEQUI / DAVIPLATA / BANCOS',
                                             icon: Landmark,
                                             color: 'from-blue-600 to-cyan-500',
@@ -569,7 +582,7 @@ export function DashboardClient() {
                                         },
                                         {
                                             title: 'CREDITO',
-                                            value: `$ ${(stats?.metodos_pago?.['CREDITO'] || 0).toLocaleString('es-CO')}`,
+                                            value: `$ ${(stats?.metodos_pago?.['CREDITO'] || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                                             sub: 'DEUDA GENERADA HOY',
                                             icon: History,
                                             color: 'from-amber-600 to-orange-400',
@@ -577,7 +590,7 @@ export function DashboardClient() {
                                         },
                                         {
                                             title: 'SERVICIO TRABAJADOR',
-                                            value: `$ ${(stats?.servicios_trabajador_total || 0).toLocaleString('es-CO')}`,
+                                            value: `$ ${(stats?.servicios_trabajador_total || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                                             sub: 'SERVICIOS ENTRE TÉCNICOS / VOUCHERS',
                                             icon: Ticket,
                                             color: 'from-slate-600 to-slate-450',
@@ -585,15 +598,23 @@ export function DashboardClient() {
                                         },
                                         {
                                             title: 'ABONO A DEUDAS',
-                                            value: `$ ${(stats?.total_abonos || 0).toLocaleString('es-CO')}`,
+                                            value: `$ ${(stats?.total_abonos || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                                             sub: 'PAGOS A DEUDAS DE CLIENTES',
                                             icon: History,
                                             color: 'from-purple-600 to-indigo-500',
                                             count: stats?.abonos_count || 0
                                         },
                                         {
+                                            title: 'VALES',
+                                            value: `$ ${(stats?.vales_total || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
+                                            sub: 'VALES DE TRABAJADOR HOY',
+                                            icon: Wallet,
+                                            color: 'from-orange-600 to-amber-500',
+                                            count: stats?.vales_count || 0
+                                        },
+                                        {
                                             title: 'DATAFONO',
-                                            value: `$ ${(stats?.metodos_pago?.['DATAFONO'] || 0).toLocaleString('es-CO')}`,
+                                            value: `$ ${(stats?.metodos_pago?.['DATAFONO'] || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                                             sub: 'TARJETAS DÉBITO / CRÉDITO',
                                             icon: CreditCard,
                                             color: 'from-indigo-600 to-violet-500',
@@ -614,7 +635,10 @@ export function DashboardClient() {
                                         >
                                             <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${stat.color} opacity-[0.03] group-hover:opacity-[0.08] rounded-full -mr-12 -mt-12 transition-all duration-500 blur-xl group-hover:scale-150`} />
                                             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 relative z-10">
-                                                <CardTitle className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.title}</CardTitle>
+                                                <CardTitle className={cn(
+                                                    "font-bold text-slate-800 dark:text-slate-100 uppercase tracking-widest",
+                                                    stat.title === 'VENTAS' ? "text-[13px]" : "text-[11px]"
+                                                )}>{stat.title}</CardTitle>
                                                 <div className="relative">
                                                     <div className={cn(
                                                         "p-2.5 rounded-xl shadow-lg shadow-coral-500/10 bg-gradient-to-br",
@@ -633,7 +657,7 @@ export function DashboardClient() {
                                             <CardContent className="relative z-10">
                                                 <div className={cn(
                                                     "font-black text-slate-900 dark:text-white leading-none tracking-tight",
-                                                    stat.title === 'VENTAS' ? "text-4xl" : "text-2xl"
+                                                    stat.title === 'VENTAS' ? "text-5xl" : "text-2xl"
                                                 )}>
                                                     {stat.value}
                                                 </div>
@@ -649,7 +673,7 @@ export function DashboardClient() {
                                         <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <Trophy className="size-4 text-[#FF7E5F]" />
-                                                <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Servicios por Técnico</h3>
+                                                <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider">Servicios por Técnico</h3>
                                             </div>
                                         </div>
                                         <div className="p-0 max-h-[300px] overflow-y-auto custom-scrollbar">
@@ -695,7 +719,7 @@ export function DashboardClient() {
                                                             </div>
                                                             <div className="flex flex-col items-end gap-1 w-[35%]">
                                                                 <div className="bg-[#FF7E5F]/10 text-[#FF7E5F] px-4 py-1.5 rounded-full text-[11px] font-black shadow-sm shadow-coral-500/5 group-hover/tech:bg-[#FF7E5F] group-hover/tech:text-white transition-all">
-                                                                    $ {(Number(tech.total) || 0).toLocaleString('es-CO')}
+                                                                    $ {(Number(tech.total) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -712,7 +736,7 @@ export function DashboardClient() {
                                     <Card className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
                                         <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center gap-2">
                                             <Users className="size-4 text-emerald-500" />
-                                            <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Total Servicios</h3>
+                                            <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider">Total Servicios</h3>
                                         </div>
                                         <div className="p-6 h-[350px] w-full">
                                             <ResponsiveContainer width="100%" height="100%">
@@ -755,7 +779,7 @@ export function DashboardClient() {
                                     <Card className="lg:col-span-2 border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
                                         <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center gap-2">
                                             <Wallet className="size-4 text-blue-500" />
-                                            <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Productos Utilizados</h3>
+                                            <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider">Productos Utilizados</h3>
                                         </div>
                                         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                                             {(chartsData?.topProducts || []).map((p: any, i: number) => (
@@ -1124,10 +1148,10 @@ export function DashboardClient() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-800">
-                                                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Concepto / ID</TableHead>
-                                                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Fecha</TableHead>
-                                                <TableHead className="font-bold text-[10px] uppercase text-slate-400">Cliente / Info</TableHead>
-                                                <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Valor</TableHead>
+                                                <TableHead className="font-bold text-[10px] uppercase text-slate-400">{detailType === 'SERVICIOS EN CURSO' ? 'Factura' : 'Concepto / ID'}</TableHead>
+                                                <TableHead className="font-bold text-[10px] uppercase text-slate-400">{detailType === 'SERVICIOS EN CURSO' ? 'Cant. Servicios' : 'Fecha'}</TableHead>
+                                                <TableHead className="font-bold text-[10px] uppercase text-slate-400">{detailType === 'SERVICIOS EN CURSO' ? 'Productos' : 'Cliente / Info'}</TableHead>
+                                                <TableHead className="font-bold text-[10px] uppercase text-slate-400 text-right">Total</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -1161,6 +1185,34 @@ export function DashboardClient() {
                                                 </>
                                             )}
 
+                                            {detailType === 'VALES' && (
+                                                <>
+                                                    {(specificData?.adelantos || []).map((v: any) => (
+                                                        <TableRow key={`val-nom-${v.VL_IDVALE_PK}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
+                                                            <TableCell className="font-bold text-xs uppercase text-orange-600">Vale de Nómina</TableCell>
+                                                            <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(v.VL_FECHA), 'dd/MM/yyyy')}</TableCell>
+                                                            <TableCell className="text-[10px] font-bold uppercase text-slate-700">{v.trabajador_nombre} ({v.VL_OBSERVACIONES})</TableCell>
+                                                            <TableCell className="text-right font-black text-xs text-orange-600">$ {(Number(v.VL_MONTO) || 0).toLocaleString('es-CO')}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                    {(specificData?.pagos || []).filter((p: any) => p.metodo?.toUpperCase() === 'VALE').map((pago: any, idx: number) => {
+                                                        const factura = (specificData?.facturas || []).find((f: any) => f.FC_IDFACTURA_PK === pago.FC_IDFACTURA_FK)
+                                                        return (
+                                                            <TableRow key={`val-pag-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
+                                                                <TableCell className="font-bold text-xs">Factura {factura?.FC_NUMERO_FACTURA || pago.FC_IDFACTURA_FK}</TableCell>
+                                                                <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">
+                                                                    {factura ? format(new Date(factura.FC_FECHA), 'dd/MM/yyyy') : '---'}
+                                                                </TableCell>
+                                                                <TableCell className="text-[10px] font-bold uppercase text-slate-700">
+                                                                    {factura?.cliente_display || 'GENERAL'} (PAGO POR VALE)
+                                                                </TableCell>
+                                                                <TableCell className="text-right font-black text-xs text-orange-600">$ {(Number(pago.PF_VALOR) || 0).toLocaleString('es-CO')}</TableCell>
+                                                            </TableRow>
+                                                        )
+                                                    })}
+                                                </>
+                                            )}
+
                                             {detailType === 'ABONO A DEUDAS' && (specificData?.abonos || []).map((ab: any) => (
                                                 <TableRow key={ab.AB_IDABONO_PK} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
                                                     <TableCell className="font-bold text-xs uppercase">Abono {ab.AB_IDABONO_PK}</TableCell>
@@ -1170,12 +1222,17 @@ export function DashboardClient() {
                                                 </TableRow>
                                             ))}
 
-                                            {detailType === 'POR COBRAR' && (specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PENDIENTE').map((f: any) => (
+                                            {detailType === 'SERVICIOS EN CURSO' && (specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PENDIENTE').map((f: any) => (
                                                 <TableRow key={f.FC_IDFACTURA_PK} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
                                                     <TableCell className="font-bold text-xs">Factura {f.FC_NUMERO_FACTURA}</TableCell>
-                                                    <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(f.FC_FECHA), 'dd/MM/yyyy')}</TableCell>
-                                                    <TableCell className="text-[10px] font-bold uppercase text-slate-700">{f.cliente_display || 'GENERAL'}</TableCell>
-                                                    <TableCell className="text-right font-black text-xs text-red-500">$ {(Number(f.FC_TOTAL) || 0).toLocaleString('es-CO')}</TableCell>
+                                                    <TableCell className="text-[10px] font-black text-slate-600 text-center">{f.servicios_count || 0}</TableCell>
+                                                    <TableCell className="text-[10px] font-medium text-slate-500 max-w-[200px] truncate">{f.productos || '--'}</TableCell>
+                                                    <TableCell className="text-right font-black text-xs text-orange-600">
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-[10px] text-slate-400 font-medium">TOTAL: $ {(Number(f.FC_TOTAL) || 0).toLocaleString('es-CO')}</span>
+                                                            <span className="text-[9px] text-[#FF7E5F]">PROD: $ {(Number(f.productos_total) || 0).toLocaleString('es-CO')}</span>
+                                                        </div>
+                                                    </TableCell>
                                                 </TableRow>
                                             ))}
 
@@ -1253,7 +1310,7 @@ export function DashboardClient() {
                                             {((detailType === 'VENTAS' && (specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PAGADO').length === 0) ||
                                                 (detailType === 'TOTAL EN CAJA' && (specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PAGADO').length === 0 && (specificData?.abonos || []).length === 0) ||
                                                 (detailType === 'ABONO A DEUDAS' && (specificData?.abonos || []).length === 0) ||
-                                                (detailType === 'POR COBRAR' && (specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PENDIENTE').length === 0)) && (
+                                                (detailType === 'SERVICIOS EN CURSO' && (specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PENDIENTE').length === 0)) && (
                                                     <TableRow>
                                                         <TableCell colSpan={4} className="py-20 text-center text-slate-300 font-bold italic text-[10px] uppercase tracking-widest">No se encontraron registros</TableCell>
                                                     </TableRow>

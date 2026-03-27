@@ -111,7 +111,7 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                 {[
                     {
                         title: 'Total Servicios',
-                        value: `$${(stats?.services_total || 0).toLocaleString('es-CO')}`,
+                        value: `$${(stats?.services_total || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                         sub: `${stats?.services_count || 0} realizados`,
                         icon: Briefcase,
                         color: 'from-[#FF7E5F] to-[#FEB47B]',
@@ -119,7 +119,7 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                     },
                     {
                         title: 'Productos Usados',
-                        value: `$${(stats?.products_total || 0).toLocaleString('es-CO')}`,
+                        value: `$${(stats?.products_total || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                         sub: `${stats?.products_count || 0} unidades`,
                         icon: Package2,
                         color: 'from-blue-600 to-cyan-500',
@@ -127,7 +127,7 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                     },
                     {
                         title: 'Diferencia (Neto)',
-                        value: `$${((stats?.services_total || 0) - (stats?.products_total || 0)).toLocaleString('es-CO')}`,
+                        value: `$${((stats?.services_total || 0) - (stats?.products_total || 0)).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                         sub: 'Servicios - Productos',
                         icon: Zap,
                         color: 'from-emerald-600 to-teal-500',
@@ -135,7 +135,7 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                     },
                     {
                         title: 'Deudas Pendientes',
-                        value: `$${(Number(stats?.vales_pendiente || 0) + Number(stats?.adelantos_pendiente || 0)).toLocaleString('es-CO')}`,
+                        value: `$${(Number(stats?.vales_pendiente || 0) + Number(stats?.adelantos_pendiente || 0)).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                         sub: 'Vales + Vales Nómina',
                         icon: DollarSign,
                         color: 'from-amber-600 to-yellow-500',
@@ -194,13 +194,13 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                                             axisLine={false} 
                                             tickLine={false} 
                                             tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
-                                            tickFormatter={(val) => `$${(Number(val) || 0).toLocaleString('es-CO')}`}
+                                            tickFormatter={(val) => `$${(Number(val) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`}
                                         />
                                         <RechartsTooltip 
                                             cursor={{ fill: '#f8fafc' }}
                                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
                                             labelFormatter={(label) => format(new Date(label), 'EEEE, d MMMM', { locale: es })}
-                                            formatter={(value: any) => [`$${(Number(value) || 0).toLocaleString('es-CO')}`, 'Valor']}
+                                            formatter={(value: any) => [`$${(Number(value) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`, 'Valor']}
                                         />
                                         <Bar dataKey="total" radius={[6, 6, 0, 0]} barSize={40}>
                                             {chartsData.map((entry, index) => (
@@ -251,7 +251,7 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                                                     </span>
                                                 </TableCell>
                                                 <TableCell className="px-6 py-4 text-right">
-                                                    <span className="text-sm font-black text-slate-900">$ {(Number(item.valor) || 0).toLocaleString('es-CO')}</span>
+                                                    <span className="text-sm font-black text-slate-900">$ {(Number(item.valor) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</span>
                                                 </TableCell>
                                             </TableRow>
                                         ))
@@ -300,7 +300,7 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                                                 <span className="text-[10px] font-bold text-slate-500">{format(new Date(v.STC_FECHA_COBRO), 'dd/MM/yyyy')}</span>
                                             </TableCell>
                                             <TableCell className="py-3 text-right pr-6">
-                                                <span className="text-xs font-black text-red-600">$ {(Number(v.STC_VALOR_CUOTA) || 0).toLocaleString('es-CO')}</span>
+                                                <span className="text-xs font-black text-red-600">$ {(Number(v.STC_VALOR_CUOTA) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</span>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -325,8 +325,8 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                                                 </TableCell>
                                                 <TableCell className="py-3 text-right pr-6">
                                                     <div className="flex flex-col items-end">
-                                                        <span className="text-xs font-black text-red-600">$ {pendiente.toLocaleString('es-CO')}</span>
-                                                        <span className="text-[9px] text-slate-400 font-bold uppercase">Total Vale: $ {Number(ad.VL_MONTO).toLocaleString('es-CO')}</span>
+                                                        <span className="text-xs font-black text-red-600">$ {pendiente.toLocaleString('es-CO', { minimumFractionDigits: 0 })}</span>
+                                                        <span className="text-[9px] text-slate-400 font-bold uppercase">Total Vale: $ {Number(ad.VL_MONTO).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</span>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -371,21 +371,21 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                                             <div className="flex flex-col">
                                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Sueldo Base</span>
-                                                <span className="text-sm font-bold text-slate-900">$ {(Number(payroll.ND_BASE) || 0).toLocaleString('es-CO')}</span>
+                                                <span className="text-sm font-bold text-slate-900">$ {(Number(payroll.ND_BASE) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</span>
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Comisiones</span>
-                                                <span className="text-sm font-bold text-emerald-600">$ {(Number(payroll.ND_COMISIONES) || 0).toLocaleString('es-CO')}</span>
+                                                <span className="text-sm font-bold text-emerald-600">$ {(Number(payroll.ND_COMISIONES) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</span>
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Deducciones</span>
                                                 <span className="text-sm font-bold text-red-500">
-                                                    - $ {(Number(payroll.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) + Number(payroll.ND_DEDUCCIONES_VALES || 0)).toLocaleString('es-CO')}
+                                                    - $ {(Number(payroll.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) + Number(payroll.ND_DEDUCCIONES_VALES || 0)).toLocaleString('es-CO', { minimumFractionDigits: 0 })}
                                                 </span>
                                             </div>
                                             <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">
                                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Neto</span>
-                                                <span className="text-lg font-black text-slate-900">$ {(Number(payroll.ND_TOTAL_NETO) || 0).toLocaleString('es-CO')}</span>
+                                                <span className="text-lg font-black text-slate-900">$ {(Number(payroll.ND_TOTAL_NETO) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</span>
                                             </div>
                                         </div>
                                     </div>

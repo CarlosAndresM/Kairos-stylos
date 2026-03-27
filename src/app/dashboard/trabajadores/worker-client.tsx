@@ -229,7 +229,7 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                       <span className="text-xs font-black text-slate-900 dark:text-white">{worker.servicios_count || 0}</span>
                     </TableCell>
                     <TableCell className="py-2 px-4 text-center">
-                      <span className="text-xs font-black text-emerald-600">${(worker.total_vales || 0).toLocaleString()}</span>
+                      <span className="text-xs font-black text-emerald-600">${(worker.total_vales || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</span>
                     </TableCell>
                     <TableCell className="py-2 px-4 text-center">
                       <span className={cn(

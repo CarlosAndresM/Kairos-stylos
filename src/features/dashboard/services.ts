@@ -81,9 +81,8 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
        FROM KS_PAGOS_FACTURA pf
        JOIN KS_FACTURAS f ON pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
-       WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? 
-       AND (f.FC_ESTADO = 'PENDIENTE' OR f.FC_ESTADO = 'PAGADO')
-       AND mp.MP_NOMBRE IN ('CREDITO', 'SERVICIO DE TRABAJADOR', 'VALE')
+       WHERE DATE(f.FC_FECHA) BETWEEN ? AND ?        AND f.FC_ESTADO = 'PAGADO'
+        AND mp.MP_NOMBRE IN ('CREDITO', 'SERVICIO DE TRABAJADOR', 'VALE')
        ${sucursalFilter ? 'AND f.' + sucursalFilter.trim().substring(4) : ''}
        GROUP BY mp.MP_NOMBRE`,
       params
@@ -93,11 +92,10 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
     const valesQuery = `
       SELECT SUM(st.ST_VALOR_TOTAL) as total, COUNT(*) as count 
       FROM KS_SERVICIOS_TRABAJADOR st
-      ${sucursalId !== -1 ? `
-        JOIN KS_TRABAJADORES t ON st.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK
-        LEFT JOIN KS_FACTURAS f ON st.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
-      ` : ''}
+      LEFT JOIN KS_FACTURAS f ON st.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+      ${sucursalId !== -1 ? 'JOIN KS_TRABAJADORES t ON st.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK' : ''}
       WHERE DATE(st.ST_FECHA) BETWEEN ? AND ?
+      AND (f.FC_IDFACTURA_PK IS NULL OR f.FC_ESTADO = 'PAGADO')
       ${sucursalId !== -1 ? 'AND (f.SC_IDSUCURSAL_FK = ? OR (f.FC_IDFACTURA_PK IS NULL AND t.SC_IDSUCURSAL_FK = ?))' : ''}
     `;
     const valesParams = sucursalId !== -1 ? [dateFrom, dateTo, sucursalId, sucursalId] : [dateFrom, dateTo];
@@ -214,6 +212,8 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
         clientes_nuevos: Number(clientsResult[0]?.total || 0),
         servicios_trabajador_total: totalServicioTrabajadorCard,
         servicios_trabajador_count: totalServicioTrabajadorCount,
+        vales_total: totalValesCard,
+        vales_count: totalValesCount,
       },
       error: null
     };
@@ -334,10 +334,12 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
         FROM KS_FACTURA_DETALLES fd 
         JOIN KS_SERVICIOS sv ON fd.SV_IDSERVICIO_FK = sv.SV_IDSERVICIO_PK 
         WHERE fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK) as servicios,
+       (SELECT COUNT(*) FROM KS_FACTURA_DETALLES fd WHERE fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK) as servicios_count,
        (SELECT GROUP_CONCAT(DISTINCT p.PR_NOMBRE SEPARATOR ', ') 
         FROM KS_FACTURA_PRODUCTOS fp 
         JOIN KS_PRODUCTOS p ON fp.PR_IDPRODUCTO_FK = p.PR_IDPRODUCTO_PK 
-        WHERE fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK) as productos
+        WHERE fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK) as productos,
+       (SELECT SUM(fp.FP_VALOR) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK) as productos_total
        FROM KS_FACTURAS f 
        JOIN KS_SUCURSALES s ON f.SC_IDSUCURSAL_FK = s.SC_IDSUCURSAL_PK
        LEFT JOIN KS_TRABAJADORES t ON f.TR_IDCLIENTE_FK = t.TR_IDTRABAJADOR_PK

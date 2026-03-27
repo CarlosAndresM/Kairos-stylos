@@ -17,9 +17,10 @@ import {
   Eye,
   Pencil
 } from 'lucide-react'
-import { format, startOfWeek, endOfWeek, isSameWeek } from 'date-fns'
+import { format, startOfWeek, endOfWeek, isSameWeek, isWithinInterval } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { v4 as uuidv4 } from 'uuid'
+import { getPeriodRange, formatPeriodRange } from '@/lib/date-utils'
 import { ProductAssociationModal } from '@/features/dashboard/product-association-modal'
 import {
   Dialog,
@@ -388,6 +389,11 @@ export function BillingModal({
   const watchedProducts = useWatch({ control: form.control, name: "products" }) || []
   const watchedPayments = useWatch({ control: form.control, name: "payments" }) || []
   const clientType = useWatch({ control: form.control, name: "FC_TIPO_CLIENTE" })
+  const selectedWorkerId = useWatch({ control: form.control, name: "TR_IDCLIENTE_FK" })
+  const workerRole = React.useMemo(() => {
+    if (clientType !== 'TECNICO' || !selectedWorkerId) return 'TECNICO';
+    return technicians.find(t => t.TR_IDTRABAJADOR_PK === Number(selectedWorkerId))?.RL_NOMBRE || 'TECNICO';
+  }, [clientType, selectedWorkerId, technicians]);
 
   // El total se calcula dinÃƒÂ¡micamente para la UI, ya no se sincroniza al estado del form para evitar bucles de renderizado
   const total = React.useMemo(() => {
@@ -433,12 +439,11 @@ export function BillingModal({
   const serviceOptions = services.map(s => ({ label: s.SV_NOMBRE, value: s.SV_IDSERVICIO_PK }))
   const productOptions = products.map(p => ({ label: p.PR_NOMBRE, value: p.PR_IDPRODUCTO_PK }))
 
-  const getWeekRange = React.useCallback((date: Date | null) => {
+  const getPeriodLabel = React.useCallback((date: Date | null) => {
     if (!date) return null;
-    const start = startOfWeek(date, { weekStartsOn: 0 });
-    const end = endOfWeek(date, { weekStartsOn: 0 });
-    return `Semana del ${format(start, 'dd MMM', { locale: es })} al ${format(end, 'dd MMM', { locale: es })}`;
-  }, []);
+    const range = getPeriodRange(date, workerRole);
+    return formatPeriodRange(range);
+  }, [workerRole]);
 
   // Manejo de pagos
   const handlePaymentToggle = (method: any, checked: boolean) => {
@@ -803,7 +808,7 @@ export function BillingModal({
                             />
                             <div className="p-3 border-t border-slate-100 bg-slate-50">
                               <p className="text-[10px] font-black uppercase text-slate-500 italic tracking-tight">
-                                {getWeekRange(field.value)}
+                                {getPeriodLabel(field.value)}
                               </p>
                             </div>
                           </PopoverContent>
@@ -842,17 +847,17 @@ export function BillingModal({
                               <PopoverContent className="w-auto p-0" align="start">
                                 <Calendar mode="single" selected={field.value || undefined} onSelect={field.onChange} initialFocus
                                   modifiers={{
-                                    week: (date) => field.value ? isSameWeek(date, field.value, { weekStartsOn: 0 }) : false
+                                    period: (date) => field.value ? isWithinInterval(date, getPeriodRange(field.value, workerRole)) : false
                                   }}
                                   modifiersClassNames={{
-                                    week: "bg-[#FF7E5F]/15 font-bold rounded-none"
+                                    period: "bg-[#FF7E5F]/15 font-bold rounded-none"
                                   }}
                                 />
                               </PopoverContent>
                             </Popover>
                             {field.value && (
                               <p className="text-[9px] font-bold text-amber-600 uppercase mt-1">
-                                {getWeekRange(field.value)}
+                                {getPeriodLabel(field.value)}
                               </p>
                             )}
                           </FormItem>

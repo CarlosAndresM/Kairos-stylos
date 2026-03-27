@@ -40,6 +40,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Progress } from '@/components/ui/progress';
 import { NumericFormat } from 'react-number-format';
+import { getPeriodRange } from '@/lib/date-utils';
 
 interface Vale {
   VL_IDVALE_PK: number;
@@ -162,28 +163,7 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
     }
   };
 
-  const getRepaymentRange = (selectedDateStr: string, role: string) => {
-    if (!selectedDateStr) return null;
-    const date = new Date(selectedDateStr + 'T00:00:00');
-
-    if (role === 'ADMINISTRADOR_PUNTO') {
-      const day = date.getDate();
-      const monthStart = startOfMonth(date);
-      const monthEnd = endOfMonth(date);
-      const midPoint = new Date(date.getFullYear(), date.getMonth(), 15);
-      const secondHalfStart = new Date(date.getFullYear(), date.getMonth(), 16);
-
-      return day <= 15
-        ? { start: monthStart, end: midPoint, label: 'Quincena (1-15)' }
-        : { start: secondHalfStart, end: monthEnd, label: 'Quincena (16-Fin)' };
-    }
-
-    return {
-      start: startOfWeek(date, { weekStartsOn: 0 }),
-      end: endOfWeek(date, { weekStartsOn: 0 }),
-      label: 'Semana'
-    };
-  };
+  // Removed redundant local getRepaymentRange
 
   const calculateSchedule = (vale: Vale) => {
     if (!vale.VL_FECHA_INICIO_COBRO) return [];
@@ -560,7 +540,7 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
                       locale={es}
                       modifiers={{
                         selectedRange: (date) => {
-                          const range = getRepaymentRange(fechaInicioCobro, selectedRole);
+                          const range = getPeriodRange(fechaInicioCobro, selectedRole);
                           if (!range) return false;
                           return isWithinInterval(date, { start: range.start, end: range.end });
                         }
@@ -574,7 +554,7 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
                 {fechaInicioCobro && (
                   <p className="text-[10px] text-slate-500 mt-1">
                     {(() => {
-                      const range = getRepaymentRange(fechaInicioCobro, selectedRole);
+                      const range = getPeriodRange(fechaInicioCobro, selectedRole);
                       return range ? `${range.label}: ${format(range.start, 'dd/MM')} - ${format(range.end, 'dd/MM')}` : '';
                     })()}
                   </p>
