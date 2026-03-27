@@ -39,7 +39,7 @@ export const invoiceSchema = z.object({
   FC_FECHA: z.date().default(() => new Date()),
   FC_TIPO_CLIENTE: z.enum(['CLIENTE', 'TECNICO']).default('CLIENTE'),
   TR_IDCLIENTE_FK: z.number().optional().nullable(),
-  isVale: z.boolean().default(false),
+  esServicioTrabajador: z.boolean().default(false),
   VL_NUMERO_CUOTAS: z.coerce.number().min(1, 'Mínimo 1 cuota').default(1),
   VL_FECHA_INICIO_COBRO: z.date().optional().nullable(),
   FC_CLIENTE_NOMBRE: z.string().optional().nullable(),

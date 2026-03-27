@@ -127,7 +127,7 @@ export function BillingModal({
       FC_CLIENTE_TELEFONO: '',
       FC_TIPO_CLIENTE: 'CLIENTE',
       TR_IDCLIENTE_FK: null,
-      isVale: false,
+      esServicioTrabajador: false,
       VL_NUMERO_CUOTAS: 1,
       VL_FECHA_INICIO_COBRO: new Date(),
       FC_FECHA: new Date(),
@@ -257,7 +257,7 @@ export function BillingModal({
       FC_FECHA: new Date(inv.FC_FECHA),
       FC_TIPO_CLIENTE: inv.FC_TIPO_CLIENTE,
       TR_IDCLIENTE_FK: inv.TR_IDCLIENTE_FK,
-      isVale: inv.isVale,
+      esServicioTrabajador: inv.esServicioTrabajador,
       VL_NUMERO_CUOTAS: inv.VL_NUMERO_CUOTAS || 1,
       VL_FECHA_INICIO_COBRO: inv.VL_FECHA_INICIO_COBRO ? new Date(inv.VL_FECHA_INICIO_COBRO) : null,
       FC_CLIENTE_NOMBRE: inv.FC_CLIENTE_NOMBRE,
@@ -358,7 +358,7 @@ export function BillingModal({
         FC_CLIENTE_TELEFONO: '',
         FC_TIPO_CLIENTE: 'CLIENTE',
         TR_IDCLIENTE_FK: null,
-        isVale: false,
+        esServicioTrabajador: false,
         VL_NUMERO_CUOTAS: 1,
         VL_FECHA_INICIO_COBRO: new Date(),
         FC_FECHA: new Date(),
@@ -459,7 +459,7 @@ export function BillingModal({
       }
 
       form.setValue("payments", newPayments)
-      if (isValeMethod) form.setValue("isVale", true)
+      if (isValeMethod) form.setValue("esServicioTrabajador", true)
     } else {
       const paymentToRemove = currentPayments.find(p => p.MP_IDMETODO_FK === method.MP_IDMETODO_PK)
       if (paymentToRemove?.PF_EVIDENCIA_URL && paymentToRemove.PF_EVIDENCIA_URL.includes('/temp/')) {
@@ -476,7 +476,7 @@ export function BillingModal({
         const n = m?.MP_NOMBRE?.toUpperCase()
         return n === 'VALE' || n === 'SERVICIO DE TRABAJADOR'
       })
-      if (isValeMethod && !anyOtherVale) form.setValue("isVale", false)
+      if (isValeMethod && !anyOtherVale) form.setValue("esServicioTrabajador", false)
     }
   }
 
@@ -503,13 +503,13 @@ export function BillingModal({
     }
   }, [clientType, paymentMethods, form])
 
-  // Sync isVale checkbox with VALE payment method
+  // Sync esServicioTrabajador checkbox with VALE payment method
   React.useEffect(() => {
-    const isValeValue = form.watch("isVale")
+    const esServicioTrabajadorValue = form.watch("esServicioTrabajador")
     const valeMethod = paymentMethods.find(m => m.MP_NOMBRE?.toUpperCase() === 'VALE')
-    const serviceMethod = paymentMethods.find(m => m.MP_NOMBRE?.toUpperCase() === 'SERVICIO DE TRABAJADOR')
+    const serviceMethod = paymentMethods.find(m => m.MP_NOMBRE?.toUpperCase() === 'SERVICIO DE TRABAJADOR' || m.MP_NOMBRE?.toUpperCase() === 'SERVICIO TRABAJADOR')
 
-    if (clientType === 'TECNICO' && isValeValue) {
+    if (clientType === 'TECNICO' && esServicioTrabajadorValue) {
       const currentPayments = form.getValues("payments") || []
       const hasVale = currentPayments.some(p => {
         const mId = p.MP_IDMETODO_FK;
@@ -523,18 +523,18 @@ export function BillingModal({
           form.setValue("payments", [...currentPayments, { MP_IDMETODO_FK: methodToUse.MP_IDMETODO_PK, PF_VALOR: 0, PF_EVIDENCIA_URL: '' }])
         }
       }
-    } else if (!isValeValue && clientType === 'TECNICO') {
+    } else if (!esServicioTrabajadorValue && clientType === 'TECNICO') {
       const currentPayments = form.getValues("payments") || []
       const filtered = currentPayments.filter(p => {
         const m = paymentMethods.find(pm => pm.MP_IDMETODO_PK === p.MP_IDMETODO_FK)
         const name = m?.MP_NOMBRE?.toUpperCase()
-        return name !== 'VALE' && name !== 'SERVICIO DE TRABAJADOR'
+        return name !== 'VALE' && name !== 'SERVICIO DE TRABAJADOR' && name !== 'SERVICIO TRABAJADOR'
       })
       if (filtered.length !== currentPayments.length) {
         form.setValue("payments", filtered)
       }
     }
-  }, [form.watch("isVale"), clientType, total, paymentMethods, form])
+  }, [form.watch("esServicioTrabajador"), clientType, total, paymentMethods, form])
 
   const onInvalid = (errors: any) => {
     console.error("Form Validation Errors (RAW):", JSON.stringify(errors, null, 2));
@@ -826,12 +826,12 @@ export function BillingModal({
                     )} />
                   </div>
 
-                  {/* Vale options */}
-                  {form.watch("isVale") && (
+                  {/* Opción Servicio Trabajador */}
+                  {form.watch("esServicioTrabajador") && (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
                       <div className="flex items-center gap-2">
                         <Receipt className="size-4 text-amber-600" />
-                        <span className="text-xs font-bold text-amber-700 uppercase">Configuración de Vale</span>
+                        <span className="text-xs font-bold text-amber-700 uppercase">Configuración de Servicio de Trabajador</span>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <FormField control={form.control} name="VL_FECHA_INICIO_COBRO" render={({ field }) => (
@@ -1024,7 +1024,7 @@ export function BillingModal({
                                 {isSelected && <Check className="size-2.5 text-white" strokeWidth={3} />}
                               </div>
                               <span className="text-xs font-semibold text-slate-700">
-                                {method.MP_NOMBRE === 'VALE' ? 'Vale trabajador' : method.MP_NOMBRE}
+                                {method.MP_NOMBRE?.toUpperCase() === 'VALE' ? 'Servicio de Trabajador' : method.MP_NOMBRE}
                               </span>
                             </div>
                           )
@@ -1041,7 +1041,7 @@ export function BillingModal({
                           return (
                             <div key={`${payment.MP_IDMETODO_FK}-${idx}`} className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
                               <span className="text-xs font-semibold text-slate-600 flex-1 min-w-0 truncate">
-                                {method?.MP_NOMBRE === 'VALE' ? 'Vale' : method?.MP_NOMBRE}
+                                {method?.MP_NOMBRE?.toUpperCase() === 'VALE' ? 'Serv. Trabajador' : method?.MP_NOMBRE}
                               </span>
                               <FormField control={form.control} name={`payments.${idx}.PF_VALOR`} render={({ field }) => (
                                 <FormItem className="space-y-0">

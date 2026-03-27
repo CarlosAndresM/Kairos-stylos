@@ -2,56 +2,57 @@
 
 import { db } from "@/lib/db";
 import { ApiResponse } from "@/lib/api-response";
-import { ValeFormData, valeSchema } from "./schema";
+import { ServicioTrabajadorFormData, servicioTrabajadorSchema } from "./schema";
 import { revalidatePath } from "next/cache";
 import { addDays } from "date-fns";
 
 /**
- * Crear un vale y generar su plan de cuotas semanales
+ * Crear un voucher de servicio de trabajador y generar su plan de cuotas semanales
+ * Nota: Esto es para deudas internas entre técnicos, NO para préstamos de nómina.
  */
-export async function crearValeCompletado(data: ValeFormData): Promise<ApiResponse> {
+export async function crearServicioTrabajadorVoucher(data: ServicioTrabajadorFormData): Promise<ApiResponse> {
   const connection = await db.getConnection();
   try {
-    const validated = valeSchema.parse(data);
+    const validated = servicioTrabajadorSchema.parse(data);
     await connection.beginTransaction();
 
-    const valorCuota = validated.VL_VALOR_TOTAL / validated.VL_NUMERO_CUOTAS;
+    const valorCuota = validated.ST_VALOR_TOTAL / validated.ST_NUMERO_CUOTAS;
 
-    // 1. Insertar Servicio principal
-    const [valeResult]: any = await (connection as any).execute(
+    // 1. Insertar Registro de Servicio
+    const [servicioResult]: any = await (connection as any).execute(
       `INSERT INTO KS_SERVICIOS_TRABAJADOR (ST_VALOR_TOTAL, ST_NUMERO_CUOTAS, ST_VALOR_CUOTA, ST_ESTADO, ST_FECHA_INICIO_COBRO, TR_IDTRABAJADOR_FK, FC_IDFACTURA_FK)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
-        validated.VL_VALOR_TOTAL,
-        validated.VL_NUMERO_CUOTAS,
+        validated.ST_VALOR_TOTAL,
+        validated.ST_NUMERO_CUOTAS,
         valorCuota,
         'PENDIENTE',
-        validated.VL_FECHA_INICIO_COBRO,
+        validated.ST_FECHA_INICIO_COBRO,
         validated.TR_IDTRABAJADOR_FK,
         validated.FC_IDFACTURA_FK || null
       ]
     );
 
-    const valeId = valeResult.insertId;
+    const registroId = servicioResult.insertId;
 
     // 2. Generar Plan de Cuotas Semanales
-    for (let i = 0; i < validated.VL_NUMERO_CUOTAS; i++) {
-      const fechaCobro = addDays(validated.VL_FECHA_INICIO_COBRO, i * 7);
+    for (let i = 0; i < validated.ST_NUMERO_CUOTAS; i++) {
+      const fechaCobro = addDays(validated.ST_FECHA_INICIO_COBRO, i * 7);
       await (connection as any).execute(
         `INSERT INTO KS_SERVICIO_TRABAJADOR_CUOTAS (STC_NUMERO_CUOTA, STC_VALOR_CUOTA, STC_ESTADO, STC_FECHA_COBRO, ST_IDSERVICIO_TRABAJADOR_FK)
            VALUES (?, ?, ?, ?, ?)`,
-        [i + 1, valorCuota, 'PENDIENTE', fechaCobro, valeId]
+        [i + 1, valorCuota, 'PENDIENTE', fechaCobro, registroId]
       );
     }
 
     await connection.commit();
     revalidatePath("/dashboard/trabajadores");
-    return { success: true, message: `Vale creado con ${validated.VL_NUMERO_CUOTAS} cuotas semanales.` };
+    return { success: true, message: `Servicio de trabajador registrado con ${validated.VL_NUMERO_CUOTAS} cuotas semanales.` };
 
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error("Error al crear vale:", error);
-    return { success: false, error: "Error al crear el vale" };
+    console.error("Error al registrar servicio trabajador:", error);
+    return { success: false, error: "Error al registrar el servicio de trabajador" };
   } finally {
     if (connection) connection.release();
   }

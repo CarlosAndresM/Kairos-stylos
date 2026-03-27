@@ -88,8 +88,8 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
       params
     );
 
-    // 6. Servicios de Trabajador (Periodo)
-    const valesQuery = `
+    // 6. Servicios de Trabajador (Periodo - Vouchers internos)
+    const vouchersServicioQuery = `
       SELECT SUM(st.ST_VALOR_TOTAL) as total, COUNT(*) as count 
       FROM KS_SERVICIOS_TRABAJADOR st
       LEFT JOIN KS_FACTURAS f ON st.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
@@ -98,9 +98,9 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
       AND (f.FC_IDFACTURA_PK IS NULL OR f.FC_ESTADO = 'PAGADO')
       ${sucursalId !== -1 ? 'AND (f.SC_IDSUCURSAL_FK = ? OR (f.FC_IDFACTURA_PK IS NULL AND t.SC_IDSUCURSAL_FK = ?))' : ''}
     `;
-    const valesParams = sucursalId !== -1 ? [dateFrom, dateTo, sucursalId, sucursalId] : [dateFrom, dateTo];
+    const vouchersServicioParams = sucursalId !== -1 ? [dateFrom, dateTo, sucursalId, sucursalId] : [dateFrom, dateTo];
 
-    const [valesResult]: any = await db.execute(valesQuery, valesParams);
+    const [vouchersServicioResult]: any = await db.execute(vouchersServicioQuery, vouchersServicioParams);
 
     // Process breakdown (ONLY PAGADO for EFECTIVO, TRANSF, DATAFONO)
     // Para CREDITO y SERVICIO DE TRABAJADOR, usamos la dudaNueva que cuenta PENDIENTE + PAGADO
@@ -154,8 +154,8 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
       }
     });
 
-    // 7. Vales (Vales Reales de Nómina) en el periodo
-    const valeQuery = `
+    // 7. Vales Reales de Nómina (Préstamos Libre Inversión) en el periodo
+    const prestamosQuery = `
       SELECT SUM(vl.VL_MONTO) as total, COUNT(*) as count
       FROM KS_VALES vl
       ${sucursalId !== -1 ? 'JOIN KS_TRABAJADORES t ON vl.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK' : ''}
@@ -163,10 +163,10 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
       AND vl.VL_ESTADO != 'ANULADO'
       ${sucursalId !== -1 ? 'AND t.SC_IDSUCURSAL_FK = ?' : ''}
     `;
-    const valeParams: any[] = [dateFrom, dateTo];
-    if (sucursalId !== -1) valeParams.push(sucursalId);
+    const prestamosParams: any[] = [dateFrom, dateTo];
+    if (sucursalId !== -1) prestamosParams.push(sucursalId);
 
-    const [valesNominaResult]: any = await db.execute(valeQuery, valeParams);
+    const [prestamosLibreInversionResult]: any = await db.execute(prestamosQuery, prestamosParams);
 
     const totalVentasPagadas = Number(salesResult[0]?.total || 0);
     const totalAbonosRecibidos = Number(abonosResult[0]?.total || 0);
@@ -176,19 +176,19 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
     const totalCaja = (metodos['EFECTIVO'] || 0) + (metodos['TRANSFERENCIA'] || 0) + (metodos['DATAFONO'] || 0) + totalAbonosRecibidos;
     const totalCajaCount = (metodosCount['EFECTIVO'] || 0) + (metodosCount['TRANSFERENCIA'] || 0) + (metodosCount['DATAFONO'] || 0) + totalAbonosCount;
 
-    const valesNominaTotal = Number(valesNominaResult[0]?.total || 0);
-    const valesNominaCount = Number(valesNominaResult[0]?.count || 0);
+    const prestamosTotal = Number(prestamosLibreInversionResult[0]?.total || 0);
+    const prestamosCount = Number(prestamosLibreInversionResult[0]?.count || 0);
 
-    const valesRealTotal = Number(valesResult[0]?.total || 0);
-    const valesRealCount = Number(valesResult[0]?.count || 0);
+    const vouchersTotal = Number(vouchersServicioResult[0]?.total || 0);
+    const vouchersCount = Number(vouchersServicioResult[0]?.count || 0);
 
-    // El total de "VALES" para el dashboard es la suma de los vales de nómina + los pagos por VALE en facturas
-    const totalValesCard = valesNominaTotal + (metodos['VALE'] || 0);
-    const totalValesCount = valesNominaCount + (metodosCount['VALE'] || 0);
+    // El total de "VALES" (Adelantos) para el dashboard es ÚNICAMENTE lo que viene de la tabla KS_VALES (nómina)
+    const totalValesCard = prestamosTotal;
+    const totalValesCount = prestamosCount;
 
-    // El total de "SERVICIO TRABAJADOR" es la suma de los registros reales + los pagos marcados asÃ en facturas
-    const totalServicioTrabajadorCard = valesRealTotal + (metodos['SERVICIO DE TRABAJADOR'] || 0);
-    const totalServicioTrabajadorCount = valesRealCount + (metodosCount['SERVICIO DE TRABAJADOR'] || 0);
+    // El total de "SERVICIO TRABAJADOR" es la suma de los vouchers reales + TODOS los pagos marcados como VALE o SERVICIO TRABAJADOR en facturas
+    const totalServicioTrabajadorCard = vouchersTotal + (metodos['SERVICIO DE TRABAJADOR'] || 0) + (metodos['VALE'] || 0);
+    const totalServicioTrabajadorCount = vouchersCount + (metodosCount['SERVICIO DE TRABAJADOR'] || 0) + (metodosCount['VALE'] || 0);
 
     return {
       success: true,
@@ -399,7 +399,7 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
 
     // 5. Abonos detallados
     const [abonos]: any = await db.execute(
-      `SELECT ab.*, c.CR_VALOR_PENDIENTE as cr_valor_pendiente, f.FC_NUMERO_FACTURA, COALESCE(f.FC_CLIENTE_NOMBRE, t.TR_NOMBRE) as cliente_display
+      `SELECT ab.*, c.CR_VALOR_PENDIENTE as cr_valor_pendiente, f.FC_NUMERO_FACTURA, f.FC_IDFACTURA_PK, COALESCE(f.FC_CLIENTE_NOMBRE, t.TR_NOMBRE) as cliente_display
        FROM KS_CREDITO_ABONOS ab
        JOIN KS_CREDITOS c ON ab.CR_IDCREDITO_FK = c.CR_IDCREDITO_PK
        JOIN KS_FACTURAS f ON c.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK

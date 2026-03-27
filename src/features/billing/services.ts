@@ -62,8 +62,8 @@ export async function getInvoiceById(id: number): Promise<ApiResponse> {
       [id]
     );
 
-    // Check if it's a vale
-    const [vales]: any = await (db as any).execute(
+    // Check if it's a worker service (voucher)
+    const [serviciosRegistrados]: any = await (db as any).execute(
       "SELECT 1 FROM ks_servicios_trabajador WHERE fc_idfactura_fk = ?",
       [id]
     );
@@ -76,7 +76,7 @@ export async function getInvoiceById(id: number): Promise<ApiResponse> {
         services: (services || []).map((s: any) => ({ ...s, FD_VALOR: Number(s.fd_valor || 0) })),
         products: (products || []).map((p: any) => ({ ...p, FP_VALOR: Number(p.fp_valor || 0) })),
         payments: (payments || []).map((p: any) => ({ ...p, PF_VALOR: Number(p.pf_valor || 0) })),
-        isVale: vales.length > 0
+        esServicioTrabajador: serviciosRegistrados.length > 0
       },
       error: null
     };
@@ -97,15 +97,19 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
     const isUpdate = !!data.FC_IDFACTURA_PK;
     let invoiceId = data.FC_IDFACTURA_PK;
 
+    // Obtener IDs de métodos de pago al inicio para evitar errores de ámbito
+    const [methodRows]: any = await (connection as any).execute("SELECT mp_idmetodo_pk, mp_nombre FROM ks_metodos_pago");
+    const allMethods = methodRows as { mp_idmetodo_pk: number, mp_nombre: string }[];
+    const metodoCreditoId = allMethods.find(m => m.mp_nombre.toUpperCase() === 'CREDITO')?.mp_idmetodo_pk;
+    const metodoServicioId = allMethods.find(m => m.mp_nombre.toUpperCase() === 'VALE' || m.mp_nombre.toUpperCase() === 'SERVICIO DE TRABAJADOR' || m.mp_nombre.toUpperCase() === 'SERVICIO TRABAJADOR')?.mp_idmetodo_pk;
+
     // Auto-resolve invoice status
     if (data.payments && data.payments.length > 0) {
       const totalPagado = data.payments.reduce((sum, p) => sum + (Number(p.PF_VALOR) || 0), 0);
       const invoiceTotal = data.FC_TOTAL || 0;
       const tolerance = 1;
 
-      // Fetch method names to check
-      const [methodRows2]: any = await (connection as any).execute("SELECT mp_idmetodo_pk, mp_nombre FROM ks_metodos_pago");
-      const getMethodName = (id: number) => methodRows2.find((m: any) => m.mp_idmetodo_pk === id)?.mp_nombre?.toUpperCase() || '';
+      const getMethodName = (id: number) => allMethods.find((m: any) => m.mp_idmetodo_pk === id)?.mp_nombre?.toUpperCase() || '';
 
       const allMethodsAreValid = data.payments.every(p => {
         const name = getMethodName(p.MP_IDMETODO_FK);
@@ -185,11 +189,7 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
         [invoiceId]
       );
 
-      const [methodRows]: any = await (connection as any).execute("SELECT mp_idmetodo_pk, mp_nombre FROM ks_metodos_pago");
-      const creditMethodId = methodRows.find((m: any) => m.mp_nombre.toUpperCase() === 'CREDITO')?.mp_idmetodo_pk;
-      const valeMethodId = methodRows.find((m: any) => m.mp_nombre.toUpperCase() === 'VALE' || m.mp_nombre.toUpperCase() === 'SERVICIO DE TRABAJADOR')?.mp_idmetodo_pk;
-
-      if (!newMethodIds.includes(valeMethodId)) {
+      if (!newMethodIds.includes(metodoServicioId)) {
         const [vRows]: any = await (connection as any).execute("SELECT st_idservicio_trabajador_pk FROM ks_servicios_trabajador WHERE fc_idfactura_fk = ?", [invoiceId]);
         for (const v of vRows) {
           await (connection as any).execute("DELETE FROM ks_servicio_trabajador_cuotas WHERE st_idservicio_trabajador_fk = ?", [v.st_idservicio_trabajador_pk]);
@@ -197,7 +197,7 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
         await (connection as any).execute("DELETE FROM ks_servicios_trabajador WHERE fc_idfactura_fk = ?", [invoiceId]);
       }
 
-      if (!newMethodIds.includes(creditMethodId)) {
+      if (!newMethodIds.includes(metodoCreditoId)) {
         const [cRows]: any = await (connection as any).execute("SELECT cr_idcredito_pk FROM ks_creditos WHERE fc_idfactura_fk = ?", [invoiceId]);
         for (const c of cRows) {
           await (connection as any).execute("DELETE FROM ks_credito_abonos WHERE cr_idcredito_fk = ?", [c.cr_idcredito_pk]);
@@ -231,39 +231,9 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
       invoiceId = invoiceResult.insertId;
     }
 
-    const [methodRows]: any = await (connection as any).execute("SELECT mp_idmetodo_pk, mp_nombre FROM ks_metodos_pago");
-    const methods = methodRows as { mp_idmetodo_pk: number, mp_nombre: string }[];
-    const creditMethodId = methods.find(m => m.mp_nombre.toUpperCase() === 'CREDITO')?.mp_idmetodo_pk;
-    const valeMethodId = methods.find(m => m.mp_nombre.toUpperCase() === 'VALE' || m.mp_nombre.toUpperCase() === 'SERVICIO DE TRABAJADOR')?.mp_idmetodo_pk;
+    // El bloque de creación de servicio de trabajador previo se elimina porque se gestiona
+    // correctamente dentro del bucle de pagos (L297+) para evitar duplicaciones.
 
-    const isValeInPayments = data.payments.some(p => p.MP_IDMETODO_FK === valeMethodId);
-    if ((data.FC_TIPO_CLIENTE === 'TECNICO' && data.isVale) || isValeInPayments) {
-      const valeTotal = isValeInPayments
-        ? data.payments.find(p => p.MP_IDMETODO_FK === valeMethodId)?.PF_VALOR || 0
-        : data.FC_TOTAL;
-
-      const numCuotas = data.VL_NUMERO_CUOTAS || 1;
-      const valorCuota = Math.round((valeTotal / numCuotas) * 100) / 100;
-      const fechaInicio = data.VL_FECHA_INICIO_COBRO || data.FC_FECHA;
-
-      const [valeResult]: any = await (connection as any).execute(
-        `INSERT INTO ks_servicios_trabajador (st_valor_total, st_numero_cuotas, st_valor_cuota, st_estado, fc_idfactura_fk, tr_idtrabajador_fk, st_fecha_inicio_cobro)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [valeTotal, numCuotas, valorCuota, 'PENDIENTE', invoiceId, data.TR_IDCLIENTE_FK || data.TR_IDCAJERO_FK, fechaInicio]
-      );
-      const valeId = valeResult.insertId;
-
-      for (let i = 1; i <= numCuotas; i++) {
-        const fechaCuota = new Date(fechaInicio);
-        fechaCuota.setDate(fechaCuota.getDate() + (i - 1) * 7);
-
-        await (connection as any).execute(
-          `INSERT INTO ks_servicio_trabajador_cuotas (stc_numero_cuota, stc_valor_cuota, stc_estado, stc_fecha_cobro, st_idservicio_trabajador_fk)
-           VALUES (?, ?, ?, ?, ?)`,
-          [i, valorCuota, 'PENDIENTE', fechaCuota, valeId]
-        );
-      }
-    }
 
     for (const service of data.services) {
       const [serviceResult]: any = await (connection as any).execute(
@@ -319,9 +289,9 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
           );
         }
 
-        const isVale = payment.MP_IDMETODO_FK === valeMethodId;
-        if ((data.FC_TIPO_CLIENTE === 'TECNICO' && data.isVale) || isVale) {
-          const valeTotal = payment.MP_IDMETODO_FK === valeMethodId ? payment.PF_VALOR : data.FC_TOTAL;
+        const esServicioTrabajador = payment.MP_IDMETODO_FK === metodoServicioId;
+        if ((data.FC_TIPO_CLIENTE === 'TECNICO' && data.esServicioTrabajador) || esServicioTrabajador) {
+          const valorTotalServicio = payment.MP_IDMETODO_FK === metodoServicioId ? payment.PF_VALOR : data.FC_TOTAL;
           const [existingVale]: any = await (connection as any).execute(
             "SELECT st_idservicio_trabajador_pk FROM ks_servicios_trabajador WHERE fc_idfactura_fk = ?",
             [invoiceId]
@@ -331,17 +301,17 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
             const valeId = existingVale[0].st_idservicio_trabajador_pk;
             await (connection as any).execute(
               "UPDATE ks_servicios_trabajador SET st_valor_total = ? WHERE st_idservicio_trabajador_pk = ?",
-              [valeTotal, valeId]
+              [valorTotalServicio, valeId]
             );
           } else {
             const numCuotas = data.VL_NUMERO_CUOTAS || 1;
-            const valorCuota = Math.round((valeTotal / numCuotas) * 100) / 100;
+            const valorCuota = Math.round((valorTotalServicio / numCuotas) * 100) / 100;
             const fechaInicio = data.VL_FECHA_INICIO_COBRO || data.FC_FECHA;
 
             const [vRes]: any = await (connection as any).execute(
               `INSERT INTO ks_servicios_trabajador (st_valor_total, st_numero_cuotas, st_valor_cuota, st_estado, fc_idfactura_fk, tr_idtrabajador_fk, st_fecha_inicio_cobro)
                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
-              [valeTotal, numCuotas, valorCuota, 'PENDIENTE', invoiceId, data.TR_IDCLIENTE_FK || data.TR_IDCAJERO_FK, fechaInicio]
+              [valorTotalServicio, numCuotas, valorCuota, 'PENDIENTE', invoiceId, data.TR_IDCLIENTE_FK || data.TR_IDCAJERO_FK, fechaInicio]
             );
             const vId = vRes.insertId;
             for (let i = 1; i <= numCuotas; i++) {
@@ -356,7 +326,7 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
           }
         }
 
-        if (payment.MP_IDMETODO_FK === creditMethodId) {
+        if (payment.MP_IDMETODO_FK === metodoCreditoId) {
           const [existingCredit]: any = await (connection as any).execute(
             "SELECT cr_idcredito_pk FROM ks_creditos WHERE fc_idfactura_fk = ?",
             [invoiceId]
@@ -579,7 +549,7 @@ export async function updateProductInInvoice(
     );
 
     if (oldRow.length === 0) throw new Error("Producto no encontrado en la factura");
-    
+
     const oldValue = Number(oldRow[0].fp_valor);
     const invoiceId = oldRow[0].fc_idfactura_fk;
     const diff = value - oldValue;
