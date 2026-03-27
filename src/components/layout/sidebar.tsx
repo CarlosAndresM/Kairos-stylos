@@ -66,6 +66,12 @@ const NAV_GROUPS = [
         icon: TrendingDown,
         roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
       },
+      {
+        title: 'Ventas y Factura',
+        href: '/dashboard/ventas',
+        icon: Receipt,
+        roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
+      },
     ]
   },
   {
@@ -104,7 +110,7 @@ const NAV_GROUPS = [
         title: 'Administradores de Punto',
         href: '/dashboard/nomina-admin',
         icon: History,
-        roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
+        roles: ['ADMINISTRADOR_TOTAL']
       },
     ]
   },
@@ -132,12 +138,6 @@ const NAV_GROUPS = [
         title: 'Clientes',
         href: '/dashboard/clientes',
         icon: Users,
-        roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
-      },
-      {
-        title: 'Ventas (Facturas)',
-        href: '/dashboard/ventas',
-        icon: Receipt,
         roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
       },
       {
