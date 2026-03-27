@@ -41,19 +41,19 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Progress } from '@/components/ui/progress';
 import { NumericFormat } from 'react-number-format';
 
-interface Adelanto {
-  AD_IDADELANTO_PK: number;
+interface Vale {
+  VL_IDVALE_PK: number;
   TR_IDTRABAJADOR_FK: number;
-  AD_MONTO: string | number;
-  AD_CUOTAS: number;
-  AD_CUOTAS_PAGADAS: number;
-  AD_ESTADO: 'PENDIENTE' | 'DESCONTADO' | 'ANULADO';
-  AD_OBSERVACIONES: string | null;
+  VL_MONTO: string | number;
+  VL_CUOTAS: number;
+  VL_CUOTAS_PAGADAS: number;
+  VL_ESTADO: 'PENDIENTE' | 'DESCONTADO' | 'ANULADO';
+  VL_OBSERVACIONES: string | null;
   TR_NOMBRE: string;
   RL_NOMBRE: string;
-  AD_FECHA_DESEMBOLSO: string | null;
-  AD_FECHA_INICIO_COBRO: string | null;
-  AD_FECHA_CREACION: string;
+  VL_FECHA_DESEMBOLSO: string | null;
+  VL_FECHA_INICIO_COBRO: string | null;
+  VL_FECHA_CREACION: string;
 }
 
 interface Trabajador {
@@ -63,12 +63,12 @@ interface Trabajador {
 }
 
 interface ValesClientProps {
-  initialAdelantos: Adelanto[];
+  initialVales: Vale[];
   trabajadores: Trabajador[];
 }
 
-export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps) {
-  const [adelantos, setAdelantos] = useState<Adelanto[]>(initialAdelantos);
+export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
+  const [vales, setVales] = useState<Vale[]>(initialVales);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,12 +83,12 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [observaciones, setObservaciones] = useState('');
 
-  const [selectedAdelanto, setSelectedAdelanto] = useState<Adelanto | null>(null);
+  const [selectedVale, setSelectedVale] = useState<Vale | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  const filteredAdelantos = React.useMemo(() => {
-    return adelantos.filter(a => {
-      const fullName = (a.TR_NOMBRE || '').toLowerCase();
+  const filteredVales = React.useMemo(() => {
+    return vales.filter(v => {
+      const fullName = (v.TR_NOMBRE || '').toLowerCase();
       const searchMatch = fullName.includes(searchTerm.toLowerCase());
       if (!searchMatch) return false;
 
@@ -96,24 +96,24 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
         if (values.length === 0) continue;
 
         let val = '';
-        if (col === 'TRABAJADOR') val = a.TR_NOMBRE || '';
-        else if (col === 'ROL') val = a.RL_NOMBRE || '';
-        else val = (a[col as keyof Adelanto] as string)?.toString() || '';
+        if (col === 'TRABAJADOR') val = v.TR_NOMBRE || '';
+        else if (col === 'ROL') val = v.RL_NOMBRE || '';
+        else val = (v[col as keyof Vale] as string)?.toString() || '';
 
         if (!values.includes(val)) return false;
       }
       return true;
     });
-  }, [adelantos, searchTerm, activeFilters]);
+  }, [vales, searchTerm, activeFilters]);
 
   const getFilterOptions = (col: string) => {
     if (col === 'TRABAJADOR') {
-      return Array.from(new Set(adelantos.map(a => a.TR_NOMBRE))).filter(Boolean).sort();
+      return Array.from(new Set(vales.map(v => v.TR_NOMBRE))).filter(Boolean).sort();
     }
     if (col === 'ROL') {
-      return Array.from(new Set(adelantos.map(a => a.RL_NOMBRE))).filter(Boolean).sort();
+      return Array.from(new Set(vales.map(v => v.RL_NOMBRE))).filter(Boolean).sort();
     }
-    return Array.from(new Set(adelantos.map(a => (a[col as keyof Adelanto] as string)?.toString() || ''))).filter(Boolean).sort();
+    return Array.from(new Set(vales.map(v => (v[col as keyof Vale] as string)?.toString() || ''))).filter(Boolean).sort();
   };
 
   const availableRoles = React.useMemo(() => {
@@ -185,10 +185,10 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
     };
   };
 
-  const calculateSchedule = (adelanto: Adelanto) => {
-    if (!adelanto.AD_FECHA_INICIO_COBRO) return [];
+  const calculateSchedule = (vale: Vale) => {
+    if (!vale.VL_FECHA_INICIO_COBRO) return [];
 
-    const rawDate = adelanto.AD_FECHA_INICIO_COBRO as any;
+    const rawDate = vale.VL_FECHA_INICIO_COBRO as any;
     let startDate: Date;
     if (rawDate instanceof Date || (typeof rawDate === 'object' && typeof (rawDate as any).getTime === 'function')) {
       startDate = new Date(rawDate);
@@ -206,12 +206,12 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
     if (isNaN(startDate.getTime())) return [];
 
     const schedule = [];
-    const cuotas = Number(adelanto.AD_CUOTAS || 1);
-    const montoCuota = Number(adelanto.AD_MONTO || 0) / cuotas;
+    const cuotas = Number(vale.VL_CUOTAS || 1);
+    const montoCuota = Number(vale.VL_MONTO || 0) / cuotas;
 
     for (let i = 0; i < cuotas; i++) {
       let date: Date;
-      if (adelanto.RL_NOMBRE === 'ADMINISTRADOR_PUNTO') {
+      if (vale.RL_NOMBRE === 'ADMINISTRADOR_PUNTO') {
         const startIsSecondHalf = startDate.getDate() > 15;
         const totalQuincenas = i + (startIsSecondHalf ? 1 : 0);
         const monthOffset = Math.floor(totalQuincenas / 2);
@@ -227,7 +227,7 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
         numero: i + 1,
         fecha: date,
         monto: montoCuota,
-        estado: (i + 1) <= Number(adelanto.AD_CUOTAS_PAGADAS || 0) ? 'PAGADA' : 'PENDIENTE'
+        estado: (i + 1) <= Number(vale.VL_CUOTAS_PAGADAS || 0) ? 'PAGADA' : 'PENDIENTE'
       });
     }
     return schedule;
@@ -244,11 +244,11 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
     try {
       const payload = {
         TR_IDTRABAJADOR_FK: parseInt(trabajadorId, 10),
-        AD_MONTO: parseFloat(monto),
-        AD_CUOTAS: parseInt(cuotas, 10) || 1,
-        AD_FECHA_DESEMBOLSO: fechaDesembolso,
-        AD_FECHA_INICIO_COBRO: fechaInicioCobro || null,
-        AD_OBSERVACIONES: observaciones
+        VL_MONTO: parseFloat(monto),
+        VL_CUOTAS: parseInt(cuotas, 10) || 1,
+        VL_FECHA_DESEMBOLSO: fechaDesembolso,
+        VL_FECHA_INICIO_COBRO: fechaInicioCobro || null,
+        VL_OBSERVACIONES: observaciones
       };
 
       const res = await fetch('/api/vales', {
@@ -287,8 +287,8 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
       const data = await res.json();
       if (data.success) {
         toast.success('Vale anulado', 'El vale ha sido marcado como anulado.');
-        setAdelantos(prev => prev.map(a =>
-          a.AD_IDADELANTO_PK === id ? { ...a, AD_ESTADO: 'ANULADO' } : a
+        setVales(prev => prev.map(v =>
+          v.VL_IDVALE_PK === id ? { ...v, VL_ESTADO: 'ANULADO' } : v
         ));
       } else {
         toast.error('Error', data.error || 'No se pudo anular el vale');
@@ -355,9 +355,9 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
                 <TableHead className="py-0 px-2">
                   <TableFilter
                     label="Estado"
-                    options={getFilterOptions('AD_ESTADO')}
-                    selectedValues={activeFilters['AD_ESTADO'] || []}
-                    onFilterChange={(vals: string[]) => handleFilterChange('AD_ESTADO', vals)}
+                    options={getFilterOptions('VL_ESTADO')}
+                    selectedValues={activeFilters['VL_ESTADO'] || []}
+                    onFilterChange={(vals: string[]) => handleFilterChange('VL_ESTADO', vals)}
                   />
                 </TableHead>
                 <TableHead>Pago</TableHead>
@@ -366,7 +366,7 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAdelantos.length === 0 ? (
+              {filteredVales.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center text-slate-500">
@@ -376,60 +376,60 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredAdelantos.map((adelanto) => (
-                  <TableRow key={adelanto.AD_IDADELANTO_PK}>
+                filteredVales.map((vale) => (
+                  <TableRow key={vale.VL_IDVALE_PK}>
                     <TableCell className="font-medium text-xs text-slate-500">
-                      {safeFormat(adelanto.AD_FECHA_CREACION, "dd/MM/yy")}
+                      {safeFormat(vale.VL_FECHA_CREACION, "dd/MM/yy")}
                     </TableCell>
                     <TableCell>
                       <div className="font-medium text-slate-900 dark:text-slate-100">
-                        {adelanto.TR_NOMBRE}
+                        {vale.TR_NOMBRE}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-[10px] uppercase font-bold">
-                        {adelanto.RL_NOMBRE}
+                        {vale.RL_NOMBRE}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
-                      <span>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(adelanto.AD_MONTO))}</span>
+                      <span>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(vale.VL_MONTO))}</span>
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(adelanto.AD_ESTADO)}
+                      {getStatusBadge(vale.VL_ESTADO)}
                     </TableCell>
                     <TableCell className="w-[120px]">
-                      {adelanto.AD_ESTADO !== 'ANULADO' && (
+                      {vale.VL_ESTADO !== 'ANULADO' && (
                         <div className="space-y-1">
                           <Progress
-                            value={(Number(adelanto.AD_CUOTAS_PAGADAS) / Number(adelanto.AD_CUOTAS)) * 100}
+                            value={(Number(vale.VL_CUOTAS_PAGADAS) / Number(vale.VL_CUOTAS)) * 100}
                             className="h-1.5"
                           />
                           <div className="flex justify-between text-[10px] text-slate-500 font-medium whitespace-nowrap gap-2">
-                            <span>{Math.round((Number(adelanto.AD_CUOTAS_PAGADAS) / Number(adelanto.AD_CUOTAS)) * 100)}%</span>
-                            <span>{adelanto.AD_CUOTAS_PAGADAS}/{adelanto.AD_CUOTAS} cuotas</span>
+                            <span>{Math.round((Number(vale.VL_CUOTAS_PAGADAS) / Number(vale.VL_CUOTAS)) * 100)}%</span>
+                            <span>{vale.VL_CUOTAS_PAGADAS}/{vale.VL_CUOTAS} cuotas</span>
                           </div>
                         </div>
                       )}
-                      {adelanto.AD_ESTADO === 'ANULADO' && <span className="text-[10px] text-slate-400">-</span>}
+                      {vale.VL_ESTADO === 'ANULADO' && <span className="text-[10px] text-slate-400">-</span>}
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate" title={adelanto.AD_OBSERVACIONES || ''}>
-                      {adelanto.AD_OBSERVACIONES || '-'}
+                    <TableCell className="max-w-[200px] truncate" title={vale.VL_OBSERVACIONES || ''}>
+                      {vale.VL_OBSERVACIONES || '-'}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => { setSelectedAdelanto(adelanto); setIsDetailsOpen(true); }}
+                          onClick={() => { setSelectedVale(vale); setIsDetailsOpen(true); }}
                           title="Ver detalles"
                         >
                           <Eye className="size-4 text-slate-500" />
                         </Button>
-                        {adelanto.AD_ESTADO === 'PENDIENTE' && (
+                        {vale.VL_ESTADO === 'PENDIENTE' && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleAnular(adelanto.AD_IDADELANTO_PK)}
+                            onClick={() => handleAnular(vale.VL_IDVALE_PK)}
                             className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
                             title="Anular Vale"
                           >
@@ -627,34 +627,34 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
             </DialogDescription>
           </DialogHeader>
 
-          {selectedAdelanto && (
+          {selectedVale && (
             <div className="space-y-6 pt-4">
               {/* Resumen */}
               <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Trabajador</p>
-                  <p className="font-semibold text-slate-900 dark:text-slate-100">{selectedAdelanto.TR_NOMBRE}</p>
-                  <Badge variant="secondary" className="text-[9px] uppercase">{selectedAdelanto.RL_NOMBRE}</Badge>
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">{selectedVale.TR_NOMBRE}</p>
+                  <Badge variant="secondary" className="text-[9px] uppercase">{selectedVale.RL_NOMBRE}</Badge>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Monto Total</p>
                   <p className="text-lg font-black text-primary">
-                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(selectedAdelanto.AD_MONTO))}
+                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(selectedVale.VL_MONTO))}
                   </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Fecha Desembolso</p>
                   <p className="text-sm font-medium">
-                    {safeFormat(selectedAdelanto.AD_FECHA_DESEMBOLSO, "dd 'de' MMMM, yyyy")}
+                    {safeFormat(selectedVale.VL_FECHA_DESEMBOLSO, "dd 'de' MMMM, yyyy")}
                   </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Estado General</p>
                   <Badge
-                    variant={selectedAdelanto.AD_ESTADO === 'DESCONTADO' ? 'default' : selectedAdelanto.AD_ESTADO === 'ANULADO' ? 'destructive' : 'secondary'}
+                    variant={selectedVale.VL_ESTADO === 'DESCONTADO' ? 'default' : selectedVale.VL_ESTADO === 'ANULADO' ? 'destructive' : 'secondary'}
                     className="text-[10px] h-5"
                   >
-                    {selectedAdelanto.AD_ESTADO}
+                    {selectedVale.VL_ESTADO}
                   </Badge>
                 </div>
               </div>
@@ -676,7 +676,7 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {calculateSchedule(selectedAdelanto).map((item) => (
+                      {calculateSchedule(selectedVale).map((item) => (
                         <TableRow key={item.numero}>
                           <TableCell className="py-2 text-sm font-medium">#{item.numero}</TableCell>
                           <TableCell className="py-2 text-sm text-center">
@@ -703,10 +703,10 @@ export function ValesClient({ initialAdelantos, trabajadores }: ValesClientProps
                 </div>
               </div>
 
-              {selectedAdelanto.AD_OBSERVACIONES && (
+              {selectedVale.VL_OBSERVACIONES && (
                 <div className="p-3 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-lg">
                   <p className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-500 mb-1">Observaciones</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 italic">"{selectedAdelanto.AD_OBSERVACIONES}"</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 italic">"{selectedVale.VL_OBSERVACIONES}"</p>
                 </div>
               )}
             </div>

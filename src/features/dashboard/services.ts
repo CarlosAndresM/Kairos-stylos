@@ -156,19 +156,19 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
       }
     });
 
-    // 7. Adelantos (Vales Reales de Nómina) en el periodo
-    const adelantoQuery = `
-      SELECT SUM(ad.AD_MONTO) as total, COUNT(*) as count
-      FROM KS_ADELANTOS ad
-      ${sucursalId !== -1 ? 'JOIN KS_TRABAJADORES t ON ad.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK' : ''}
-      WHERE DATE(ad.AD_FECHA) BETWEEN ? AND ? 
-      AND ad.AD_ESTADO != 'ANULADO'
+    // 7. Vales (Vales Reales de Nómina) en el periodo
+    const valeQuery = `
+      SELECT SUM(vl.VL_MONTO) as total, COUNT(*) as count
+      FROM KS_VALES vl
+      ${sucursalId !== -1 ? 'JOIN KS_TRABAJADORES t ON vl.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK' : ''}
+      WHERE DATE(vl.VL_FECHA) BETWEEN ? AND ? 
+      AND vl.VL_ESTADO != 'ANULADO'
       ${sucursalId !== -1 ? 'AND t.SC_IDSUCURSAL_FK = ?' : ''}
     `;
-    const adelantoParams: any[] = [dateFrom, dateTo];
-    if (sucursalId !== -1) adelantoParams.push(sucursalId);
+    const valeParams: any[] = [dateFrom, dateTo];
+    if (sucursalId !== -1) valeParams.push(sucursalId);
 
-    const [adelantosResult]: any = await db.execute(adelantoQuery, adelantoParams);
+    const [valesNominaResult]: any = await db.execute(valeQuery, valeParams);
 
     const totalVentasPagadas = Number(salesResult[0]?.total || 0);
     const totalAbonosRecibidos = Number(abonosResult[0]?.total || 0);
@@ -178,15 +178,15 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
     const totalCaja = (metodos['EFECTIVO'] || 0) + (metodos['TRANSFERENCIA'] || 0) + (metodos['DATAFONO'] || 0) + totalAbonosRecibidos;
     const totalCajaCount = (metodosCount['EFECTIVO'] || 0) + (metodosCount['TRANSFERENCIA'] || 0) + (metodosCount['DATAFONO'] || 0) + totalAbonosCount;
 
-    const adelantosNominaTotal = Number(adelantosResult[0]?.total || 0);
-    const adelantosNominaCount = Number(adelantosResult[0]?.count || 0);
+    const valesNominaTotal = Number(valesNominaResult[0]?.total || 0);
+    const valesNominaCount = Number(valesNominaResult[0]?.count || 0);
 
     const valesRealTotal = Number(valesResult[0]?.total || 0);
     const valesRealCount = Number(valesResult[0]?.count || 0);
 
-    // El total de "VALES" para el dashboard es la suma de los adelantos de nÃ³mina + los pagos por VALE en facturas
-    const totalValesCard = adelantosNominaTotal + (metodos['VALE'] || 0);
-    const totalValesCount = adelantosNominaCount + (metodosCount['VALE'] || 0);
+    // El total de "VALES" para el dashboard es la suma de los vales de nómina + los pagos por VALE en facturas
+    const totalValesCard = valesNominaTotal + (metodos['VALE'] || 0);
+    const totalValesCount = valesNominaCount + (metodosCount['VALE'] || 0);
 
     // El total de "SERVICIO TRABAJADOR" es la suma de los registros reales + los pagos marcados asÃ en facturas
     const totalServicioTrabajadorCard = valesRealTotal + (metodos['SERVICIO DE TRABAJADOR'] || 0);
@@ -212,10 +212,8 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
         total_abonos: totalAbonosRecibidos,
         abonos_count: totalAbonosCount,
         clientes_nuevos: Number(clientsResult[0]?.total || 0),
-        vales_total: totalValesCard,
-        vales_count: totalValesCount,
-        adelantos_total: totalServicioTrabajadorCard,
-        adelantos_count: totalServicioTrabajadorCount,
+        servicios_trabajador_total: totalServicioTrabajadorCard,
+        servicios_trabajador_count: totalServicioTrabajadorCount,
       },
       error: null
     };
@@ -409,20 +407,20 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
       sucursalId !== -1 ? [...baseParams, sucursalId] : baseParams
     );
 
-    // 6. Adelantos (Vales Reales de Nómina) detallados
-    const adelantoQuerySpecific = `
-      SELECT a.*, t.TR_NOMBRE as trabajador_nombre
-      FROM KS_ADELANTOS a
-      ${sucursalId !== -1 ? 'JOIN KS_TRABAJADORES t ON a.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK' : 'LEFT JOIN KS_TRABAJADORES t ON a.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK'}
-      WHERE DATE(a.AD_FECHA) BETWEEN ? AND ?
-      AND a.AD_ESTADO != 'ANULADO'
+    // 6. Vales (Vales Reales de Nómina) detallados
+    const valeQuerySpecific = `
+      SELECT v.*, t.TR_NOMBRE as trabajador_nombre
+      FROM KS_VALES v
+      ${sucursalId !== -1 ? 'JOIN KS_TRABAJADORES t ON v.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK' : 'LEFT JOIN KS_TRABAJADORES t ON v.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK'}
+      WHERE DATE(v.VL_FECHA) BETWEEN ? AND ?
+      AND v.VL_ESTADO != 'ANULADO'
       ${sucursalId !== -1 ? 'AND t.SC_IDSUCURSAL_FK = ?' : ''}
-      ORDER BY a.AD_FECHA DESC
+      ORDER BY v.VL_FECHA DESC
     `;
-    const adelantoParamsSpecific: any[] = [dateFrom, dateTo];
-    if (sucursalId !== -1) adelantoParamsSpecific.push(sucursalId);
+    const valeParamsSpecific: any[] = [dateFrom, dateTo];
+    if (sucursalId !== -1) valeParamsSpecific.push(sucursalId);
 
-    const [adelantos]: any = await db.execute(adelantoQuerySpecific, adelantoParamsSpecific);
+    const [valesRegistros]: any = await db.execute(valeQuerySpecific, valeParamsSpecific);
 
     // 7. Pagos por factura (para filtrar por método en el detalle modal)
     const [pagos]: any = await db.execute(
@@ -470,10 +468,10 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
         vales: (vales || []).map((v: any) => ({ ...v, ST_VALOR: Number(v.ST_VALOR || 0) })),
         productos: (productos || []).map((p: any) => ({ ...p, FP_VALOR: Number(p.FP_VALOR || 0) })),
         abonos: (abonos || []).map((a: any) => ({ ...a, AB_VALOR: Number(a.AB_VALOR || 0), cr_valor_pendiente: Number(a.cr_valor_pendiente || 0) })),
-        adelantos: (adelantos || []).map((a: any) => ({ ...a, AD_MONTO: Number(a.AD_MONTO || 0) })),
         pagos: (pagos || []).map((p: any) => ({ ...p, PF_VALOR: Number(p.PF_VALOR || 0) })),
         serviciosDetalle: (serviciosDetalle || []).map((s: any) => ({ ...s, FD_VALOR: Number(s.FD_VALOR || 0) })),
-        serviciosReal: (serviciosReal || []).map((s: any) => ({ ...s, ST_VALOR_TOTAL: Number(s.ST_VALOR_TOTAL || 0) }))
+        serviciosReal: (serviciosReal || []).map((s: any) => ({ ...s, ST_VALOR_TOTAL: Number(s.ST_VALOR_TOTAL || 0) })),
+        adelantos: (valesRegistros || []).map((v: any) => ({ ...v, VL_MONTO: Number(v.VL_MONTO || 0) })),
       },
       error: null
     };
@@ -514,11 +512,11 @@ export async function getTechnicianStats(workerId: number, dateFrom: string, dat
       [workerId]
     );
 
-    // 4. Adelantos Pendientes (Nómina)
-    const [adelantosResult]: any = await db.execute(
-      `SELECT SUM(AD_MONTO - (AD_MONTO / AD_CUOTAS * AD_CUOTAS_PAGADAS)) as total_pendiente
-       FROM KS_ADELANTOS
-       WHERE TR_IDTRABAJADOR_FK = ? AND AD_ESTADO = 'PENDIENTE'`,
+    // 4. Vales Pendientes (Nómina)
+    const [valesNominaResult]: any = await db.execute(
+      `SELECT SUM(VL_MONTO - (VL_MONTO / VL_CUOTAS * VL_CUOTAS_PAGADAS)) as total_pendiente
+       FROM KS_VALES
+       WHERE TR_IDTRABAJADOR_FK = ? AND VL_ESTADO = 'PENDIENTE'`,
       [workerId]
     );
 
@@ -530,7 +528,7 @@ export async function getTechnicianStats(workerId: number, dateFrom: string, dat
         products_total: Number(productsResult[0]?.total || 0),
         products_count: Number(productsResult[0]?.count || 0),
         vales_pendiente: Number(valesResult[0]?.total_pendiente || 0),
-        adelantos_pendiente: Number(adelantosResult[0]?.total_pendiente || 0),
+        adelantos_pendiente: Number(valesNominaResult[0]?.total_pendiente || 0),
       },
       error: null
     };
@@ -600,14 +598,14 @@ export async function getTechnicianDeudas(workerId: number): Promise<ApiResponse
       [workerId]
     );
 
-    const [adelantos]: any = await db.execute(
-      `SELECT * FROM KS_ADELANTOS
-       WHERE TR_IDTRABAJADOR_FK = ? AND AD_ESTADO = 'PENDIENTE'
-       ORDER BY AD_FECHA ASC`,
+    const [valesRegistros]: any = await db.execute(
+      `SELECT * FROM KS_VALES
+       WHERE TR_IDTRABAJADOR_FK = ? AND VL_ESTADO = 'PENDIENTE'
+       ORDER BY VL_FECHA ASC`,
       [workerId]
     );
 
-    return { success: true, data: { vales, adelantos }, error: null };
+    return { success: true, data: { vales, adelantos: valesRegistros }, error: null };
   } catch (error) {
     console.error("Error in getTechnicianDeudas:", error);
     return { success: false, data: null, error: "Error al obtener deudas del técnico" };

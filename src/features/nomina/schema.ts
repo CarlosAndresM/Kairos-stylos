@@ -30,6 +30,6 @@ export interface NominaDetailData {
   ND_COMISIONES: number;
   ND_BONOS: number;
   ND_DEDUCCIONES_SERVICIOS_TRABAJADOR: number;
-  ND_DEDUCCIONES_ADELANTOS: number;
+  ND_DEDUCCIONES_VALES: number;
   ND_TOTAL_NETO: number;
 }

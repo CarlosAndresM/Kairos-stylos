@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { anularAdelantoService } from '@/features/vales/services';
+import { anularValeService } from '@/features/vales/services';
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -8,11 +8,11 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       return NextResponse.json({ success: false, error: 'ID inválido', data: null }, { status: 400 });
     }
 
-    const response = await anularAdelantoService(id);
+    const response = await anularValeService(id);
     if (!response.success) {
       return NextResponse.json(response, { status: 400 });
     }
-    
+
     return NextResponse.json(response);
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message, data: null }, { status: 500 });

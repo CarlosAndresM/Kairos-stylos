@@ -136,7 +136,7 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                     {
                         title: 'Deudas Pendientes',
                         value: `$${(Number(stats?.vales_pendiente || 0) + Number(stats?.adelantos_pendiente || 0)).toLocaleString('es-CO')}`,
-                        sub: 'Vales + Adelantos',
+                        sub: 'Vales + Vales Nómina',
                         icon: DollarSign,
                         color: 'from-amber-600 to-yellow-500',
                         count: 0
@@ -304,30 +304,29 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                                             </TableCell>
                                         </TableRow>
                                     ))}
-
-                                    {/* Muestras de Adelantos */}
+                                    {/* Muestras de Vales de Nómina */}
                                     {deudas.adelantos.map((ad: any, idx: number) => {
-                                        const cuotaValor = ad.AD_MONTO / ad.AD_CUOTAS;
-                                        const pagado = cuotaValor * ad.AD_CUOTAS_PAGADAS;
-                                        const pendiente = ad.AD_MONTO - pagado;
+                                        const cuotaValor = ad.VL_MONTO / ad.VL_CUOTAS;
+                                        const pagado = cuotaValor * ad.VL_CUOTAS_PAGADAS;
+                                        const pendiente = ad.VL_MONTO - pagado;
                                         return (
                                             <TableRow key={`ad-${idx}`} className="group hover:bg-slate-100/30">
                                                 <TableCell className="px-6 py-3">
-                                                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-100 text-red-600 uppercase">Adelanto</span>
+                                                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-100 text-red-600 uppercase">Vale Nómina</span>
                                                 </TableCell>
                                                 <TableCell className="py-3">
                                                     <div className="flex flex-col">
-                                                        <span className="text-xs font-black text-slate-900">ADELANTO NÓMINA</span>
-                                                        <span className="text-[10px] text-slate-400 font-bold uppercase">{ad.AD_CUOTAS_PAGADAS}/{ad.AD_CUOTAS} CUOTAS</span>
+                                                        <span className="text-xs font-black text-slate-900">VALE NÓMINA (ADELANTO)</span>
+                                                        <span className="text-[10px] text-slate-400 font-bold uppercase">{ad.VL_CUOTAS_PAGADAS}/{ad.VL_CUOTAS} CUOTAS</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="py-3 text-center">
-                                                    <span className="text-[10px] font-bold text-slate-500">{format(new Date(ad.AD_FECHA), 'dd/MM/yyyy')}</span>
+                                                    <span className="text-[10px] font-bold text-slate-500">{format(new Date(ad.VL_FECHA), 'dd/MM/yyyy')}</span>
                                                 </TableCell>
                                                 <TableCell className="py-3 text-right pr-6">
                                                     <div className="flex flex-col items-end">
                                                         <span className="text-xs font-black text-red-600">$ {pendiente.toLocaleString('es-CO')}</span>
-                                                        <span className="text-[9px] text-slate-400 font-bold uppercase">Total Adelantado: $ {Number(ad.AD_MONTO).toLocaleString('es-CO')}</span>
+                                                        <span className="text-[9px] text-slate-400 font-bold uppercase">Total Vale: $ {Number(ad.VL_MONTO).toLocaleString('es-CO')}</span>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -381,7 +380,7 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                                             <div className="flex flex-col">
                                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Deducciones</span>
                                                 <span className="text-sm font-bold text-red-500">
-                                                    - $ {(Number(payroll.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) + Number(payroll.ND_DEDUCCIONES_ADELANTOS || 0)).toLocaleString('es-CO')}
+                                                    - $ {(Number(payroll.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) + Number(payroll.ND_DEDUCCIONES_VALES || 0)).toLocaleString('es-CO')}
                                                 </span>
                                             </div>
                                             <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">

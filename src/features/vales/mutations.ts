@@ -1,28 +1,28 @@
 import { db } from '@/lib/db';
 import { ResultSetHeader } from 'mysql2/promise';
-import { CreateAdelantoInput } from '@/features/vales/schema';
+import { CreateValeInput } from '@/features/vales/schema';
 
-export async function createAdelantoMutation(data: CreateAdelantoInput) {
+export async function createValeMutation(data: CreateValeInput) {
   const [result] = await db.query<ResultSetHeader>(
-    `INSERT INTO KS_ADELANTOS (TR_IDTRABAJADOR_FK, AD_MONTO, AD_FECHA, AD_OBSERVACIONES, AD_ESTADO, AD_CUOTAS, AD_FECHA_DESEMBOLSO, AD_FECHA_INICIO_COBRO)
+    `INSERT INTO KS_VALES (TR_IDTRABAJADOR_FK, VL_MONTO, VL_FECHA, VL_OBSERVACIONES, VL_ESTADO, VL_CUOTAS, VL_FECHA_DESEMBOLSO, VL_FECHA_INICIO_COBRO)
      VALUES (?, ?, ?, ?, 'PENDIENTE', ?, ?, ?)`,
     [
       data.TR_IDTRABAJADOR_FK,
-      data.AD_MONTO,
-      data.AD_FECHA || null,
-      data.AD_OBSERVACIONES || null,
-      data.AD_CUOTAS || 1,
-      data.AD_FECHA_DESEMBOLSO || null,
-      data.AD_FECHA_INICIO_COBRO || null
+      data.VL_MONTO,
+      data.VL_FECHA || data.VL_FECHA_DESEMBOLSO || null,
+      data.VL_OBSERVACIONES || null,
+      data.VL_CUOTAS || 1,
+      data.VL_FECHA_DESEMBOLSO || null,
+      data.VL_FECHA_INICIO_COBRO || null
     ]
   );
   return result.insertId;
 }
 
-export async function anularAdelantoMutation(idAdelanto: number) {
+export async function anularValeMutation(idVale: number) {
   const [result] = await db.query<ResultSetHeader>(
-    `UPDATE KS_ADELANTOS SET AD_ESTADO = 'ANULADO' WHERE AD_IDADELANTO_PK = ? AND AD_ESTADO = 'PENDIENTE'`,
-    [idAdelanto]
+    `UPDATE KS_VALES SET VL_ESTADO = 'ANULADO' WHERE VL_IDVALE_PK = ? AND VL_ESTADO = 'PENDIENTE'`,
+    [idVale]
   );
   return result.affectedRows > 0;
 }

@@ -29,7 +29,7 @@ async function clean() {
       'KS_FACTURAS',
       'KS_SERVICIO_TRABAJADOR_CUOTAS',
       'KS_SERVICIOS_TRABAJADOR',
-      'KS_ADELANTOS',
+      'KS_VALES',
       'KS_GASTOS',
       'KS_NOMINA_DETALLES',
       'KS_NOMINAS',

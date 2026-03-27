@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { getAllAdelantosService } from '@/features/vales/services';
+import { getAllValesService } from '@/features/vales/services';
 import { getTrabajadores } from '@/features/trabajadores/services';
 import { ValesClient } from '@/app/dashboard/vales/vales-client';
 import { DashboardBanner } from '@/components/layout/dashboard-banner';
@@ -10,13 +10,13 @@ export const metadata: Metadata = {
 };
 
 export default async function ValesPage() {
-  const [adelantosRes, trabajadoresRes] = await Promise.all([
-    getAllAdelantosService(),
+  const [valesRes, trabajadoresRes] = await Promise.all([
+    getAllValesService(),
     getTrabajadores()
   ]);
 
-  const adelantos = adelantosRes.success ? adelantosRes.data : [];
-  
+  const vales = valesRes.success ? valesRes.data : [];
+
   // Excluir administradores de la lista de trabajadores elegibles para adelantos
   const trabajadores = (trabajadoresRes.success ? trabajadoresRes.data : [])?.filter(
     (w: any) => w.RL_NOMBRE !== 'ADMINISTRADOR_TOTAL'
@@ -24,14 +24,14 @@ export default async function ValesPage() {
 
   return (
     <div className="space-y-8 pb-12">
-      <DashboardBanner 
+      <DashboardBanner
         title="Gestión de Vales"
         subtitle="Administra los anticipos de sueldo para los trabajadores de todas las sedes."
       />
 
-      <ValesClient 
-        initialAdelantos={(adelantos || []) as any[]} 
-        trabajadores={(trabajadores || []) as any[]} 
+      <ValesClient
+        initialVales={(vales || []) as any[]}
+        trabajadores={(trabajadores || []) as any[]}
       />
     </div>
   );

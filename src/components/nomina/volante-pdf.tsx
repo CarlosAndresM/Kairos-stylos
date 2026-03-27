@@ -238,11 +238,11 @@ export const VolantePDF = ({ data, logoUrl }: { data: any, logoUrl?: string }) =
 
   const deducciones = [
     { desc: 'Servicio Trabajador (Cuota)', val: Number(data.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) },
-    { desc: 'Vales / Adelantos (Cuota)', val: Number(data.ND_DEDUCCIONES_ADELANTOS || 0) },
+    { desc: 'Vales (Cuota)', val: Number(data.ND_DEDUCCIONES_VALES || 0) },
   ].filter(i => i.val > 0);
 
   const totalDevengado = Number(data.ND_BASE || 0) + Number(data.ND_COMISIONES || 0) + Number(data.ND_BONOS || 0);
-  const totalDeducido = Number(data.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) + Number(data.ND_DEDUCCIONES_ADELANTOS || 0);
+  const totalDeducido = Number(data.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) + Number(data.ND_DEDUCCIONES_VALES || 0);
 
   return (
     <Document>

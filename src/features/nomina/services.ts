@@ -178,35 +178,35 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
       );
       const valesDeduct = Number(vales[0].total || 0);
 
-      // 4.4. Obtener deducciones de adelantos (Vales reales) para este periodo
-      const [adelantos]: any = await (connection as any).execute(
-        `SELECT AD_MONTO, AD_CUOTAS, AD_CUOTAS_PAGADAS, AD_IDADELANTO_PK
-         FROM KS_ADELANTOS 
-         WHERE TR_IDTRABAJADOR_FK = ? AND AD_ESTADO = 'PENDIENTE' 
-         AND DATE(AD_FECHA_INICIO_COBRO) <= DATE(?)`,
+      // 4.4. Obtener deducciones de vales (Vales reales) para este periodo
+      const [valesRegistros]: any = await (connection as any).execute(
+        `SELECT VL_MONTO, VL_CUOTAS, VL_CUOTAS_PAGADAS, VL_IDVALE_PK
+         FROM KS_VALES 
+         WHERE TR_IDTRABAJADOR_FK = ? AND VL_ESTADO = 'PENDIENTE' 
+         AND DATE(VL_FECHA_INICIO_COBRO) <= DATE(?)`,
         [worker.TR_IDTRABAJADOR_PK, data.endDate]
       );
 
-      let adelantosTotalDeduct = 0;
-      for (const adelanto of adelantos) {
-        const remainingCuotas = adelanto.AD_CUOTAS - adelanto.AD_CUOTAS_PAGADAS;
+      let valesTotalDeduct = 0;
+      for (const vale of valesRegistros) {
+        const remainingCuotas = vale.VL_CUOTAS - vale.VL_CUOTAS_PAGADAS;
         if (remainingCuotas > 0) {
-          const cuotaValor = adelanto.AD_MONTO / adelanto.AD_CUOTAS;
-          adelantosTotalDeduct += cuotaValor;
+          const cuotaValor = vale.VL_MONTO / vale.VL_CUOTAS;
+          valesTotalDeduct += cuotaValor;
         }
       }
 
       // 4.5. Calcular totales
       const totalEarnings = svcComm + prdComm;
       const basePay = 0; // Se elimina el sueldo base para técnicos
-      const netPay = basePay + totalEarnings - valesDeduct - adelantosTotalDeduct;
+      const netPay = basePay + totalEarnings - valesDeduct - valesTotalDeduct;
 
       // 4.6. Insertar detalle
       await (connection as any).execute(
         `INSERT INTO KS_NOMINA_DETALLES 
-         (NM_IDNOMINA_FK, TR_IDTRABAJADOR_FK, ND_BASE, ND_COMISIONES, ND_BONOS, ND_DEDUCCIONES_SERVICIOS_TRABAJADOR, ND_DEDUCCIONES_ADELANTOS, ND_TOTAL_NETO)
+         (NM_IDNOMINA_FK, TR_IDTRABAJADOR_FK, ND_BASE, ND_COMISIONES, ND_BONOS, ND_DEDUCCIONES_SERVICIOS_TRABAJADOR, ND_DEDUCCIONES_VALES, ND_TOTAL_NETO)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [nominaId, worker.TR_IDTRABAJADOR_PK, basePay, totalEarnings, 0, valesDeduct, adelantosTotalDeduct, netPay]
+        [nominaId, worker.TR_IDTRABAJADOR_PK, basePay, totalEarnings, 0, valesDeduct, valesTotalDeduct, netPay]
       );
 
       granTotal += netPay;
@@ -267,22 +267,22 @@ export async function confirmarNomina(nominaId: number): Promise<ApiResponse> {
         [detail.TR_IDTRABAJADOR_FK, NM_FECHA_INICIO, NM_FECHA_FIN]
       );
 
-      // 3.1. Actualizar adelantos (Vales reales)
-      const [adelantos]: any = await (connection as any).execute(
-        `SELECT AD_MONTO, AD_CUOTAS, AD_CUOTAS_PAGADAS, AD_IDADELANTO_PK
-         FROM KS_ADELANTOS 
-         WHERE TR_IDTRABAJADOR_FK = ? AND AD_ESTADO = 'PENDIENTE' 
-         AND AD_FECHA_INICIO_COBRO <= ?`,
+      // 3.1. Actualizar vales (Vales reales)
+      const [valesRegistros]: any = await (connection as any).execute(
+        `SELECT VL_MONTO, VL_CUOTAS, VL_CUOTAS_PAGADAS, VL_IDVALE_PK
+         FROM KS_VALES 
+         WHERE TR_IDTRABAJADOR_FK = ? AND VL_ESTADO = 'PENDIENTE' 
+         AND VL_FECHA_INICIO_COBRO <= ?`,
         [detail.TR_IDTRABAJADOR_FK, NM_FECHA_FIN]
       );
 
-      for (const adelanto of adelantos) {
-        const newPagadas = adelanto.AD_CUOTAS_PAGADAS + 1;
-        const newEstado = newPagadas >= adelanto.AD_CUOTAS ? 'DESCONTADO' : 'PENDIENTE';
+      for (const vale of valesRegistros) {
+        const newPagadas = vale.VL_CUOTAS_PAGADAS + 1;
+        const newEstado = newPagadas >= vale.VL_CUOTAS ? 'DESCONTADO' : 'PENDIENTE';
 
         await (connection as any).execute(
-          "UPDATE KS_ADELANTOS SET AD_CUOTAS_PAGADAS = ?, AD_ESTADO = ?, NM_IDNOMINA_FK = ? WHERE AD_IDADELANTO_PK = ?",
-          [newPagadas, newEstado, nominaId, adelanto.AD_IDADELANTO_PK]
+          "UPDATE KS_VALES SET VL_CUOTAS_PAGADAS = ?, VL_ESTADO = ?, NM_IDNOMINA_FK = ? WHERE VL_IDVALE_PK = ?",
+          [newPagadas, newEstado, nominaId, vale.VL_IDVALE_PK]
         );
       }
     }
@@ -338,7 +338,7 @@ export async function getNominaByRange(startDate: Date, endDate: Date, type: str
           ND_COMISIONES: Number(d.ND_COMISIONES || 0),
           ND_BONOS: Number(d.ND_BONOS || 0),
           ND_DEDUCCIONES_SERVICIOS_TRABAJADOR: Number(d.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0),
-          ND_DEDUCCIONES_ADELANTOS: Number(d.ND_DEDUCCIONES_ADELANTOS || 0),
+          ND_DEDUCCIONES_VALES: Number(d.ND_DEDUCCIONES_VALES || 0),
           ND_TOTAL_NETO: Number(d.ND_TOTAL_NETO || 0),
         }))
       }
@@ -425,34 +425,34 @@ export async function procesarNominaAdmins(data: {
       );
       const valesDeduct = Number(vales[0].total || 0);
 
-      // 4. Obtener deducciones de adelantos (Vales reales) para este periodo
-      const [adelantos]: any = await (connection as any).execute(
-        `SELECT AD_MONTO, AD_CUOTAS, AD_CUOTAS_PAGADAS, AD_IDADELANTO_PK
-         FROM KS_ADELANTOS 
-         WHERE TR_IDTRABAJADOR_FK = ? AND AD_ESTADO = 'PENDIENTE' 
-         AND DATE(AD_FECHA_INICIO_COBRO) <= DATE(?)`,
+      // 4. Obtener deducciones de vales (Vales reales) para este periodo
+      const [valesRegistros]: any = await (connection as any).execute(
+        `SELECT VL_MONTO, VL_CUOTAS, VL_CUOTAS_PAGADAS, VL_IDVALE_PK
+         FROM KS_VALES 
+         WHERE TR_IDTRABAJADOR_FK = ? AND VL_ESTADO = 'PENDIENTE' 
+         AND DATE(VL_FECHA_INICIO_COBRO) <= DATE(?)`,
         [item.workerId, data.endDate]
       );
 
-      let adelantosTotalDeduct = 0;
-      for (const adelanto of adelantos) {
-        const remainingCuotas = adelanto.AD_CUOTAS - adelanto.AD_CUOTAS_PAGADAS;
+      let valesTotalDeduct = 0;
+      for (const vale of valesRegistros) {
+        const remainingCuotas = vale.VL_CUOTAS - vale.VL_CUOTAS_PAGADAS;
         if (remainingCuotas > 0) {
-          const cuotaValor = adelanto.AD_MONTO / adelanto.AD_CUOTAS;
-          adelantosTotalDeduct += cuotaValor;
+          const cuotaValor = vale.VL_MONTO / vale.VL_CUOTAS;
+          valesTotalDeduct += cuotaValor;
         }
       }
 
       // 5. Calcular totales
       const basePay = Number(item.salary || 0);
-      const netPay = basePay - valesDeduct - adelantosTotalDeduct;
+      const netPay = basePay - valesDeduct - valesTotalDeduct;
 
       // 6. Insertar detalle
       await (connection as any).execute(
         `INSERT INTO KS_NOMINA_DETALLES 
-         (NM_IDNOMINA_FK, TR_IDTRABAJADOR_FK, ND_BASE, ND_COMISIONES, ND_BONOS, ND_DEDUCCIONES_SERVICIOS_TRABAJADOR, ND_DEDUCCIONES_ADELANTOS, ND_TOTAL_NETO)
+         (NM_IDNOMINA_FK, TR_IDTRABAJADOR_FK, ND_BASE, ND_COMISIONES, ND_BONOS, ND_DEDUCCIONES_SERVICIOS_TRABAJADOR, ND_DEDUCCIONES_VALES, ND_TOTAL_NETO)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [nominaId, item.workerId, basePay, 0, 0, valesDeduct, adelantosTotalDeduct, netPay]
+        [nominaId, item.workerId, basePay, 0, 0, valesDeduct, valesTotalDeduct, netPay]
       );
 
       granTotal += netPay;

@@ -294,7 +294,7 @@ export default function NominaClient() {
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] px-6">Trabajador</TableHead>
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Comisiones (Neto)</TableHead>
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Servicio Trabajador</TableHead>
-                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Vales (Adelantos)</TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Vales</TableHead>
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right px-6">Total a Pagar</TableHead>
                 <TableHead className="w-[80px]"></TableHead>
               </TableRow>
@@ -309,7 +309,7 @@ export default function NominaClient() {
                       - $ {(item.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0).toLocaleString('es-CO')}
                     </TableCell>
                     <TableCell className="text-right font-medium text-xs text-orange-600 tracking-tighter">
-                      - $ {(item.ND_DEDUCCIONES_ADELANTOS || 0).toLocaleString('es-CO')}
+                      - $ {(item.ND_DEDUCCIONES_VALES || 0).toLocaleString('es-CO')}
                     </TableCell>
                     <TableCell className="text-right font-black text-sm text-slate-900 px-6">
                       $ {Math.max(0, Number(item.ND_TOTAL_NETO || 0)).toLocaleString('es-CO')}

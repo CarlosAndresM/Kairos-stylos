@@ -373,7 +373,7 @@ export default function NominaAdminClient() {
                         <TableCell className="font-bold text-slate-900 text-xs px-6 uppercase tracking-tight">{item.TR_NOMBRE}</TableCell>
                         <TableCell className="text-right font-medium text-xs">$ {item.ND_BASE.toLocaleString('es-CO')}</TableCell>
                         <TableCell className="text-right font-medium text-xs text-red-600 tracking-tighter">
-                          - $ {((item.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) + (item.ND_DEDUCCIONES_ADELANTOS || 0)).toLocaleString('es-CO')}
+                          - $ {((item.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) + (item.ND_DEDUCCIONES_VALES || 0)).toLocaleString('es-CO')}
                         </TableCell>
                         <TableCell className="text-right font-black text-sm text-slate-900 px-6">
                           $ {Math.max(0, Number(item.ND_TOTAL_NETO || 0)).toLocaleString('es-CO')}

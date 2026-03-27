@@ -57,8 +57,18 @@ const connectionProxyHandler: ProxyHandler<mysql.PoolConnection> = {
     const value = Reflect.get(target, prop, receiver);
     if (prop === 'execute' || prop === 'query') {
       return async (sql: any, params?: any) => {
-        const [rows, fields] = await (target as any)[prop](normalizeSql(sql), params);
-        return [normalizeRows(rows), fields];
+        try {
+          const [rows, fields] = await (target as any)[prop](normalizeSql(sql), params);
+          return [normalizeRows(rows), fields];
+        } catch (error: any) {
+          console.error("❌ DATABASE CONNECTION ERROR:", {
+            message: error.message,
+            code: error.code,
+            sql: normalizeSql(sql),
+            params
+          });
+          throw error;
+        }
       };
     }
     // Retornar la función bindeada al target original para evitar errores de contexto
@@ -74,8 +84,18 @@ const poolProxyHandler: ProxyHandler<mysql.Pool> = {
     // Proxy de métodos de consulta directa
     if (prop === 'execute' || prop === 'query') {
       return async (sql: any, params?: any) => {
-        const [rows, fields] = await (target as any)[prop](normalizeSql(sql), params);
-        return [normalizeRows(rows), fields];
+        try {
+          const [rows, fields] = await (target as any)[prop](normalizeSql(sql), params);
+          return [normalizeRows(rows), fields];
+        } catch (error: any) {
+          console.error("❌ DATABASE POOL ERROR:", {
+            message: error.message,
+            code: error.code,
+            sql: normalizeSql(sql),
+            params
+          });
+          throw error;
+        }
       };
     }
 

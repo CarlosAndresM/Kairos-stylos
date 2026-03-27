@@ -32,7 +32,7 @@ export function VolantePago({ data }: { data: any }) {
 
   const deducciones = [
     { desc: 'Servicio Trabajador (Cuota)', val: Number(data.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) },
-    { desc: 'Vales / Adelantos (Cuota)', val: Number(data.ND_DEDUCCIONES_ADELANTOS || 0) },
+    { desc: 'Vales (Cuota)', val: Number(data.ND_DEDUCCIONES_VALES || 0) },
   ].filter(i => i.val > 0);
 
   return (
@@ -144,7 +144,7 @@ export function VolantePago({ data }: { data: any }) {
                  <tr className="font-bold border-t-2 border-slate-200">
                    <td className="pt-3 text-slate-400 uppercase text-[10px]">Subtotal Deducciones</td>
                    <td className="pt-3 text-right text-red-600">
-                      -{fmt(Number(data.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) + Number(data.ND_DEDUCCIONES_ADELANTOS || 0))}
+                      -{fmt(Number(data.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) + Number(data.ND_DEDUCCIONES_VALES || 0))}
                    </td>
                  </tr>
                </tfoot>

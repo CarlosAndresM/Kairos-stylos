@@ -576,20 +576,12 @@ export function DashboardClient() {
                                             count: stats?.metodos_count?.['CREDITO'] || 0
                                         },
                                         {
-                                            title: 'VALES',
-                                            value: `$ ${(stats?.adelantos_total || 0).toLocaleString('es-CO')}`,
-                                            sub: 'SERVICIOS ENTRE TÉCNICOS',
-                                            icon: Zap,
-                                            color: 'from-orange-500 to-yellow-500',
-                                            count: stats?.adelantos_count || 0
-                                        },
-                                        {
                                             title: 'SERVICIO TRABAJADOR',
-                                            value: `$ ${(stats?.vales_total || 0).toLocaleString('es-CO')}`,
-                                            sub: 'DEUDA GENERADA HOY (ADELANTOS)',
+                                            value: `$ ${(stats?.servicios_trabajador_total || 0).toLocaleString('es-CO')}`,
+                                            sub: 'SERVICIOS ENTRE TÉCNICOS / VOUCHERS',
                                             icon: Ticket,
                                             color: 'from-slate-600 to-slate-450',
-                                            count: stats?.vales_count || 0
+                                            count: stats?.servicios_trabajador_count || 0
                                         },
                                         {
                                             title: 'ABONO A DEUDAS',
@@ -1007,65 +999,6 @@ export function DashboardClient() {
                                 </div>
                             </Card>
 
-                            {/* Adelantos Table */}
-                            <Card className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
-                                <div className="p-4 bg-slate-50/50 border-b border-slate-100">
-                                    <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-2">
-                                        <Zap className="size-4 text-orange-500" /> Vales (Adelantos)
-                                    </h3>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader className="bg-slate-50/30">
-                                            <TableRow className="hover:bg-transparent border-b border-slate-100">
-                                                <TableHead className="px-4 py-3 text-[10px] uppercase font-bold text-slate-400 w-[100px]">Fecha</TableHead>
-                                                <TableHead className="px-4 py-3 text-[10px] uppercase font-bold text-slate-400">Trabajador</TableHead>
-                                                <TableHead className="px-4 py-3 text-[10px] uppercase font-bold text-slate-400">Valor</TableHead>
-                                                <TableHead className="px-4 py-3 text-[10px] uppercase font-bold text-slate-400 text-center">Estado</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {isLoading ? (
-                                                Array.from({ length: 3 }).map((_, i) => (
-                                                    <TableRow key={`adelantos-skeleton-${i}`}>
-                                                        <TableCell colSpan={4} className="p-4">
-                                                            <Skeleton className="h-8 w-full rounded-lg" />
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : (
-                                                <>
-                                                    {(specificData?.adelantos || []).map((v: any) => (
-                                                        <TableRow key={v.AD_IDADELANTO_PK} className="transition-colors border-b border-slate-50">
-                                                            <TableCell className="px-4 py-3 text-[10px] font-medium text-slate-500 tabular-nums">
-                                                                {format(new Date(v.AD_FECHA), "dd/MM/yyyy", { locale: es })}
-                                                            </TableCell>
-                                                            <TableCell className="px-4 py-3 text-[11px] font-bold text-slate-900 uppercase">{v.trabajador_nombre}</TableCell>
-                                                            <TableCell className="px-4 py-3 text-[12px] font-black text-slate-900 tabular-nums">$ {(Number(v.AD_MONTO) || 0).toLocaleString('es-CO')}</TableCell>
-                                                            <TableCell className="px-4 py-3 text-center">
-                                                                <span className={cn(
-                                                                    "px-2 py-0.5 text-[9px] font-bold uppercase border rounded-full",
-                                                                    v.AD_ESTADO === 'PENDIENTE' ? "bg-amber-50 text-amber-500 border-amber-200" :
-                                                                        v.AD_ESTADO === 'DESCONTADO' ? "bg-emerald-50 text-emerald-500 border-emerald-200" :
-                                                                            "bg-slate-50 text-slate-500 border-slate-200"
-                                                                )}>
-                                                                    {v.AD_ESTADO}
-                                                                </span>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                    {(specificData?.adelantos || []).length === 0 && (
-                                                        <TableRow>
-                                                            <TableCell colSpan={4} className="text-center py-10 text-slate-400 font-medium italic text-xs">Sin adelantos registrados</TableCell>
-                                                        </TableRow>
-                                                    )}
-                                                </>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </Card>
-
                             {/* PRODUCTOS Table */}
                             <Card className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden lg:col-span-2">
                                 <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
@@ -1295,33 +1228,7 @@ export function DashboardClient() {
                                                 )
                                             })()}
 
-                                            {detailType === 'VALES' && (
-                                                <>
-                                                    {(specificData?.adelantos || []).map((v: any) => (
-                                                        <TableRow key={`adelanto-${v.AD_IDADELANTO_PK}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
-                                                            <TableCell className="font-bold text-xs uppercase text-orange-600">Adelanto Nómina</TableCell>
-                                                            <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">{format(new Date(v.AD_FECHA), 'dd/MM/yyyy')}</TableCell>
-                                                            <TableCell className="text-[10px] font-bold uppercase text-slate-700">{v.trabajador_nombre}</TableCell>
-                                                            <TableCell className="text-right font-black text-xs text-orange-600">$ {(Number(v.AD_MONTO) || 0).toLocaleString('es-CO')}</TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                    {(specificData?.pagos || []).filter((p: any) => p.metodo?.toUpperCase() === 'VALE').map((pago: any, idx: number) => {
-                                                        const factura = (specificData?.facturas || []).find((f: any) => f.FC_IDFACTURA_PK === pago.FC_IDFACTURA_FK)
-                                                        return (
-                                                            <TableRow key={`vale-pago-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
-                                                                <TableCell className="font-bold text-xs uppercase text-amber-600">Vale Trabajador</TableCell>
-                                                                <TableCell className="text-[10px] font-medium text-slate-500 tabular-nums">
-                                                                    {factura ? format(new Date(factura.FC_FECHA), 'dd/MM/yyyy') : '---'}
-                                                                </TableCell>
-                                                                <TableCell className="text-[10px] font-bold uppercase text-slate-700">
-                                                                    {factura?.cliente_display || 'GENERAL'} (Fact. {factura?.FC_NUMERO_FACTURA})
-                                                                </TableCell>
-                                                                <TableCell className="text-right font-black text-xs text-amber-600">$ {(Number(pago.PF_VALOR) || 0).toLocaleString('es-CO')}</TableCell>
-                                                            </TableRow>
-                                                        )
-                                                    })}
-                                                </>
-                                            )}
+
 
                                             {detailType === 'Técnico' && (specificData?.serviciosDetalle || [])
                                                 .filter((s: any) => s.tecnico_nombre === detailTitle.replace('Servicios de ', ''))
