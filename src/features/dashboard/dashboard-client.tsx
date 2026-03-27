@@ -102,6 +102,7 @@ export function DashboardClient() {
         from: startOfWeek(new Date(), { weekStartsOn: 0 }),
         to: endOfWeek(new Date(), { weekStartsOn: 0 })
     })
+    const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear())
 
     // Custom Table States
     const [searchTerm, setSearchTerm] = React.useState('')
@@ -212,6 +213,15 @@ export function DashboardClient() {
 
     const navigateDay = (dir: 'prev' | 'next') => {
         setCurrentDate(prev => dir === 'prev' ? subDays(prev, 1) : addDays(prev, 1))
+    }
+
+    const navigateWeeklyRange = (dir: 'prev' | 'next') => {
+        setDateRange(prev => {
+            const days = dir === 'prev' ? -7 : 7;
+            const newFrom = addDays(prev.from, days);
+            const newTo = addDays(prev.to || prev.from, days);
+            return { from: newFrom, to: newTo };
+        })
     }
 
 
@@ -396,6 +406,38 @@ export function DashboardClient() {
                             </button>
                         </div>
 
+                        {/* Selector de Año */}
+                        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                            <Select
+                                value={selectedYear.toString()}
+                                onValueChange={(val) => {
+                                    const year = parseInt(val);
+                                    setSelectedYear(year);
+
+                                    // Actualizar currentDate y dateRange al nuevo año
+                                    const newDate = new Date(currentDate);
+                                    newDate.setFullYear(year);
+                                    setCurrentDate(newDate);
+
+                                    const newFrom = new Date(dateRange.from);
+                                    newFrom.setFullYear(year);
+                                    const newTo = dateRange.to ? new Date(dateRange.to) : undefined;
+                                    if (newTo) newTo.setFullYear(year);
+
+                                    setDateRange({ from: newFrom, to: newTo });
+                                }}
+                            >
+                                <SelectTrigger className="h-8 w-24 bg-transparent border-none text-[10px] font-bold uppercase shadow-none ring-0 focus:ring-0">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {[2024, 2025, 2026, 2027].map(y => (
+                                        <SelectItem key={y} value={y.toString()} className="text-[10px] font-bold">{y}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
                         <div className="h-6 w-px bg-slate-200 hidden md:block" />
 
                         {/* Mostramos el filtro correspondiente */}
@@ -437,52 +479,26 @@ export function DashboardClient() {
                             </div>
                         ) : filterType === 'RANGO' ? (
                             <div className="flex items-center gap-1 bg-white dark:bg-slate-950 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="ghost" className="h-9 px-4 rounded-none font-bold text-[11px] uppercase tracking-tight flex gap-2 text-slate-700 hover:bg-slate-50">
-                                            <CalendarIcon className="size-4 text-[#FF7E5F]" />
-                                            {dateRange.from ? (
-                                                dateRange.to ? (
-                                                    <>
-                                                        {format(dateRange.from, "d MMM", { locale: es })} - {format(dateRange.to, "d MMM", { locale: es })}
-                                                    </>
-                                                ) : (
-                                                    format(dateRange.from, "d 'de' MMMM", { locale: es })
-                                                )
-                                            ) : (
-                                                <span>Seleccionar rango</span>
-                                            )}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0 border border-slate-200 rounded-2xl shadow-xl" align="start">
-                                        <Calendar
-                                            initialFocus
-                                            mode="range"
-                                            defaultMonth={dateRange.from}
-                                            selected={{
-                                                from: dateRange.from,
-                                                to: dateRange.to
-                                            } as any}
-                                            onSelect={(range: any) => {
-                                                if (range?.from) {
-                                                    // Snap to period instead of literal range selection
-                                                    const period = getPeriodRange(range.from, user?.role || 'TECNICO');
-                                                    setDateRange({ from: period.start, to: period.end });
-                                                }
-                                            }}
-                                            numberOfMonths={2}
-                                            modifiers={{
-                                                selectedPeriod: (date) => {
-                                                    if (!dateRange.from || !dateRange.to) return false;
-                                                    return isWithinInterval(date, { start: dateRange.from, end: dateRange.to });
-                                                }
-                                            }}
-                                            modifiersClassNames={{
-                                                selectedPeriod: "bg-[#FF7E5F]/15 font-bold rounded-none first:rounded-l-md last:rounded-r-md"
-                                            }}
-                                        />
-                                    </PopoverContent>
-                                </Popover>
+                                <Button variant="ghost" size="icon" onClick={() => navigateWeeklyRange('prev')} className="h-9 w-9 rounded-none hover:bg-slate-50 text-slate-400">
+                                    <ChevronLeft className="size-4" />
+                                </Button>
+                                <div className="h-9 px-4 flex items-center gap-2 border-x border-slate-100 text-slate-700 font-bold text-[11px] uppercase tracking-tight">
+                                    <CalendarIcon className="size-4 text-[#FF7E5F]" />
+                                    {dateRange.from ? (
+                                        dateRange.to ? (
+                                            <>
+                                                {format(dateRange.from, "d MMM", { locale: es })} - {format(dateRange.to, "d MMM", { locale: es })}
+                                            </>
+                                        ) : (
+                                            format(dateRange.from, "d 'de' MMMM", { locale: es })
+                                        )
+                                    ) : (
+                                        <span>Seleccionar rango</span>
+                                    )}
+                                </div>
+                                <Button variant="ghost" size="icon" onClick={() => navigateWeeklyRange('next')} className="h-9 w-9 rounded-none hover:bg-slate-50 text-slate-400">
+                                    <ChevronRight className="size-4" />
+                                </Button>
                             </div>
                         ) : null}
                     </div>
