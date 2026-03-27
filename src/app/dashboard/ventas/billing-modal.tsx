@@ -233,7 +233,11 @@ export function BillingModal({
         PR_IDPRODUCTO_FK: p.PR_IDPRODUCTO_FK,
         TR_IDTECNICO_FK: p.TR_IDTECNICO_FK,
         FP_VALOR: Number(p.FP_VALOR),
-        FD_IDDETALLE_FK: p.FD_IDDETALLE_FK
+        FP_CANTIDAD: p.FP_CANTIDAD || 1,
+        FP_PORCENTAJE_APLICADO: p.FP_PORCENTAJE_APLICADO || 0,
+        FP_COMISION_VALOR: p.FP_COMISION_VALOR || 0,
+        FD_IDDETALLE_FK: p.FD_IDDETALLE_FK,
+        tr_tecnico_nombre: p.tr_tecnico_nombre
       }))
 
       return {
@@ -249,7 +253,11 @@ export function BillingModal({
       PR_IDPRODUCTO_FK: p.PR_IDPRODUCTO_FK,
       TR_IDTECNICO_FK: p.TR_IDTECNICO_FK,
       FP_VALOR: Number(p.FP_VALOR),
-      FD_IDDETALLE_FK: null
+      FP_CANTIDAD: p.FP_CANTIDAD || 1,
+      FP_PORCENTAJE_APLICADO: p.FP_PORCENTAJE_APLICADO || 0,
+      FP_COMISION_VALOR: p.FP_COMISION_VALOR || 0,
+      FD_IDDETALLE_FK: null,
+      tr_tecnico_nombre: p.tr_tecnico_nombre
     }))
 
     return {
@@ -303,6 +311,9 @@ export function BillingModal({
           PR_IDPRODUCTO_FK: productData.PR_IDPRODUCTO_FK,
           TR_IDTECNICO_FK: productData.TR_IDTECNICO_FK,
           FP_VALOR: productData.FP_VALOR,
+          FP_CANTIDAD: productData.FP_CANTIDAD || 1,
+          FP_PORCENTAJE_APLICADO: productData.FP_PORCENTAJE_APLICADO || 0,
+          FP_COMISION_VALOR: productData.FP_COMISION_VALOR || 0,
           FD_IDDETALLE_FK: productData.FD_IDDETALLE_FK
         }
       ])
@@ -936,16 +947,22 @@ export function BillingModal({
                               )} />
                             </td>
                             <td className="px-4 py-3">
-                              <FormField control={form.control} name={`services.${index}.TR_IDTECNICO_FK`} render={({ field }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <ComboboxSearch options={technicianOptions} value={field.value} disabled={isPaid}
-                                      onValueChange={(val) => field.onChange(val)}
-                                      placeholder="Tecnico..." className="h-9 text-xs" />
-                                  </FormControl>
-                                  <FormMessage className="text-[10px]" />
-                                </FormItem>
-                              )} />
+                              {isPaid ? (
+                                <div className="h-9 flex items-center px-3 bg-slate-50 border border-slate-100 rounded-md text-xs font-bold text-indigo-600 uppercase">
+                                  {watchedServices[index]?.tr_tecnico_nombre || 'No asignado'}
+                                </div>
+                              ) : (
+                                <FormField control={form.control} name={`services.${index}.TR_IDTECNICO_FK`} render={({ field }) => (
+                                  <FormItem>
+                                    <FormControl>
+                                      <ComboboxSearch options={technicianOptions} value={field.value} disabled={isPaid}
+                                        onValueChange={(val) => field.onChange(val)}
+                                        placeholder="Tecnico..." className="h-9 text-xs" />
+                                    </FormControl>
+                                    <FormMessage className="text-[10px]" />
+                                  </FormItem>
+                                )} />
+                              )}
                             </td>
                             <td className="px-2 py-3">
                               <FormField control={form.control} name={`services.${index}.FD_CANTIDAD`} render={({ field }) => (
@@ -972,7 +989,10 @@ export function BillingModal({
                                     return (
                                       <div key={pIdx} className="bg-blue-50/70 border border-blue-100 rounded-lg px-2 py-1 flex items-center gap-2 group/prod">
                                         <div className="flex flex-col">
-                                          <span className="text-[10px] font-black text-blue-900 uppercase leading-none">{pName}</span>
+                                          <div className="flex items-center gap-1">
+                                            <span className="text-[10px] font-black text-blue-900 uppercase leading-none">{pName}</span>
+                                            <span className="text-[8px] font-bold text-indigo-400 uppercase">({p.tr_tecnico_nombre || 'Téc'})</span>
+                                          </div>
                                           <span className="text-[8px] font-bold text-blue-500 tabular-nums">${Number(p.FP_VALOR).toLocaleString('es-CO')}</span>
                                         </div>
                                         <div className="flex items-center gap-0.5 ml-1 opacity-0 group-hover/prod:opacity-100 transition-opacity">

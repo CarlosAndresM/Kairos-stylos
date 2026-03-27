@@ -48,12 +48,18 @@ export async function getInvoiceById(id: number): Promise<ApiResponse> {
 
     // Fetch details
     const [services]: any = await (db as any).execute(
-      "SELECT fd_iddetalle_pk, fd_valor, fd_cantidad, sv_idservicio_fk, tr_idtecnico_fk FROM ks_factura_detalles WHERE fc_idfactura_fk = ?",
+      `SELECT fd.fd_iddetalle_pk, fd.fd_valor, fd.fd_cantidad, fd.sv_idservicio_fk, fd.tr_idtecnico_fk, t.tr_nombre as tr_tecnico_nombre
+       FROM ks_factura_detalles fd
+       LEFT JOIN ks_trabajadores t ON fd.tr_idtecnico_fk = t.tr_idtrabajador_pk
+       WHERE fd.fc_idfactura_fk = ?`,
       [id]
     );
 
     const [products]: any = await (db as any).execute(
-      "SELECT fp_idfactura_producto_pk, fp_valor, fp_cantidad, fp_porcentaje_aplicado, fp_comision_valor, pr_idproducto_fk, tr_idtecnico_fk, fd_iddetalle_fk FROM ks_factura_productos WHERE fc_idfactura_fk = ?",
+      `SELECT fp.fp_idfactura_producto_pk, fp.fp_valor, fp.fp_cantidad, fp.fp_porcentaje_aplicado, fp.fp_comision_valor, fp.pr_idproducto_fk, fp.tr_idtecnico_fk, fp.fd_iddetalle_fk, t.tr_nombre as tr_tecnico_nombre
+       FROM ks_factura_productos fp
+       LEFT JOIN ks_trabajadores t ON fp.tr_idtecnico_fk = t.tr_idtrabajador_pk
+       WHERE fp.fc_idfactura_fk = ?`,
       [id]
     );
 
@@ -472,7 +478,14 @@ export async function getInvoicesByFilter(filters: { sucursalId?: number, date?:
       (SELECT GROUP_CONCAT(DISTINCT mp.mp_nombre SEPARATOR ', ') 
        FROM ks_pagos_factura pf 
        JOIN ks_metodos_pago mp ON pf.mp_idmetodo_fk = mp.mp_idmetodo_pk 
-       WHERE pf.fc_idfactura_fk = f.fc_idfactura_pk) as metodos_pago
+       WHERE pf.fc_idfactura_fk = f.fc_idfactura_pk) as metodos_pago,
+      (SELECT GROUP_CONCAT(DISTINCT t_all.tr_nombre SEPARATOR ', ')
+       FROM (
+         SELECT tr_idtecnico_fk FROM ks_factura_detalles WHERE fc_idfactura_fk = f.fc_idfactura_pk
+         UNION
+         SELECT tr_idtecnico_fk FROM ks_factura_productos WHERE fc_idfactura_fk = f.fc_idfactura_pk
+       ) as techs
+       JOIN ks_trabajadores t_all ON techs.tr_idtecnico_fk = t_all.tr_idtrabajador_pk) as tecnicos
       FROM ks_facturas f 
       JOIN ks_sucursales s ON f.sc_idsucursal_fk = s.sc_idsucursal_pk
       LEFT JOIN ks_trabajadores t ON f.tr_idcliente_fk = t.tr_idtrabajador_pk

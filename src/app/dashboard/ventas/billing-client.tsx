@@ -327,6 +327,9 @@ export function BillingClient({
                     />
                   </TableHead>
                   <TableHead className="h-10 py-0 px-4">
+                    <span className="font-bold uppercase tracking-wider text-[10px] text-slate-500">Técnicos</span>
+                  </TableHead>
+                  <TableHead className="h-10 py-0 px-4">
                     <span className="font-bold uppercase tracking-wide text-[10px] text-slate-500">Pago</span>
                   </TableHead>
                   <TableHead className="h-10 py-0 px-4 text-right w-[110px]">
@@ -390,6 +393,11 @@ export function BillingClient({
                             </span>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell className="py-2 px-4">
+                        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tight block max-w-[120px] truncate" title={invoice.tecnicos}>
+                          {invoice.tecnicos || '--'}
+                        </span>
                       </TableCell>
                       <TableCell className="py-2 px-4">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block max-w-[100px] truncate" title={invoice.metodos_pago}>

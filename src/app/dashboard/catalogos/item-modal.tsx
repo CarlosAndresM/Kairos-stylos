@@ -41,11 +41,9 @@ export function ItemModal({ isOpen, onClose, onSave, editingItem, type }: ItemMo
     shouldUnregister: true,
     defaultValues: editingItem || (type === 'service' ? {
       SV_NOMBRE: '',
-      SV_PRECIO: 0,
       SV_ACTIVO: true
     } : {
       PR_NOMBRE: '',
-      PR_PRECIO: 0,
       PR_APLICA_COMISION: false,
       PR_PORCENTAJE_COMISION: 0,
       PR_ACTIVO: true
@@ -65,12 +63,10 @@ export function ItemModal({ isOpen, onClose, onSave, editingItem, type }: ItemMo
         [activeField]: editingItem[activeField] ?? true,
         ...(type === 'service' 
           ? { 
-              SV_IDSERVICIO_PK: editingItem.SV_IDSERVICIO_PK,
-              SV_PRECIO: editingItem.SV_PRECIO || 0
+              SV_IDSERVICIO_PK: editingItem.SV_IDSERVICIO_PK
             } 
           : { 
               PR_IDPRODUCTO_PK: editingItem.PR_IDPRODUCTO_PK,
-              PR_PRECIO: editingItem.PR_PRECIO || 0,
               PR_APLICA_COMISION: !!editingItem.PR_APLICA_COMISION,
               PR_PORCENTAJE_COMISION: editingItem.PR_PORCENTAJE_COMISION || 0
             }
@@ -79,11 +75,9 @@ export function ItemModal({ isOpen, onClose, onSave, editingItem, type }: ItemMo
     } else {
       form.reset(type === 'service' ? {
         SV_NOMBRE: '',
-        SV_PRECIO: 0,
         SV_ACTIVO: true
       } : {
         PR_NOMBRE: '',
-        PR_PRECIO: 0,
         PR_APLICA_COMISION: false,
         PR_PORCENTAJE_COMISION: 0,
         PR_ACTIVO: true
@@ -132,19 +126,6 @@ export function ItemModal({ isOpen, onClose, onSave, editingItem, type }: ItemMo
               )}
             />
 
-            <FormField
-              control={form.control}
-              name={type === 'service' ? 'SV_PRECIO' : 'PR_PRECIO'}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Precio Base</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.01" placeholder="0.00" {...field} className="rounded-xl" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             {type === 'product' && (
               <>

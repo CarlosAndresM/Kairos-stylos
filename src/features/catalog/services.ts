@@ -12,7 +12,7 @@ import { revalidatePath } from "next/cache";
 export async function getServices(): Promise<ApiResponse> {
   try {
     const [rows] = await db.execute(
-      "SELECT SV_IDSERVICIO_PK, SV_NOMBRE, SV_PRECIO, SV_ACTIVO FROM KS_SERVICIOS ORDER BY SV_NOMBRE ASC"
+      "SELECT SV_IDSERVICIO_PK, SV_NOMBRE, SV_ACTIVO FROM KS_SERVICIOS ORDER BY SV_NOMBRE ASC"
     );
 
     // Convert TINYINT (0/1) from MySQL to Boolean for Zod validation
@@ -32,13 +32,13 @@ export async function saveService(data: ServiceFormData): Promise<ApiResponse> {
   try {
     if (data.SV_IDSERVICIO_PK) {
       await db.execute(
-        "UPDATE KS_SERVICIOS SET SV_NOMBRE = ?, SV_PRECIO = ?, SV_ACTIVO = ? WHERE SV_IDSERVICIO_PK = ?",
-        [data.SV_NOMBRE, data.SV_PRECIO, data.SV_ACTIVO, data.SV_IDSERVICIO_PK]
+        "UPDATE KS_SERVICIOS SET SV_NOMBRE = ?, SV_ACTIVO = ? WHERE SV_IDSERVICIO_PK = ?",
+        [data.SV_NOMBRE, data.SV_ACTIVO, data.SV_IDSERVICIO_PK]
       );
     } else {
       await db.execute(
-        "INSERT INTO KS_SERVICIOS (SV_NOMBRE, SV_PRECIO, SV_ACTIVO) VALUES (?, ?, ?)",
-        [data.SV_NOMBRE, data.SV_PRECIO, data.SV_ACTIVO]
+        "INSERT INTO KS_SERVICIOS (SV_NOMBRE, SV_ACTIVO) VALUES (?, ?)",
+        [data.SV_NOMBRE, data.SV_ACTIVO]
       );
     }
     revalidatePath("/dashboard/catalogos");
@@ -68,7 +68,7 @@ export async function getProducts(): Promise<ApiResponse> {
   try {
     // FORCE NO CACHE with a random comment
     const [rows] = await db.execute(
-      "SELECT PR_IDPRODUCTO_PK, PR_NOMBRE, PR_PRECIO, PR_APLICA_COMISION, PR_PORCENTAJE_COMISION, PR_ACTIVO FROM KS_PRODUCTOS ORDER BY PR_NOMBRE ASC"
+      "SELECT PR_IDPRODUCTO_PK, PR_NOMBRE, PR_APLICA_COMISION, PR_PORCENTAJE_COMISION, PR_ACTIVO FROM KS_PRODUCTOS ORDER BY PR_NOMBRE ASC"
     );
 
     const products = (rows as any[]).map(p => ({
@@ -87,13 +87,13 @@ export async function saveProduct(data: ProductFormData): Promise<ApiResponse> {
   try {
     if (data.PR_IDPRODUCTO_PK) {
       await db.execute(
-        "UPDATE KS_PRODUCTOS SET PR_NOMBRE = ?, PR_PRECIO = ?, PR_APLICA_COMISION = ?, PR_PORCENTAJE_COMISION = ?, PR_ACTIVO = ? WHERE PR_IDPRODUCTO_PK = ?",
-        [data.PR_NOMBRE, data.PR_PRECIO, data.PR_APLICA_COMISION, data.PR_PORCENTAJE_COMISION, data.PR_ACTIVO, data.PR_IDPRODUCTO_PK]
+        "UPDATE KS_PRODUCTOS SET PR_NOMBRE = ?, PR_APLICA_COMISION = ?, PR_PORCENTAJE_COMISION = ?, PR_ACTIVO = ? WHERE PR_IDPRODUCTO_PK = ?",
+        [data.PR_NOMBRE, data.PR_APLICA_COMISION, data.PR_PORCENTAJE_COMISION, data.PR_ACTIVO, data.PR_IDPRODUCTO_PK]
       );
     } else {
       await db.execute(
-        "INSERT INTO KS_PRODUCTOS (PR_NOMBRE, PR_PRECIO, PR_APLICA_COMISION, PR_PORCENTAJE_COMISION, PR_ACTIVO) VALUES (?, ?, ?, ?, ?)",
-        [data.PR_NOMBRE, data.PR_PRECIO, data.PR_APLICA_COMISION, data.PR_PORCENTAJE_COMISION, data.PR_ACTIVO]
+        "INSERT INTO KS_PRODUCTOS (PR_NOMBRE, PR_APLICA_COMISION, PR_PORCENTAJE_COMISION, PR_ACTIVO) VALUES (?, ?, ?, ?)",
+        [data.PR_NOMBRE, data.PR_APLICA_COMISION, data.PR_PORCENTAJE_COMISION, data.PR_ACTIVO]
       );
     }
     revalidatePath("/dashboard/catalogos");

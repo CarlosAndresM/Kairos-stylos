@@ -18,6 +18,7 @@ export const invoiceServiceSchema = z.object({
     FP_COMISION_VALOR: z.coerce.number().min(0).default(0),
     FD_IDDETALLE_FK: z.any().optional().nullable(),
   })).optional().default([]),
+  tr_tecnico_nombre: z.string().optional().nullable(),
 });
 
 export const invoiceProductSchema = z.object({
@@ -29,6 +30,7 @@ export const invoiceProductSchema = z.object({
   FP_PORCENTAJE_APLICADO: z.coerce.number().min(0).max(100).default(0),
   FP_COMISION_VALOR: z.coerce.number().min(0).default(0),
   FD_IDDETALLE_FK: z.any().optional().nullable(),
+  tr_tecnico_nombre: z.string().optional().nullable(),
 });
 
 // Desglose de pagos mixtos
