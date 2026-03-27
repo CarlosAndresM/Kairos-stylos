@@ -746,7 +746,7 @@ export function BillingModal({
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Evidencia física</label>
                     <div className="flex items-center gap-2">
-                      <input type="file" accept="image/*" className="hidden" ref={physicalInvoiceInputRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhysicalInvoiceUpload(f) }} />
+                      <input type="file" accept="image/*" capture="environment" className="hidden" ref={physicalInvoiceInputRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhysicalInvoiceUpload(f) }} />
                       <Button type="button" variant="outline" size="sm" disabled={uploadingPhysical || isPaid} onClick={() => physicalInvoiceInputRef.current?.click()} className={cn("gap-2", form.watch("FC_EVIDENCIA_FISICA_URL") && "border-green-300 text-green-700 bg-green-50")}>
                         {uploadingPhysical ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
                         {form.watch("FC_EVIDENCIA_FISICA_URL") ? 'Foto adjunta' : 'Subir foto'}
@@ -1070,7 +1070,7 @@ export function BillingModal({
                                 </FormItem>
                               )} />
                               <div className="flex items-center gap-1">
-                                <input type="file" accept="image/*" className="hidden" ref={el => { fileInputRefs.current[`${idx}`] = el }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(idx, f) }} />
+                                <input type="file" accept="image/*" capture="environment" className="hidden" ref={el => { fileInputRefs.current[`${idx}`] = el }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(idx, f) }} />
                                 <button type="button" disabled={uploadingIndexes.includes(idx) || isPaid} onClick={(e) => { e.stopPropagation(); fileInputRefs.current[`${idx}`]?.click() }}
                                   className={cn("p-1.5 rounded border text-xs transition-all",
                                     uploadingIndexes.includes(idx) ? "border-slate-200 text-slate-300" :
