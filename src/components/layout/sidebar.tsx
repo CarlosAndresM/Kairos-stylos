@@ -61,15 +61,15 @@ const NAV_GROUPS = [
         roles: ['ADMINISTRADOR_TOTAL']
       },
       {
-        title: 'Gastos',
-        href: '/dashboard/gastos',
-        icon: TrendingDown,
-        roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
-      },
-      {
         title: 'Ventas y Factura',
         href: '/dashboard/ventas',
         icon: Receipt,
+        roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
+      },
+      {
+        title: 'Gastos',
+        href: '/dashboard/gastos',
+        icon: TrendingDown,
         roles: ['ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO']
       },
     ]

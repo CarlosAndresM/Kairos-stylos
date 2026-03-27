@@ -47,6 +47,7 @@ import { toast } from "@/lib/toast-helper";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
@@ -205,19 +206,36 @@ export default function NominaClient() {
 
 
 
-  const handleDownloadZip = () => {
+  const handleDownloadZip = async () => {
     const startSimple = format(startDate, 'yyyy-MM-dd');
     const endSimple = format(endDate, 'yyyy-MM-dd');
     const url = `/api/nomina/zip-volantes?startDate=${startSimple}&endDate=${endSimple}&type=TECNICO`;
     
     toast.info("Generando archivo ZIP de volantes, por favor espere...");
     
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', '');
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    try {
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "No se pudo generar el archivo");
+      }
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.setAttribute('download', `VOLANTES_${format(endDate, 'yyyy-MM-dd')}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast.success("Archivo ZIP generado correctamente");
+    } catch (err: any) {
+      console.error("Error downloading ZIP:", err);
+      toast.error(err.message || "Error al descargar el archivo ZIP");
+    }
   };
 
   const currentRangeLabel = `${format(startDate, "dd MMM", { locale: es })} - ${format(endDate, "dd MMM yyyy", { locale: es })}`;
@@ -442,6 +460,9 @@ export default function NominaClient() {
                 Parametrizar Nomina Técnicos
               </DialogTitle>
             </div>
+            <DialogDescription className="sr-only">
+              Configuración de comisiones y vigencias para el pago de nómina de técnicos.
+            </DialogDescription>
             <Button
               onClick={() => setShowConfigForm(!showConfigForm)}
               className={cn(
@@ -585,6 +606,9 @@ export default function NominaClient() {
               <DialogTitle className="text-2xl font-black uppercase tracking-tighter italic">Comprobante de Pago</DialogTitle>
               <div className="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-bold uppercase tracking-widest">Nomina Semanal</div>
             </div>
+            <DialogDescription className="sr-only">
+              Vista del volante de pago detallado para el técnico.
+            </DialogDescription>
           </DialogHeader>
 
           {showVolante && (

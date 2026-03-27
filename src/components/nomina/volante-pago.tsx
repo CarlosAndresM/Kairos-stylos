@@ -111,32 +111,33 @@ export function VolantePago({ data, auditData = [] }: { data: any, auditData?: a
           </div>
         </div>
 
-        {/* Conceptos Seccionados */}
-        <div className="px-6 py-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Conceptos Seccionados - Uno debajo del otro */}
+        <div className="px-6 py-6 space-y-10">
+          <div className="space-y-6">
             {/* Devengados */}
             <div>
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 flex items-center gap-2 border-l-2 border-emerald-500 pl-2">
+              <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 flex items-center gap-2 border-l-4 border-emerald-500 pl-3">
                 Devengado (Ingresos)
               </h4>
               <table className="w-full text-[11px]">
                 <tbody className="divide-y divide-slate-100">
-                  {devengos.map((d: any, i) => (
-                    <tr key={i} className="group">
-                      <td className="py-2 text-slate-600">
-                        <div className="flex flex-col">
-                          <span className="font-bold">{d.desc}</span>
-                          {d.count > 0 && <span className="text-[9px] text-slate-400 font-medium">Cantidad: {d.count} unidades</span>}
-                        </div>
-                      </td>
-                      <td className="py-2 text-right font-black text-slate-900">{fmt(d.val)}</td>
-                    </tr>
-                  ))}
+                    {devengos.map((d: any, i) => (
+                      <tr key={i} className="group">
+                        <td className="py-3 text-slate-600">
+                          <div className="flex flex-col">
+                            <span className="font-bold uppercase tracking-tight text-xs">
+                              {d.desc} {d.count > 0 ? `(${d.count})` : ''}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 text-right font-black text-slate-900 border-b border-slate-50">{fmt(d.val)}</td>
+                      </tr>
+                    ))}
                 </tbody>
                 <tfoot>
-                  <tr className="font-bold border-t border-slate-200">
-                    <td className="pt-2 text-slate-400 uppercase text-[9px] italic">Total Devengado</td>
-                    <td className="pt-2 text-right text-emerald-600 text-xs">
+                  <tr className="font-bold border-t-2 border-slate-200">
+                    <td className="pt-3 text-slate-400 uppercase text-[10px] italic">Total Devengado</td>
+                    <td className="pt-3 text-right text-emerald-600 text-sm">
                       {fmt(devengos.reduce((acc, curr) => acc + curr.val, 0))}
                     </td>
                   </tr>
@@ -144,9 +145,12 @@ export function VolantePago({ data, auditData = [] }: { data: any, auditData?: a
               </table>
             </div>
 
+            {/* Separador visual */}
+            <div className="border-t border-slate-100 my-4" />
+
             {/* Deducciones */}
             <div>
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 flex items-center gap-2 border-l-2 border-red-500 pl-2">
+              <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 flex items-center gap-2 border-l-4 border-red-500 pl-3">
                 Deducciones (Egresos)
               </h4>
               <table className="w-full text-[11px]">
@@ -176,81 +180,6 @@ export function VolantePago({ data, auditData = [] }: { data: any, auditData?: a
             </div>
           </div>
         </div>
-
-        {/* Detalle de Actividad Desglosado */}
-        {auditData.length > 0 && (
-          <div className="px-6 pb-6 space-y-4">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 border-t pt-4">
-              <Receipt className="size-3" /> Desglose Detallado de Actividad
-            </h4>
-
-            <div className="grid grid-cols-1 gap-4">
-              {/* Tabla Servicios */}
-              {finalSvc.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-black text-emerald-600 uppercase bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">Servicios Realizados</span>
-                    <span className="text-[10px] font-bold text-slate-400">{finalSvc.length} Registros</span>
-                  </div>
-                  <div className="border border-slate-100 rounded-lg overflow-hidden">
-                    <table className="w-full text-[10px]">
-                      <thead className="bg-slate-50/50">
-                        <tr className="text-slate-400 border-b border-slate-100">
-                          <th className="text-left font-bold px-3 py-1.5 uppercase tracking-tighter w-16">Fecha</th>
-                          <th className="text-left font-bold px-3 py-1.5 uppercase tracking-tighter">Descripción</th>
-                          <th className="text-center font-bold px-2 py-1.5 uppercase tracking-tighter w-12">Cant</th>
-                          <th className="text-right font-bold px-3 py-1.5 uppercase tracking-tighter w-32">Comisión</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50">
-                        {finalSvc.map((item, i) => (
-                          <tr key={i} className="hover:bg-slate-50/50">
-                            <td className="px-3 py-1.5 text-slate-400 font-medium">{new Date(item.FC_FECHA).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' })}</td>
-                            <td className="px-3 py-1.5 font-black text-slate-700 uppercase tracking-tight text-[9px]">{item.PF_DESCRIPCION}</td>
-                            <td className="px-2 py-1.5 text-center font-black text-slate-900">{item.PF_CANTIDAD}</td>
-                            <td className="px-3 py-1.5 text-right font-black text-slate-900">{fmt(item.PF_COMISION_VALOR)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* Tabla Productos */}
-              {finalPrd.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">Comisiones por Productos</span>
-                    <span className="text-[10px] font-bold text-slate-400">{finalPrd.length} Registros</span>
-                  </div>
-                  <div className="border border-slate-100 rounded-lg overflow-hidden">
-                    <table className="w-full text-[10px]">
-                      <thead className="bg-slate-50/50">
-                        <tr className="text-slate-400 border-b border-slate-100">
-                          <th className="text-left font-bold px-3 py-1.5 uppercase tracking-tighter w-16">Fecha</th>
-                          <th className="text-left font-bold px-3 py-1.5 uppercase tracking-tighter">Producto</th>
-                          <th className="text-center font-bold px-2 py-1.5 uppercase tracking-tighter w-12">Cant</th>
-                          <th className="text-right font-bold px-3 py-1.5 uppercase tracking-tighter w-32">Comisión</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50">
-                        {finalPrd.map((item, i) => (
-                          <tr key={i} className="hover:bg-slate-50/50">
-                            <td className="px-3 py-1.5 text-slate-400 font-medium">{new Date(item.FC_FECHA).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' })}</td>
-                            <td className="px-3 py-1.5 font-black text-slate-700 uppercase tracking-tight text-[9px]">{item.PF_DESCRIPCION}</td>
-                            <td className="px-2 py-1.5 text-center font-black text-slate-900">{item.PF_CANTIDAD}</td>
-                            <td className="px-3 py-1.5 text-right font-black text-slate-900">{fmt(item.PF_COMISION_VALOR)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Neto Final Compacto */}
         <div className="mx-6 mb-6 p-4 bg-slate-900 text-white rounded-xl flex justify-between items-center shadow-lg border-t-4 border-[#FF7E5F]">

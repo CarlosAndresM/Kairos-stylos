@@ -341,7 +341,7 @@ export const VolantePDF = ({ data, logoUrl, auditData = [] }: { data: any, logoU
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 30 }}>
+        <View style={{ flexDirection: 'column', gap: 20 }}>
           {/* Devengados */}
           <View style={{ flex: 1 }}>
             <View style={[styles.sectionHeader, { borderLeftWidth: 2, borderLeftColor: '#10B981', paddingLeft: 6 }]}>
@@ -351,8 +351,9 @@ export const VolantePDF = ({ data, logoUrl, auditData = [] }: { data: any, logoU
               {devengos.map((item: any, i) => (
                 <View key={i} style={styles.tableRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.cellDesc}>{item.desc}</Text>
-                    {item.count > 0 && <Text style={{ fontSize: 6, color: '#94A3B8' }}>Cantidad: {item.count}</Text>}
+                    <Text style={styles.cellDesc}>
+                      {item.desc} {item.count > 0 ? `(${item.count})` : ''}
+                    </Text>
                   </View>
                   <Text style={styles.cellAmount}>{fmt(item.val)}</Text>
                 </View>
@@ -376,7 +377,7 @@ export const VolantePDF = ({ data, logoUrl, auditData = [] }: { data: any, logoU
                   <Text style={[styles.cellAmount, { color: '#DC2626' }]}>- {fmt(item.val)}</Text>
                 </View>
               )) : (
-                <Text style={{ fontSize: 8, color: '#94A3B8', fontStyle: 'italic', marginTop: 10, textAlign: 'center' }}>No hay deducciones</Text>
+                <Text style={{ fontSize: 8, color: '#94A3B8', marginTop: 10, textAlign: 'center' }}>No hay deducciones</Text>
               )}
               {deducciones.length > 0 && (
                 <View style={styles.subtotalRow}>
@@ -396,57 +397,6 @@ export const VolantePDF = ({ data, logoUrl, auditData = [] }: { data: any, logoU
           </View>
           <Text style={styles.netoValue}>{fmt(data.ND_TOTAL_NETO)}</Text>
         </View>
-
-        {/* Desglose de Actividad */}
-        {auditData.length > 0 && (
-          <View style={{ marginTop: 20 }}>
-            <Text style={[styles.sectionTitle, { marginBottom: 10, borderTopWidth: 0.5, borderTopColor: '#F1F5F9', paddingTop: 10 }]}>Desglose Detallado de Actividad</Text>
-
-            {finalSvc.length > 0 && (
-              <View style={{ marginBottom: 15 }}>
-                <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#059669', marginBottom: 5 }}>Servicios Realizados</Text>
-                <View style={{ borderWidth: 0.5, borderColor: '#F1F5F9', borderRadius: 4 }}>
-                  <View style={[styles.auditHeader, { backgroundColor: '#F8FAFC' }]}>
-                    <Text style={styles.colFecha}>Fecha</Text>
-                    <Text style={styles.colDesc}>Descripción</Text>
-                    <Text style={styles.colCant}>Cant</Text>
-                    <Text style={styles.colComm}>Comisión</Text>
-                  </View>
-                  {finalSvc.map((item, i) => (
-                    <View key={i} style={styles.auditRow}>
-                      <Text style={styles.colFecha}>{new Date(item.FC_FECHA).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' })}</Text>
-                      <Text style={styles.colDesc}>{item.PF_DESCRIPCION}</Text>
-                      <Text style={styles.colCant}>{item.PF_CANTIDAD}</Text>
-                      <Text style={styles.colComm}>{fmt(item.PF_COMISION_VALOR)}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {finalPrd.length > 0 && (
-              <View>
-                <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#2563EB', marginBottom: 5 }}>Comisiones por Productos</Text>
-                <View style={{ borderWidth: 0.5, borderColor: '#F1F5F9', borderRadius: 4 }}>
-                  <View style={[styles.auditHeader, { backgroundColor: '#F8FAFC' }]}>
-                    <Text style={styles.colFecha}>Fecha</Text>
-                    <Text style={styles.colDesc}>Producto</Text>
-                    <Text style={styles.colCant}>Cant</Text>
-                    <Text style={styles.colComm}>Comisión</Text>
-                  </View>
-                  {finalPrd.map((item, i) => (
-                    <View key={i} style={styles.auditRow}>
-                      <Text style={styles.colFecha}>{new Date(item.FC_FECHA).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' })}</Text>
-                      <Text style={styles.colDesc}>{item.PF_DESCRIPCION}</Text>
-                      <Text style={styles.colCant}>{item.PF_CANTIDAD}</Text>
-                      <Text style={styles.colComm}>{fmt(item.PF_COMISION_VALOR)}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-          </View>
-        )}
 
         <Text style={styles.footer}>
           Este documento es un comprobante informativo de liquidación de nómina. {new Date().getFullYear()} kairos STYLOS.
