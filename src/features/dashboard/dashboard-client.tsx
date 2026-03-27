@@ -1160,6 +1160,8 @@ export function DashboardClient() {
                                             </Table>
                                         </div>
                                     </Card>
+                                </div>
+                            </div>
                         )}
 
                                     {/* Metric Detail Modal */}
