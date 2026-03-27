@@ -723,16 +723,16 @@ export function DashboardClient() {
                                         <Table>
                                             <TableHeader className="bg-slate-50/30">
                                                 <TableRow className="hover:bg-transparent border-b border-slate-100">
-                                                    <TableHead className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider w-[120px]">Factura</TableHead>
-                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider w-[100px] text-center">Fecha</TableHead>
-                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Sucursal</TableHead>
-                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Técnicos</TableHead>
-                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Cliente</TableHead>
-                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider text-center">Teléfono</TableHead>
-                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider">Detalle Servicios</TableHead>
-                                                    <TableHead className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider text-right w-[120px]">Total</TableHead>
-                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider text-center w-[120px]">Estado</TableHead>
-                                                    <TableHead className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider text-right w-[100px]">Acciones</TableHead>
+                                                    <TableHead className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider w-[120px] border border-slate-200">Factura</TableHead>
+                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider w-[100px] text-center border border-slate-200">Fecha</TableHead>
+                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider border border-slate-200">Sucursal</TableHead>
+                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider border border-slate-200">Técnicos</TableHead>
+                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider border border-slate-200">Cliente</TableHead>
+                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider text-center border border-slate-200">Teléfono</TableHead>
+                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider border border-slate-200">Detalle Servicios</TableHead>
+                                                    <TableHead className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider text-right w-[120px] border border-slate-200">Total</TableHead>
+                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider text-center w-[120px] border border-slate-200">Estado</TableHead>
+                                                    <TableHead className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider text-right w-[100px] border border-slate-200">Acciones</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -748,32 +748,32 @@ export function DashboardClient() {
                                                     <>
                                                         {(specificData?.facturas || []).map((f: any) => (
                                                             <TableRow key={f.FC_IDFACTURA_PK} className="transition-colors border-b border-slate-100/50 group">
-                                                                <TableCell className="px-6 py-4 text-xs font-bold text-slate-900">{f.FC_NUMERO_FACTURA}</TableCell>
-                                                                <TableCell className="px-4 py-4 text-[10px] font-medium text-slate-500 text-center tabular-nums">
+                                                                <TableCell className="px-6 py-4 text-xs font-bold text-slate-900 border border-slate-200">{f.FC_NUMERO_FACTURA}</TableCell>
+                                                                <TableCell className="px-4 py-4 text-[10px] font-medium text-slate-500 text-center tabular-nums border border-slate-200">
                                                                     {format(new Date(f.FC_FECHA), "dd/MM/yyyy", { locale: es })}
                                                                 </TableCell>
-                                                                <TableCell className="px-4 py-4">
+                                                                <TableCell className="px-4 py-4 border border-slate-200">
                                                                     <span className="text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-lg whitespace-nowrap">
                                                                         {f.sucursal_nombre}
                                                                     </span>
                                                                 </TableCell>
-                                                                <TableCell className="px-4 py-4 max-w-[150px] truncate">
+                                                                <TableCell className="px-4 py-4 border border-slate-200">
                                                                     <span 
-                                                                      className="text-[10px] font-black text-[#00CED1] uppercase italic truncate"
+                                                                      className="text-[10px] font-black text-[#00CED1] uppercase italic"
                                                                       style={{ WebkitTextStroke: '0.4px black', letterSpacing: '0.1em' }}
                                                                     >
                                                                         {f.tecnicos || '--'}
                                                                     </span>
                                                                 </TableCell>
-                                                                <TableCell className="px-4 py-4 text-xs font-bold text-slate-700 uppercase">{f.cliente_display || 'GENERAL'}</TableCell>
-                                                                <TableCell className="px-4 py-4 text-[10px] font-medium text-slate-400 text-center tabular-nums">{f.FC_CLIENTE_TELEFONO || '--'}</TableCell>
-                                                                <TableCell className="px-4 py-4 text-[11px] font-medium text-slate-500 max-w-[300px] truncate italic transition-all">
+                                                                <TableCell className="px-4 py-4 text-xs font-bold text-slate-700 uppercase border border-slate-200">{f.cliente_display || 'GENERAL'}</TableCell>
+                                                                <TableCell className="px-4 py-4 text-[10px] font-medium text-slate-400 text-center tabular-nums border border-slate-200">{f.FC_CLIENTE_TELEFONO || '--'}</TableCell>
+                                                                <TableCell className="px-4 py-4 text-[11px] font-medium text-slate-500 italic transition-all border border-slate-200">
                                                                     {f.servicios || '--'}
                                                                     {f.productos && (
                                                                         <span className="text-[#FF7E5F] font-bold"> + {f.productos}</span>
                                                                     )}
                                                                 </TableCell>
-                                                                <TableCell className="px-6 py-4 text-center">
+                                                                <TableCell className="px-6 py-4 text-center border border-slate-200">
                                                                     <div className={cn(
                                                                         "text-sm font-black tabular-nums text-right",
                                                                         f.FC_ESTADO === 'CANCELADO' ? "text-slate-300 line-through" : "text-slate-900"
@@ -781,7 +781,7 @@ export function DashboardClient() {
                                                                         $ {(Number(f.FC_TOTAL) || 0).toLocaleString('es-CO')}
                                                                     </div>
                                                                 </TableCell>
-                                                                <TableCell className="px-4 py-4 text-center">
+                                                                <TableCell className="px-4 py-4 text-center border border-slate-200">
                                                                     <span className={cn(
                                                                         "px-2.5 py-1 rounded-full text-[10px] font-bold tracking-tight border",
                                                                         f.FC_ESTADO === 'PAGADO' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
@@ -791,8 +791,8 @@ export function DashboardClient() {
                                                                         {f.FC_ESTADO}
                                                                     </span>
                                                                 </TableCell>
-                                                                <TableCell className="px-6 py-4 text-right">
-                                                                    <div className="flex justify-end gap-1.5 transition-opacity">
+                                                                <TableCell className="px-6 py-4 text-right border border-slate-200">
+                                                                    <div className="flex justify-end gap-1.5 transition-opacity opacity-100">
                                                                         <button
                                                                             onClick={() => handleOpenInvoice(f, true)}
                                                                             className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-900 rounded-xl transition-all"
@@ -918,14 +918,14 @@ export function DashboardClient() {
                                     <div className="overflow-x-auto">
                                         <Table>
                                             <TableHeader className="bg-slate-50/30">
-                                                <TableRow className="hover:bg-transparent border-b border-slate-100 text-center">
-                                                    <TableHead className="px-6 py-3 font-bold text-slate-500 text-[10px] uppercase w-[120px]">Factura</TableHead>
-                                                    <TableHead className="px-4 py-3 font-bold text-slate-500 text-[10px] uppercase w-[100px] text-center">Fecha</TableHead>
-                                                    <TableHead className="px-4 py-3 font-bold text-slate-500 text-[10px] uppercase">Producto</TableHead>
-                                                    <TableHead className="px-4 py-3 font-bold text-slate-500 text-[10px] uppercase text-right">Valor</TableHead>
-                                                    <TableHead className="px-4 py-3 font-bold text-slate-500 text-[10px] uppercase">Técnico</TableHead>
-                                                    <TableHead className="px-4 py-3 font-bold text-slate-500 text-[10px] uppercase">Servicio Asociado</TableHead>
-                                                    <TableHead className="px-6 py-3 font-bold text-slate-500 text-[10px] uppercase text-right w-[100px]">Acción</TableHead>
+                                                <TableRow className="hover:bg-transparent border-b border-slate-100/50">
+                                                    <TableHead className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase w-[120px] border border-slate-200">Factura</TableHead>
+                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase w-[100px] text-center border border-slate-200">Fecha</TableHead>
+                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase border border-slate-200">Producto</TableHead>
+                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase text-right border border-slate-200">Valor</TableHead>
+                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase border border-slate-200">Técnico</TableHead>
+                                                    <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase border border-slate-200">Servicio Asociado</TableHead>
+                                                    <TableHead className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase text-right w-[100px] border border-slate-200">Acción</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -941,16 +941,16 @@ export function DashboardClient() {
                                                     <>
                                                         {(specificData?.productos || []).map((p: any) => (
                                                             <TableRow key={p.FP_IDFACTURA_PRODUCTO_PK} className="transition-colors border-b border-slate-50 group">
-                                                                <TableCell className="px-6 py-3 text-xs font-bold text-slate-900">#{p.FC_NUMERO_FACTURA}</TableCell>
-                                                                <TableCell className="px-4 py-3 text-[10px] font-medium text-slate-500 text-center tabular-nums">
+                                                                <TableCell className="px-6 py-4 text-xs font-bold text-slate-900 border border-slate-200">#{p.FC_NUMERO_FACTURA}</TableCell>
+                                                                <TableCell className="px-4 py-4 text-[10px] font-medium text-slate-500 text-center tabular-nums border border-slate-200">
                                                                     {format(new Date(p.FC_FECHA), 'dd/MM/yyyy', { locale: es })}
                                                                 </TableCell>
-                                                                <TableCell className="px-4 py-3 text-xs font-bold text-slate-700 uppercase">{p.producto_nombre}</TableCell>
-                                                                <TableCell className="px-4 py-3 text-xs font-black text-right text-slate-900 tabular-nums">
+                                                                <TableCell className="px-4 py-4 text-xs font-bold text-slate-700 uppercase border border-slate-200">{p.producto_nombre}</TableCell>
+                                                                <TableCell className="px-4 py-4 text-xs font-black text-right text-slate-900 tabular-nums border border-slate-200">
                                                                     $ {(Number(p.FP_VALOR) || 0).toLocaleString('es-CO')}
                                                                 </TableCell>
-                                                                <TableCell className="px-4 py-3 text-[11px] font-bold uppercase text-slate-500 italic">{p.tecnico_nombre}</TableCell>
-                                                                <TableCell className="px-4 py-3">
+                                                                <TableCell className="px-4 py-4 text-[11px] font-bold uppercase text-slate-500 italic border border-slate-200">{p.tecnico_nombre}</TableCell>
+                                                                <TableCell className="px-4 py-4 border border-slate-200">
                                                                     {p.servicio_nombre ? (
                                                                         <span className="bg-slate-100 text-[10px] font-bold text-slate-500 px-2 py-0.5 rounded-lg border border-slate-200">
                                                                             {p.servicio_nombre}
@@ -959,8 +959,8 @@ export function DashboardClient() {
                                                                         <span className="text-slate-300 italic text-[10px]">SIN ASOCIACIÓN</span>
                                                                     )}
                                                                 </TableCell>
-                                                                <TableCell className="px-6 py-3 text-right">
-                                                                    <div className="flex justify-end gap-1 font-black transition-opacity">
+                                                                <TableCell className="px-6 py-4 text-right border border-slate-200">
+                                                                    <div className="flex justify-end gap-1 font-black transition-opacity opacity-100">
                                                                         <button
                                                                             onClick={() => handleOpenInvoice({ ...p, FC_IDFACTURA_PK: p.FC_IDFACTURA_FK }, true)}
                                                                             className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-slate-900 rounded-xl transition-all"
@@ -1135,15 +1135,15 @@ export function DashboardClient() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-800 bg-slate-50/50">
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4">Concepto / ID</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4">Fecha</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4">{detailType === 'VALES' ? 'Nombre' : 'Cliente'}</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4">Técnicos</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4">Detalle</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4">Servicios</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4">Productos</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right">Total</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right w-[60px]">Ver</TableHead>
+                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Concepto / ID</TableHead>
+                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Fecha</TableHead>
+                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">{detailType === 'VALES' ? 'Nombre' : 'Cliente'}</TableHead>
+                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Técnicos</TableHead>
+                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Detalle</TableHead>
+                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Servicios</TableHead>
+                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Productos</TableHead>
+                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right border border-slate-200">Total</TableHead>
+                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right w-[60px] border border-slate-200">Ver</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>

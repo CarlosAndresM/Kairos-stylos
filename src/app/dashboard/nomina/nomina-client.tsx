@@ -304,12 +304,12 @@ export default function NominaClient() {
           <Table>
             <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] px-6">Trabajador</TableHead>
-                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Comisiones (Neto)</TableHead>
-                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Servicio Trabajador</TableHead>
-                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Vales</TableHead>
-                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right px-6">Total a Pagar</TableHead>
-                <TableHead className="w-[80px]"></TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] px-6 border border-slate-200">Trabajador</TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right border border-slate-200">Comisiones (Neto)</TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right border border-slate-200">Servicio Trabajador</TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right border border-slate-200">Vales</TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right px-6 border border-slate-200">Total a Pagar</TableHead>
+                <TableHead className="w-[80px] border border-slate-200"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -317,26 +317,26 @@ export default function NominaClient() {
                 nominaData.map((item, idx) => (
                   <TableRow key={idx} className="hover:bg-slate-50 transition-colors border-b border-slate-100 group">
                     <TableCell 
-                      className="font-black text-[#00CED1] text-xs px-6 uppercase tracking-tight"
+                      className="font-black text-[#00CED1] text-xs px-6 uppercase tracking-tight border border-slate-200"
                       style={{ WebkitTextStroke: '0.4px black', letterSpacing: '0.1em' }}
                     >
                       {item.TR_NOMBRE}
                     </TableCell>
-                    <TableCell className="text-right font-bold text-xs text-emerald-600">$ {item.ND_COMISIONES.toLocaleString('es-CO')}</TableCell>
-                    <TableCell className="text-right font-medium text-xs text-red-600 tracking-tighter">
+                    <TableCell className="text-right font-bold text-xs text-emerald-600 border border-slate-200">$ {item.ND_COMISIONES.toLocaleString('es-CO')}</TableCell>
+                    <TableCell className="text-right font-medium text-xs text-red-600 tracking-tighter border border-slate-200">
                       - $ {(item.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0).toLocaleString('es-CO')}
                     </TableCell>
-                    <TableCell className="text-right font-medium text-xs text-orange-600 tracking-tighter">
+                    <TableCell className="text-right font-medium text-xs text-orange-600 tracking-tighter border border-slate-200">
                       - $ {(item.ND_DEDUCCIONES_VALES || 0).toLocaleString('es-CO')}
                     </TableCell>
-                    <TableCell className="text-right font-black text-sm text-slate-900 px-6">
+                    <TableCell className="text-right font-black text-sm text-slate-900 px-6 border border-slate-200">
                       $ {Math.max(0, Number(item.ND_TOTAL_NETO || 0)).toLocaleString('es-CO')}
                       {Number(item.ND_TOTAL_NETO) < 0 && (
                         <div className="text-[9px] text-red-500 font-bold uppercase mt-1">Saldo Negativo: $ {Math.abs(Number(item.ND_TOTAL_NETO)).toLocaleString('es-CO')}</div>
                       )}
                     </TableCell>
-                    <TableCell className="px-6 text-right">
-                      <div className="flex justify-end gap-1">
+                    <TableCell className="px-6 text-right border border-slate-200">
+                      <div className="flex justify-end gap-1 opacity-100 transition-opacity">
 
                         <button
                           onClick={async () => {

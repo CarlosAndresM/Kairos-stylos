@@ -152,7 +152,7 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
             <Table>
               <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-10 py-0 px-4">
+                  <TableHead className="h-10 py-0 px-4 border border-slate-200">
                     <TableFilter
                       label="Nombre"
                       options={getFilterOptions('TR_NOMBRE')}
@@ -160,7 +160,7 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                       onFilterChange={(vals: string[]) => handleFilterChange('TR_NOMBRE', vals)}
                     />
                   </TableHead>
-                  <TableHead className="h-10 py-0 px-4">
+                  <TableHead className="h-10 py-0 px-4 border border-slate-200">
                     <TableFilter
                       label="Teléfono"
                       options={getFilterOptions('TR_TELEFONO')}
@@ -168,7 +168,7 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                       onFilterChange={(vals: string[]) => handleFilterChange('TR_TELEFONO', vals)}
                     />
                   </TableHead>
-                  <TableHead className="h-10 py-0 px-4">
+                  <TableHead className="h-10 py-0 px-4 border border-slate-200">
                     <TableFilter
                       label="Rol"
                       options={getFilterOptions('RL_NOMBRE')}
@@ -177,7 +177,7 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                     />
                   </TableHead>
                   {isTotalAdmin && (
-                    <TableHead className="h-10 py-0 px-4">
+                    <TableHead className="h-10 py-0 px-4 border border-slate-200">
                       <TableFilter
                         label="Sucursal"
                         options={getFilterOptions('SC_NOMBRE')}
@@ -186,10 +186,10 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                       />
                     </TableHead>
                   )}
-                  <TableHead className="h-10 py-0 px-4 font-bold text-slate-500 uppercase tracking-wider text-[10px] text-center">Servicios</TableHead>
-                  <TableHead className="h-10 py-0 px-4 font-bold text-slate-500 uppercase tracking-wider text-[10px] text-center">Vales</TableHead>
-                  <TableHead className="h-10 py-0 px-4 font-bold text-slate-500 uppercase tracking-wider text-[10px] text-center">Deuda</TableHead>
-                  <TableHead className="h-10 py-0 px-4 text-center">
+                  <TableHead className="h-10 py-0 px-4 font-bold text-slate-500 uppercase tracking-wider text-[10px] text-center border border-slate-200">Servicios</TableHead>
+                  <TableHead className="h-10 py-0 px-4 font-bold text-slate-500 uppercase tracking-wider text-[10px] text-center border border-slate-200">Vales</TableHead>
+                  <TableHead className="h-10 py-0 px-4 font-bold text-slate-500 uppercase tracking-wider text-[10px] text-center border border-slate-200">Deuda</TableHead>
+                  <TableHead className="h-10 py-0 px-4 text-center border border-slate-200">
                     <TableFilter
                       label="Estado"
                       align="center"
@@ -198,13 +198,13 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                       onFilterChange={(vals: string[]) => handleFilterChange('TR_ACTIVO', vals)}
                     />
                   </TableHead>
-                  <TableHead className="h-10 py-0 px-4 font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right">Acciones</TableHead>
+                  <TableHead className="h-10 py-0 px-4 font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right border border-slate-200">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredWorkers.map((worker) => (
                   <TableRow key={worker.TR_IDTRABAJADOR_PK} className="hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors group border-b border-slate-100 dark:border-slate-800/50">
-                    <TableCell className="py-2 px-4">
+                    <TableCell className="py-2 px-4 border border-slate-200">
                       <span 
                         className="font-black text-[#00CED1] text-xs uppercase tracking-tight"
                         style={{ WebkitTextStroke: '0.4px black', letterSpacing: '0.1em' }}
@@ -212,27 +212,27 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                         {worker.TR_NOMBRE}
                       </span>
                     </TableCell>
-                    <TableCell className="py-2 px-4">
+                    <TableCell className="py-2 px-4 border border-slate-200">
                       <span className="text-[11px] font-bold text-slate-600">
                         {worker.TR_TELEFONO || '---'}
                       </span>
                     </TableCell>
-                    <TableCell className="py-2 px-4">
+                    <TableCell className="py-2 px-4 border border-slate-200">
                       <span className="text-[10px] font-bold uppercase text-slate-500 italic bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded-md border border-slate-100 dark:border-slate-800">
                         {worker.RL_NOMBRE.replace('_', ' ')}
                       </span>
                     </TableCell>
                     {isTotalAdmin && (
-                      <TableCell className="py-2 px-4">
+                      <TableCell className="py-2 px-4 border border-slate-200">
                         <span className="text-[10px] font-medium text-slate-400">
                           {worker.SC_NOMBRE || 'GLOBAL'}
                         </span>
                       </TableCell>
                     )}
-                    <TableCell className="py-2 px-4 text-center">
+                    <TableCell className="py-2 px-4 text-center border border-slate-200">
                       <span className="text-xs font-black text-slate-900 dark:text-white">{worker.servicios_count || 0}</span>
                     </TableCell>
-                    <TableCell className="py-2 px-4 text-center">
+                    <TableCell className="py-2 px-4 text-center border border-slate-200">
                       <NumericFormat
                         value={worker.total_vales || 0}
                         displayType="text"
@@ -248,7 +248,7 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                         )}
                       />
                     </TableCell>
-                    <TableCell className="py-2 px-4 text-center">
+                    <TableCell className="py-2 px-4 text-center border border-slate-200">
                       <span className={cn(
                         "text-xs font-black",
                         (worker.vales_pendientes || 0) > 0 ? "text-red-600" : "text-slate-400"
@@ -256,7 +256,7 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                         {worker.vales_pendientes || 0}
                       </span>
                     </TableCell>
-                    <TableCell className="py-2 px-4 text-center">
+                    <TableCell className="py-2 px-4 text-center border border-slate-200">
                       <span className={cn(
                         "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter border shadow-sm",
                         worker.TR_ACTIVO ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20" : "bg-red-50 text-red-600 border-red-100 dark:bg-red-950/20"
@@ -265,8 +265,8 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                       </span>
                     </TableCell>
                     {isTotalAdmin && (
-                      <TableCell className="py-2 px-4 text-right">
-                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <TableCell className="py-2 px-4 text-right border border-slate-200">
+                        <div className="flex justify-end gap-1 opacity-100 transition-opacity">
                           <button
                             onClick={() => handleToggleStatus(worker)}
                             className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 rounded-lg transition-all"

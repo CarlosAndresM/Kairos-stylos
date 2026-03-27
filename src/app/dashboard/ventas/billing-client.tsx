@@ -283,7 +283,7 @@ export function BillingClient({
             <Table>
               <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-10 py-0 px-4 w-[110px]">
+                  <TableHead className="h-10 py-0 px-4 w-[110px] border border-slate-200">
                     <TableFilter
                       label="FACT. #"
                       options={getFilterOptions('FC_NUMERO_FACTURA')}
@@ -291,7 +291,7 @@ export function BillingClient({
                       onFilterChange={(vals) => handleFilterChange('FC_NUMERO_FACTURA', vals)}
                     />
                   </TableHead>
-                  <TableHead className="h-10 py-0 px-4">
+                  <TableHead className="h-10 py-0 px-4 border border-slate-200">
                     <TableFilter
                       label="SUCURSAL"
                       options={getFilterOptions('sucursal_nombre')}
@@ -299,7 +299,7 @@ export function BillingClient({
                       onFilterChange={(vals) => handleFilterChange('sucursal_nombre', vals)}
                     />
                   </TableHead>
-                  <TableHead className="h-10 py-0 px-4">
+                  <TableHead className="h-10 py-0 px-4 border border-slate-200">
                     <TableFilter
                       label="TELÉFONO"
                       options={getFilterOptions('FC_CLIENTE_TELEFONO')}
@@ -307,7 +307,7 @@ export function BillingClient({
                       onFilterChange={(vals) => handleFilterChange('FC_CLIENTE_TELEFONO', vals)}
                     />
                   </TableHead>
-                  <TableHead className="h-10 py-0 px-4 text-center">
+                  <TableHead className="h-10 py-0 px-4 text-center border border-slate-200">
                     <TableFilter
                       label="TIPO"
                       align="center"
@@ -316,7 +316,7 @@ export function BillingClient({
                       onFilterChange={(vals) => handleFilterChange('FC_TIPO_CLIENTE', vals)}
                     />
                   </TableHead>
-                  <TableHead className="h-10 py-0 px-4">
+                  <TableHead className="h-10 py-0 px-4 border border-slate-200">
                     <TableFilter
                       label="CLIENTE"
                       options={getFilterOptions('cliente_display')}
@@ -324,7 +324,7 @@ export function BillingClient({
                       onFilterChange={(vals) => handleFilterChange('cliente_display', vals)}
                     />
                   </TableHead>
-                  <TableHead className="h-10 py-0 px-4">
+                  <TableHead className="h-10 py-0 px-4 border border-slate-200">
                     <TableFilter
                       label="SERVICIOS / PRODUCTOS"
                       options={services.map(s => s.SV_NOMBRE).sort()}
@@ -332,7 +332,7 @@ export function BillingClient({
                       onFilterChange={(vals) => handleFilterChange('servicios', vals)}
                     />
                   </TableHead>
-                  <TableHead className="h-10 py-0 px-4">
+                  <TableHead className="h-10 py-0 px-4 border border-slate-200">
                     <TableFilter
                       label="TÉCNICOS"
                       options={technicians.map((t: any) => t.TR_NOMBRE || t.tr_nombre).filter(Boolean).sort()}
@@ -340,13 +340,13 @@ export function BillingClient({
                       onFilterChange={(vals) => handleFilterChange('tecnicos', vals)}
                     />
                   </TableHead>
-                  <TableHead className="h-10 py-0 px-4">
+                  <TableHead className="h-10 py-0 px-4 border border-slate-200">
                     <span className="font-bold uppercase tracking-wide text-[10px] text-slate-500">Pago</span>
                   </TableHead>
-                  <TableHead className="h-10 py-0 px-4 text-right w-[110px]">
+                  <TableHead className="h-10 py-0 px-4 text-right w-[110px] border border-slate-200">
                     <span className="font-bold uppercase tracking-wider text-[10px] text-slate-500 pr-2">Total</span>
                   </TableHead>
-                  <TableHead className="h-10 py-0 px-4 text-center w-[100px]">
+                  <TableHead className="h-10 py-0 px-4 text-center w-[100px] border border-slate-200">
                     <TableFilter
                       label="ESTADO"
                       align="center"
@@ -355,7 +355,7 @@ export function BillingClient({
                       onFilterChange={(vals) => handleFilterChange('FC_ESTADO', vals)}
                     />
                   </TableHead>
-                  <TableHead className="h-10 py-0 px-4 text-right w-[60px]">
+                  <TableHead className="h-10 py-0 px-4 text-right w-[60px] border border-slate-200">
                     <span className="font-bold uppercase tracking-wider text-[10px] text-slate-500">Acción</span>
                   </TableHead>
                 </TableRow>
@@ -367,15 +367,15 @@ export function BillingClient({
                       key={invoice.FC_IDFACTURA_PK}
                       className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
                     >
-                      <TableCell className="py-2 px-4 font-bold text-slate-700 text-xs">
+                      <TableCell className="py-2 px-4 font-bold text-slate-700 text-xs border border-slate-200">
                         {invoice.FC_NUMERO_FACTURA}
                       </TableCell>
-                      <TableCell className="py-2 px-4">
+                      <TableCell className="py-2 px-4 border border-slate-200">
                         <Badge variant="outline" className="text-[10px] uppercase font-bold">
                           {invoice.sucursal_nombre}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-2 px-4">
+                      <TableCell className="py-2 px-4 border border-slate-200">
                         <span 
                           className="text-[10px] font-black text-slate-500 tabular-nums uppercase"
                           style={{ WebkitTextStroke: '0.4px black', letterSpacing: '0.1em' }}
@@ -383,7 +383,7 @@ export function BillingClient({
                           {invoice.FC_CLIENTE_TELEFONO || '--'}
                         </span>
                       </TableCell>
-                      <TableCell className="py-2 px-4 text-center">
+                      <TableCell className="py-2 px-4 text-center border border-slate-200">
                         <Badge variant="secondary" className={cn(
                           "text-[9px] font-black uppercase tracking-tighter px-2",
                           invoice.FC_TIPO_CLIENTE === 'TECNICO' ? "bg-indigo-50 text-indigo-600 border-indigo-100" : "bg-slate-50 text-slate-500"
@@ -391,38 +391,38 @@ export function BillingClient({
                           {invoice.FC_TIPO_CLIENTE}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-2 px-4">
-                        <span className="text-xs font-bold text-slate-700 truncate max-w-[150px] block">
+                      <TableCell className="py-2 px-4 border border-slate-200">
+                        <span className="text-xs font-bold text-slate-700 block">
                           {invoice.cliente_display || 'GENERAL'}
                         </span>
                       </TableCell>
-                      <TableCell className="py-2 px-4">
-                        <div className="flex flex-col gap-0.5 max-w-[200px]">
-                          <span className="text-[11px] font-medium text-slate-500 truncate" title={invoice.servicios}>
+                      <TableCell className="py-2 px-4 border border-slate-200">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[11px] font-medium text-slate-500" title={invoice.servicios}>
                             {invoice.servicios || '--'}
                           </span>
                           {invoice.productos_nombres && (
-                            <span className="text-[9px] font-bold text-[#FF7E5F] truncate italic" title={invoice.productos_nombres}>
+                            <span className="text-[9px] font-bold text-[#FF7E5F] italic" title={invoice.productos_nombres}>
                               + {invoice.productos_nombres}
                             </span>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="py-2 px-4">
+                      <TableCell className="py-2 px-4 border border-slate-200">
                         <span 
-                          className="text-[10px] font-black text-indigo-500 uppercase tracking-tight block max-w-[120px] truncate" 
+                          className="text-[10px] font-black text-indigo-500 uppercase tracking-tight block" 
                           style={{ WebkitTextStroke: '0.4px black', letterSpacing: '0.1em' }}
                           title={invoice.tecnicos}
                         >
                           {invoice.tecnicos || '--'}
                         </span>
                       </TableCell>
-                      <TableCell className="py-2 px-4">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block max-w-[100px] truncate" title={invoice.metodos_pago}>
+                      <TableCell className="py-2 px-4 border border-slate-200">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block" title={invoice.metodos_pago}>
                           {invoice.metodos_pago || '--'}
                         </span>
                       </TableCell>
-                      <TableCell className="py-2 px-4 text-right">
+                      <TableCell className="py-2 px-4 text-right border border-slate-200">
                         <span className={cn(
                           "text-sm font-black tracking-tight",
                           invoice.FC_ESTADO === 'CANCELADO' ? "text-slate-200 line-through" : "text-slate-800"
@@ -430,7 +430,7 @@ export function BillingClient({
                           $ {(Number(invoice.FC_TOTAL) || 0).toLocaleString('es-CO')}
                         </span>
                       </TableCell>
-                      <TableCell className="py-2 px-4 text-center">
+                      <TableCell className="py-2 px-4 text-center border border-slate-200">
                         <Badge className={cn(
                           "text-[10px] border-none",
                           invoice.FC_ESTADO === 'PAGADO' ? "bg-green-500 hover:bg-green-600 text-white" :
@@ -440,8 +440,8 @@ export function BillingClient({
                           {invoice.FC_ESTADO}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-2 px-4 text-right">
-                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <TableCell className="py-2 px-4 text-right border border-slate-200">
+                        <div className="flex justify-end gap-1 opacity-100 transition-opacity">
                           <Button
                             variant="ghost"
                             size="icon"
