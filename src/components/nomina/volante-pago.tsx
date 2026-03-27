@@ -213,7 +213,7 @@ function InfoRow({ label, value, bold }: { label: string, value: string, bold?: 
        <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">{label}</span>
        <span className={cn(
          "text-xs uppercase tracking-tight",
-         bold ? (label === 'Colaborador' ? 'font-black text-[#00CED1] [text-shadow:_-0.5px_-0.5px_0_#000,_0.5px_-0.5px_0_#000,_-0.5px_0.5px_0_#000,_0.5px_0.5px_0_#000]' : 'font-black text-slate-900') : 'font-bold text-slate-600'
+         bold ? (label === 'Colaborador' ? 'font-black text-[#00CED1]' : 'font-black text-slate-900') : 'font-bold text-slate-600'
        )}>{value}</span>
     </div>
   );

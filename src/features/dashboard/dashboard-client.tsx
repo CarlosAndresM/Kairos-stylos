@@ -641,10 +641,8 @@ export function DashboardClient() {
                                             key={i}
                                             className={cn(
                                                 "border border-slate-200 rounded-2xl shadow-sm overflow-hidden relative group transition-all hover:shadow-md cursor-pointer",
-                                                stat.title === 'VENTAS' ? "col-span-2 lg:col-span-2 hover:ring-2 hover:ring-[#FF7E5F]/50 bg-white" : 
-                                                (stat.title === 'SERVICIO TRABAJADOR' || stat.title === 'VALES') 
-                                                    ? "bg-[#00CED1] border-black border-[0.5px] hover:ring-2 hover:ring-black" 
-                                                    : "bg-white dark:bg-slate-900 hover:ring-2 hover:ring-[#FF7E5F]/50"
+                                                stat.title === 'VENTAS' ? "col-span-2 lg:col-span-2 hover:ring-2 hover:ring-[#FF7E5F]/50" : "hover:ring-2 hover:ring-[#FF7E5F]/50",
+                                                "bg-white dark:bg-slate-900"
                                             )}
                                             onClick={() => {
                                                 setDetailType(stat.title)
@@ -733,7 +731,7 @@ export function DashboardClient() {
                                                                     {index + 1}
                                                                 </div>
                                                                 <div className="flex flex-col truncate">
-                                                                    <span className="text-[11px] font-black text-[#00CED1] [text-shadow:_-0.5px_-0.5px_0_#000,_0.5px_-0.5px_0_#000,_-0.5px_0.5px_0_#000,_0.5px_0.5px_0_#000] uppercase tracking-tight truncate">{tech.name}</span>
+                                                                    <span className="text-[11px] font-black text-[#00CED1] uppercase tracking-tight truncate">{tech.name}</span>
                                                                 </div>
                                                             </div>
                                                             <div className="w-[20%] text-center">
