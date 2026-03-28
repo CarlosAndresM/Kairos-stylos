@@ -9,6 +9,7 @@ const envSchema = z.object({
   DB_PORT: z.string().default("3306"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   JWT_SECRET: z.string().default("kairos_stylos_secret_key_2026_secure_random_string"),
+  DB_TIMEZONE: z.string().default("UTC"),
 });
 
 const _env = envSchema.safeParse(process.env);

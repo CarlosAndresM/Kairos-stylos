@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { ApiResponse } from "@/lib/api-response";
 import { revalidatePath } from "next/cache";
 import { NominaBatchData, NominaConfigData, nominaConfigSchema } from "./schema";
+import { toLocalDateString } from "@/lib/date-utils";
 
 /**
  * Obtener todas las configuraciones ordenadas por fecha reciente
@@ -52,7 +53,7 @@ export async function saveNominaConfig(data: NominaConfigData): Promise<ApiRespo
     await db.execute(
       `INSERT INTO KS_NOMINA_CONFIG (NC_PORCENTAJE_SERVICIO, NC_FECHA_INICIO)
        VALUES (?, ?)`,
-      [validated.NC_PORCENTAJE_SERVICIO, validated.NC_FECHA_INICIO]
+      [validated.NC_PORCENTAJE_SERVICIO, toLocalDateString(validated.NC_FECHA_INICIO)]
     );
 
     revalidatePath("/dashboard/nomina");
@@ -86,7 +87,7 @@ export async function updateNominaConfig(id: number, data: NominaConfigData): Pr
       `UPDATE KS_NOMINA_CONFIG 
        SET NC_PORCENTAJE_SERVICIO = ?, NC_FECHA_INICIO = ?
        WHERE NC_IDCONFIG_PK = ?`,
-      [validated.NC_PORCENTAJE_SERVICIO, validated.NC_FECHA_INICIO, id]
+      [validated.NC_PORCENTAJE_SERVICIO, toLocalDateString(validated.NC_FECHA_INICIO), id]
     );
 
     revalidatePath("/dashboard/nomina");
@@ -114,8 +115,8 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
 
     // 2. Eliminar cualquier nómina existente en este rango y tipo que NO esté CONFIRMADA
     const [existing]: any = await (connection as any).execute(
-      "SELECT NM_IDNOMINA_PK FROM KS_NOMINAS WHERE DATE(NM_FECHA_INICIO) = DATE(?) AND DATE(NM_FECHA_FIN) = DATE(?) AND NM_TIPO = ? AND NM_ESTADO != 'CONFIRMADA'",
-      [data.startDate, data.endDate, roleName]
+      "SELECT NM_IDNOMINA_PK FROM KS_NOMINAS WHERE DATE(NM_FECHA_INICIO) = ? AND DATE(NM_FECHA_FIN) = ? AND NM_TIPO = ? AND NM_ESTADO != 'CONFIRMADA'",
+      [toLocalDateString(data.startDate), toLocalDateString(data.endDate), roleName]
     );
 
     if (existing.length > 0) {
@@ -126,7 +127,7 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
     // 3. Crear cabecera de Nómina
     const [nominaResult]: any = await (connection as any).execute(
       "INSERT INTO KS_NOMINAS (NM_FECHA_INICIO, NM_FECHA_FIN, NM_ESTADO, NM_TIPO) VALUES (?, ?, 'PROCESANDO', ?)",
-      [data.startDate, data.endDate, roleName]
+      [toLocalDateString(data.startDate), toLocalDateString(data.endDate), roleName]
     );
     const nominaId = nominaResult.insertId;
 
@@ -366,7 +367,7 @@ export async function desconfirmarNomina(nominaId: number): Promise<ApiResponse>
     );
 
     await connection.commit();
-    
+
     // Revalidar según el tipo
     if (NM_TIPO === 'TECNICO') revalidatePath("/dashboard/nomina");
     else if (NM_TIPO === 'ADMINISTRADOR_PUNTO') revalidatePath("/dashboard/nomina-admin");

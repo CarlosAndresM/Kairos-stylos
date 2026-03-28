@@ -1,5 +1,5 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
@@ -15,6 +15,18 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.ico",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Kairos Stylos",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
 }
 
 import { ThemeProvider } from "@/components/theme-provider"
@@ -38,6 +50,24 @@ export default function RootLayout({
           <Toaster position="bottom-right" />
           <Analytics />
         </ThemeProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(
+                    function(registration) {
+                      console.log('Service Worker registration successful with scope: ', registration.scope);
+                    },
+                    function(err) {
+                      console.log('Service Worker registration failed: ', err);
+                    }
+                  );
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   )

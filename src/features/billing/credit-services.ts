@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { ApiResponse } from "@/lib/api-response";
 import { revalidatePath } from "next/cache";
 import { finalizeUpload } from "@/lib/file-utils";
+import { toLocalDateString } from "@/lib/date-utils";
 
 /**
  * Obtener créditos (por defecto solo pendientes)
@@ -93,7 +94,7 @@ export async function payCredit(
     // 3. Registrar Abono (Trazabilidad)
     await connection.execute(
       "INSERT INTO KS_CREDITO_ABONOS (AB_VALOR, AB_FECHA, AB_EVIDENCIA_URL, CR_IDCREDITO_FK) VALUES (?, ?, ?, ?)",
-      [amount, params?.date || new Date(), finalEvidenceUrl || null, creditId]
+      [amount, toLocalDateString(params?.date || new Date()), finalEvidenceUrl || null, creditId]
     );
 
     // 4. Si se pagó todo, actualizar estado de factura

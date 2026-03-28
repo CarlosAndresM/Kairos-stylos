@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { ApiResponse } from "@/lib/api-response";
 import { SolicitudProductoFormData } from "./schema";
 import { revalidatePath } from "next/cache";
+import { toLocalDateString } from "@/lib/date-utils";
 
 export async function createSolicitud(data: SolicitudProductoFormData): Promise<ApiResponse> {
   try {
@@ -39,7 +40,7 @@ export async function updateSolicitudStatus(id: number, status: 'PENDIENTE' | 'E
        SP_ESTADO = ?, 
        SP_FECHA_ENTREGA = ? 
        WHERE SP_IDSOLICITUD_PK = ?`,
-      [status, fechaEntrega, id]
+      [status, toLocalDateString(fechaEntrega), id]
     );
 
     revalidatePath("/dashboard/solicitudes");

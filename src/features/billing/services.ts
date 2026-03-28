@@ -6,6 +6,7 @@ import { InvoiceFormData } from "@/features/billing/schema";
 import { revalidatePath } from "next/cache";
 import { hashPassword, comparePassword, isHashed } from "@/lib/password-utils";
 import { finalizeUpload } from "@/lib/file-utils";
+import { toLocalDateString } from "@/lib/date-utils";
 
 /**
  * Obtener todos los trabajadores activos y sus cargos
@@ -173,7 +174,7 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
          WHERE fc_idfactura_pk = ?`,
         [
           data.FC_NUMERO_FACTURA,
-          data.FC_FECHA,
+          toLocalDateString(data.FC_FECHA),
           data.FC_TIPO_CLIENTE === 'CLIENTE' ? data.FC_CLIENTE_NOMBRE : null,
           data.FC_TIPO_CLIENTE === 'CLIENTE' ? data.FC_CLIENTE_TELEFONO : null,
           data.FC_TOTAL,
@@ -228,7 +229,7 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           targetInvoiceNum,
-          data.FC_FECHA,
+          toLocalDateString(data.FC_FECHA),
           data.FC_TIPO_CLIENTE === 'CLIENTE' ? data.FC_CLIENTE_NOMBRE : null,
           data.FC_TIPO_CLIENTE === 'CLIENTE' ? data.FC_CLIENTE_TELEFONO : null,
           data.FC_TOTAL,
@@ -336,7 +337,7 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
         const valeId = existingVale[0].st_idservicio_trabajador_pk;
         await (connection as any).execute(
           "UPDATE ks_servicios_trabajador SET st_valor_total = ?, tr_idtrabajador_fk = ?, st_fecha = ? WHERE st_idservicio_trabajador_pk = ?",
-          [valorTotalServicio, data.TR_IDCLIENTE_FK || data.TR_IDCAJERO_FK, data.FC_FECHA, valeId]
+          [valorTotalServicio, data.TR_IDCLIENTE_FK || data.TR_IDCAJERO_FK, toLocalDateString(data.FC_FECHA), valeId]
         );
       } else {
         const numCuotas = data.VL_NUMERO_CUOTAS || 1;
@@ -346,7 +347,7 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
         const [vRes]: any = await (connection as any).execute(
           `INSERT INTO ks_servicios_trabajador (st_valor_total, st_numero_cuotas, st_valor_cuota, st_estado, fc_idfactura_fk, tr_idtrabajador_fk, st_fecha_inicio_cobro, st_fecha)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [valorTotalServicio, numCuotas, valorCuota, 'PENDIENTE', invoiceId, data.TR_IDCLIENTE_FK || data.TR_IDCAJERO_FK, fechaInicio, data.FC_FECHA]
+          [valorTotalServicio, numCuotas, valorCuota, 'PENDIENTE', invoiceId, data.TR_IDCLIENTE_FK || data.TR_IDCAJERO_FK, toLocalDateString(fechaInicio), toLocalDateString(data.FC_FECHA)]
         );
         const vId = vRes.insertId;
         for (let i = 1; i <= numCuotas; i++) {
@@ -355,7 +356,7 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
           await (connection as any).execute(
             `INSERT INTO ks_servicio_trabajador_cuotas (stc_numero_cuota, stc_valor_cuota, stc_estado, stc_fecha_cobro, st_idservicio_trabajador_fk)
                VALUES (?, ?, ?, ?, ?)`,
-            [i, valorCuota, 'PENDIENTE', fCuota, vId]
+            [i, valorCuota, 'PENDIENTE', toLocalDateString(fCuota), vId]
           );
         }
       }

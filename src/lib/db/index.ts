@@ -16,10 +16,20 @@ const pool = globalForDb.db ?? mysql.createPool({
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
+  timezone: env.DB_TIMEZONE, // Forzar zona horaria de Colombia
+  dateStrings: [
+    'DATE',
+    'DATETIME',
+    'TIMESTAMP'
+  ]
 });
 
 if (process.env.NODE_ENV !== 'production') globalForDb.db = pool;
-
+  
+// --- CONFIGURACIÓN DE ZONA HORARIA EN SESIÓN ---
+pool.on('connection', (connection) => {
+  connection.query(`SET time_zone = '${env.DB_TIMEZONE}'`);
+});
 // --- NORMALIZACIÓN DE SQL PARA LINUX ---
 const normalizeSql = (sql: any) => {
   if (typeof sql === 'string') {

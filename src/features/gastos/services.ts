@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { ApiResponse } from "@/lib/api-response";
 import { revalidatePath } from "next/cache";
 import { GastoData, UnifiedGasto, gastoSchema } from "./schema";
+import { toLocalDateString } from "@/lib/date-utils";
 
 /**
  * Obtener lista unificada de gastos (Manuales + Nómina Confirmada)
@@ -67,7 +68,7 @@ export async function createExpense(data: GastoData): Promise<ApiResponse<number
       [
         validated.GS_CONCEPTO,
         validated.GS_DESCRIPCION || '',
-        validated.GS_FECHA,
+        toLocalDateString(validated.GS_FECHA),
         validated.GS_VALOR,
         validated.SC_IDSUCURSAL_FK || null
       ]

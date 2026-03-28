@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { ResultSetHeader } from 'mysql2/promise';
 import { CreateValeInput } from '@/features/vales/schema';
+import { toLocalDateString } from '@/lib/date-utils';
 
 export async function createValeMutation(data: CreateValeInput) {
   const [result] = await db.query<ResultSetHeader>(
@@ -9,11 +10,11 @@ export async function createValeMutation(data: CreateValeInput) {
     [
       data.TR_IDTRABAJADOR_FK,
       data.VL_MONTO,
-      data.VL_FECHA || data.VL_FECHA_DESEMBOLSO || null,
+      toLocalDateString(data.VL_FECHA || data.VL_FECHA_DESEMBOLSO || null),
       data.VL_OBSERVACIONES || null,
       data.VL_CUOTAS || 1,
-      data.VL_FECHA_DESEMBOLSO || null,
-      data.VL_FECHA_INICIO_COBRO || null
+      toLocalDateString(data.VL_FECHA_DESEMBOLSO || null),
+      toLocalDateString(data.VL_FECHA_INICIO_COBRO || null)
     ]
   );
   return result.insertId;

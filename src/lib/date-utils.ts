@@ -48,3 +48,15 @@ export const getPeriodRange = (dateInput: Date | string, role: string): PeriodRa
 export const formatPeriodRange = (range: PeriodRange): string => {
   return `${range.label}: ${format(range.start, 'dd/MM')} - ${format(range.end, 'dd/MM')}`;
 };
+
+/**
+ * Convierte un objeto Date a un string 'YYYY-MM-DD' respetando la zona horaria de Colombia.
+ * Útil para guardar solo la FECHA en la DB y evitar problemas de desfase horario.
+ */
+export const toLocalDateString = (date: Date | string | null | undefined): string | null => {
+  if (!date) return null;
+  const targetDate = typeof date === 'string' ? new Date(date) : date;
+  
+  // Usamos sv-SE porque el formato es YYYY-MM-DD
+  return targetDate.toLocaleDateString('sv-SE', { timeZone: 'America/Bogota' });
+};
