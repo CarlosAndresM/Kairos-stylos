@@ -30,4 +30,10 @@ FROM ks_trabajadores t
 INNER JOIN ks_roles r ON t.rl_idrol_fk = r.rl_idrol_pk
 WHERE r.rl_nombre NOT IN ('ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO');
 
--- Conserva: ks_migraciones, ks_roles, ks_metodos_pago, ks_sucursales, administradores.
+-- Sucursales sin administradores asignados
+DELETE s
+FROM ks_sucursales s
+LEFT JOIN ks_trabajadores t ON t.sc_idsucursal_fk = s.sc_idsucursal_pk
+WHERE t.tr_idtrabajador_pk IS NULL;
+
+-- Conserva: ks_migraciones, ks_roles, ks_metodos_pago, ks_sucursales de admins, administradores.

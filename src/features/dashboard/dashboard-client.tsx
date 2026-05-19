@@ -323,7 +323,7 @@ export function DashboardClient() {
                                     value={selectedSede}
                                     onChange={(e) => setSelectedSede(Number(e.target.value))}
                                 >
-                                    <option value="-1" className="bg-slate-900">GENERAL (TODAS)</option>
+                                    <option value="-1" className="bg-slate-900">(TODAS LAS SUCURSALES)</option>
                                     {sedes.map(s => (
                                         <option key={s.SC_IDSUCURSAL_PK} value={s.SC_IDSUCURSAL_PK} className="bg-slate-900">{s.SC_NOMBRE}</option>
                                     ))}
