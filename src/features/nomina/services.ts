@@ -388,8 +388,8 @@ export async function desconfirmarNomina(nominaId: number): Promise<ApiResponse>
  */
 export async function getNominaByRange(startDate: Date, endDate: Date, type: string = 'TECNICO'): Promise<ApiResponse> {
   try {
-    const startStr = startDate.toISOString().split('T')[0];
-    const endStr = endDate.toISOString().split('T')[0];
+    const startStr = toLocalDateString(startDate);
+    const endStr = toLocalDateString(endDate);
 
     const [rows]: any = await db.query(
       "SELECT * FROM KS_NOMINAS WHERE DATE(NM_FECHA_INICIO) = ? AND DATE(NM_FECHA_FIN) = ? AND NM_TIPO = ? LIMIT 1",
@@ -475,8 +475,8 @@ export async function procesarNominaAdmins(data: {
 
     // 1. Eliminar cualquier nómina existente en este rango y tipo que NO esté CONFIRMADA
     const [existing]: any = await (connection as any).execute(
-      "SELECT NM_IDNOMINA_PK FROM KS_NOMINAS WHERE DATE(NM_FECHA_INICIO) = DATE(?) AND DATE(NM_FECHA_FIN) = DATE(?) AND NM_TIPO = ? AND NM_ESTADO != 'CONFIRMADA'",
-      [data.startDate, data.endDate, roleName]
+      "SELECT NM_IDNOMINA_PK FROM KS_NOMINAS WHERE DATE(NM_FECHA_INICIO) = ? AND DATE(NM_FECHA_FIN) = ? AND NM_TIPO = ? AND NM_ESTADO != 'CONFIRMADA'",
+      [toLocalDateString(data.startDate), toLocalDateString(data.endDate), roleName]
     );
 
     if (existing.length > 0) {
@@ -487,7 +487,7 @@ export async function procesarNominaAdmins(data: {
     // 2. Crear cabecera de Nómina
     const [nominaResult]: any = await (connection as any).execute(
       "INSERT INTO KS_NOMINAS (NM_FECHA_INICIO, NM_FECHA_FIN, NM_ESTADO, NM_TIPO) VALUES (?, ?, 'PROCESANDO', ?)",
-      [data.startDate, data.endDate, roleName]
+      [toLocalDateString(data.startDate), toLocalDateString(data.endDate), roleName]
     );
     const nominaId = nominaResult.insertId;
 
@@ -501,8 +501,8 @@ export async function procesarNominaAdmins(data: {
         `SELECT SUM(STC_VALOR_CUOTA) as total 
          FROM KS_SERVICIO_TRABAJADOR_CUOTAS stc
          JOIN KS_SERVICIOS_TRABAJADOR st ON stc.ST_IDSERVICIO_TRABAJADOR_FK = st.ST_IDSERVICIO_TRABAJADOR_PK
-         WHERE st.TR_IDTRABAJADOR_FK = ? AND stc.STC_ESTADO = 'PENDIENTE' AND DATE(stc.STC_FECHA_COBRO) BETWEEN DATE(?) AND DATE(?)`,
-        [item.workerId, data.startDate, data.endDate]
+         WHERE st.TR_IDTRABAJADOR_FK = ? AND stc.STC_ESTADO = 'PENDIENTE' AND DATE(stc.STC_FECHA_COBRO) BETWEEN ? AND ?`,
+        [item.workerId, toLocalDateString(data.startDate), toLocalDateString(data.endDate)]
       );
       const valesDeduct = Number(vales[0].total || 0);
 
@@ -511,8 +511,8 @@ export async function procesarNominaAdmins(data: {
         `SELECT VL_MONTO, VL_CUOTAS, VL_CUOTAS_PAGADAS, VL_IDVALE_PK
          FROM KS_VALES 
          WHERE TR_IDTRABAJADOR_FK = ? AND VL_ESTADO = 'PENDIENTE' 
-         AND DATE(VL_FECHA_INICIO_COBRO) <= DATE(?)`,
-        [item.workerId, data.endDate]
+         AND DATE(VL_FECHA_INICIO_COBRO) <= ?`,
+        [item.workerId, toLocalDateString(data.endDate)]
       );
 
       let valesTotalDeduct = 0;

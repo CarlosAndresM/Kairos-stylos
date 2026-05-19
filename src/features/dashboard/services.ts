@@ -64,7 +64,7 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
     // 5. Total Pendiente por Cobrar (SOLO EFECTIVO, TRANSF, DATAFONO en facturas pendientes)
     // Se omiten CRÉDITOS y VALES porque no se cobrarán hoy
     const [pendientesHoy]: any = await db.execute(
-      `SELECT SUM(pf.PF_VALOR) as total, COUNT(pf.PF_IDPAGO_PK) as count
+      `SELECT SUM(pf.PF_VALOR) as total, COUNT(DISTINCT f.FC_IDFACTURA_PK) as count
        FROM KS_PAGOS_FACTURA pf
        JOIN KS_FACTURAS f ON pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
