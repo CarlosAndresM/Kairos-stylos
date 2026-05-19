@@ -1,0 +1,278 @@
+{
+  "database": "kairos_stylos",
+  "schema_version": "030",
+  "tables": [
+    {
+      "name": "KS_MIGRACIONES",
+      "columns": [
+        { "name": "MG_IDMIGRACION_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "MG_NOMBRE", "type": "VARCHAR(255)", "nullable": false },
+        { "name": "MG_FECHA_EJECUCION", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP" }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_ROLES",
+      "columns": [
+        { "name": "RL_IDROL_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "RL_NOMBRE", "type": "VARCHAR(100)", "nullable": false, "unique": true }
+      ],
+      "seed_roles": ["ADMINISTRADOR_TOTAL", "ADMINISTRADOR_PUNTO", "TECNICO"],
+      "indexes": []
+    },
+    {
+      "name": "KS_SUCURSALES",
+      "columns": [
+        { "name": "SC_IDSUCURSAL_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "SC_NOMBRE", "type": "VARCHAR(100)", "nullable": false },
+        { "name": "SC_DIRECCION", "type": "VARCHAR(255)", "nullable": true }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_TRABAJADORES",
+      "columns": [
+        { "name": "TR_IDTRABAJADOR_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "TR_NOMBRE", "type": "VARCHAR(255)", "nullable": false },
+        { "name": "TR_TELEFONO", "type": "VARCHAR(20)", "nullable": true },
+        { "name": "TR_PASSWORD", "type": "VARCHAR(255)", "nullable": true },
+        { "name": "TR_ACTIVO", "type": "BOOLEAN", "default": true },
+        { "name": "RL_IDROL_FK", "type": "INT", "nullable": false, "references": "KS_ROLES.RL_IDROL_PK" },
+        { "name": "SC_IDSUCURSAL_FK", "type": "INT", "nullable": true, "references": "KS_SUCURSALES.SC_IDSUCURSAL_PK" }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_SERVICIOS",
+      "columns": [
+        { "name": "SV_IDSERVICIO_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "SV_NOMBRE", "type": "VARCHAR(255)", "nullable": false },
+        { "name": "SV_ACTIVO", "type": "BOOLEAN", "default": true }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_PRODUCTOS",
+      "columns": [
+        { "name": "PR_IDPRODUCTO_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "PR_NOMBRE", "type": "VARCHAR(255)", "nullable": false },
+        { "name": "PR_ACTIVO", "type": "BOOLEAN", "default": true },
+        { "name": "PR_APLICA_COMISION", "type": "BOOLEAN", "default": false },
+        { "name": "PR_PORCENTAJE_COMISION", "type": "DECIMAL(5,2)", "default": 0 }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_FACTURAS",
+      "columns": [
+        { "name": "FC_IDFACTURA_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "FC_NUMERO_FACTURA", "type": "VARCHAR(50)", "nullable": false, "unique": true },
+        { "name": "FC_FECHA", "type": "DATETIME", "nullable": false },
+        { "name": "FC_CLIENTE_NOMBRE", "type": "VARCHAR(255)", "nullable": true },
+        { "name": "FC_CLIENTE_TELEFONO", "type": "VARCHAR(20)", "nullable": true },
+        { "name": "FC_TOTAL", "type": "DECIMAL(15,2)", "default": 0 },
+        { "name": "FC_ESTADO", "type": "ENUM('PENDIENTE','PAGADO','CANCELADO')", "default": "PENDIENTE" },
+        { "name": "SC_IDSUCURSAL_FK", "type": "INT", "nullable": false, "references": "KS_SUCURSALES.SC_IDSUCURSAL_PK" },
+        { "name": "TR_IDCAJERO_FK", "type": "INT", "nullable": false, "references": "KS_TRABAJADORES.TR_IDTRABAJADOR_PK" },
+        { "name": "FC_TIPO_CLIENTE", "type": "ENUM('CLIENTE','TECNICO')", "default": "CLIENTE" },
+        { "name": "TR_IDCLIENTE_FK", "type": "INT", "nullable": true, "references": "KS_TRABAJADORES.TR_IDTRABAJADOR_PK" },
+        { "name": "FC_EVIDENCIA_FISICA_URL", "type": "VARCHAR(500)", "nullable": true }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_FACTURA_DETALLES",
+      "columns": [
+        { "name": "FD_IDDETALLE_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "FD_VALOR", "type": "DECIMAL(15,2)", "nullable": false },
+        { "name": "FD_CANTIDAD", "type": "INT", "default": 1 },
+        { "name": "FC_IDFACTURA_FK", "type": "INT", "nullable": false, "references": "KS_FACTURAS.FC_IDFACTURA_PK" },
+        { "name": "SV_IDSERVICIO_FK", "type": "INT", "nullable": false, "references": "KS_SERVICIOS.SV_IDSERVICIO_PK" },
+        { "name": "TR_IDTECNICO_FK", "type": "INT", "nullable": false, "references": "KS_TRABAJADORES.TR_IDTRABAJADOR_PK" }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_FACTURA_PRODUCTOS",
+      "columns": [
+        { "name": "FP_IDFACTURA_PRODUCTO_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "FP_VALOR", "type": "DECIMAL(15,2)", "nullable": false },
+        { "name": "FP_CANTIDAD", "type": "INT", "default": 1 },
+        { "name": "FC_IDFACTURA_FK", "type": "INT", "nullable": false, "references": "KS_FACTURAS.FC_IDFACTURA_PK" },
+        { "name": "PR_IDPRODUCTO_FK", "type": "INT", "nullable": false, "references": "KS_PRODUCTOS.PR_IDPRODUCTO_PK" },
+        { "name": "FD_IDDETALLE_FK", "type": "INT", "nullable": true, "references": "KS_FACTURA_DETALLES.FD_IDDETALLE_PK", "onDelete": "SET NULL" },
+        { "name": "FP_PORCENTAJE_APLICADO", "type": "DECIMAL(5,2)", "default": 0 },
+        { "name": "FP_COMISION_VALOR", "type": "DECIMAL(15,2)", "default": 0 },
+        { "name": "TR_IDTECNICO_FK", "type": "INT", "nullable": false, "references": "KS_TRABAJADORES.TR_IDTRABAJADOR_PK" }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_METODOS_PAGO",
+      "columns": [
+        { "name": "MP_IDMETODO_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "MP_NOMBRE", "type": "VARCHAR(50)", "nullable": false, "unique": true }
+      ],
+      "seed_methods": ["TRANSFERENCIA", "EFECTIVO", "DATAFONO", "CREDITO", "SERVICIO DE TRABAJADOR"],
+      "indexes": []
+    },
+    {
+      "name": "KS_PAGOS_FACTURA",
+      "columns": [
+        { "name": "PF_IDPAGO_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "PF_VALOR", "type": "DECIMAL(15,2)", "nullable": false },
+        { "name": "PF_EVIDENCIA_URL", "type": "VARCHAR(255)", "nullable": true },
+        { "name": "FC_IDFACTURA_FK", "type": "INT", "nullable": false, "references": "KS_FACTURAS.FC_IDFACTURA_PK" },
+        { "name": "MP_IDMETODO_FK", "type": "INT", "nullable": false, "references": "KS_METODOS_PAGO.MP_IDMETODO_PK" }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_SERVICIOS_TRABAJADOR",
+      "description": "Deuda/servicio del trabajador en factura (método de pago SERVICIO DE TRABAJADOR)",
+      "columns": [
+        { "name": "ST_IDSERVICIO_TRABAJADOR_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "ST_VALOR_TOTAL", "type": "DECIMAL(15,2)", "nullable": false },
+        { "name": "ST_NUMERO_CUOTAS", "type": "INT", "nullable": false },
+        { "name": "ST_VALOR_CUOTA", "type": "DECIMAL(15,2)", "nullable": false },
+        { "name": "ST_ESTADO", "type": "ENUM('PENDIENTE','PAGADO','CANCELADO')", "default": "PENDIENTE" },
+        { "name": "ST_FECHA", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP" },
+        { "name": "FC_IDFACTURA_FK", "type": "INT", "nullable": true, "references": "KS_FACTURAS.FC_IDFACTURA_PK" },
+        { "name": "TR_IDTRABAJADOR_FK", "type": "INT", "nullable": false, "references": "KS_TRABAJADORES.TR_IDTRABAJADOR_PK" },
+        { "name": "ST_FECHA_INICIO_COBRO", "type": "DATE", "nullable": true }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_SERVICIO_TRABAJADOR_CUOTAS",
+      "columns": [
+        { "name": "STC_IDCUOTA_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "STC_NUMERO_CUOTA", "type": "INT", "nullable": false },
+        { "name": "STC_VALOR_CUOTA", "type": "DECIMAL(15,2)", "nullable": false },
+        { "name": "STC_ESTADO", "type": "ENUM('PENDIENTE','PAGADO','CANCELADO')", "default": "PENDIENTE" },
+        { "name": "STC_FECHA_COBRO", "type": "DATE", "nullable": false },
+        { "name": "ST_IDSERVICIO_TRABAJADOR_FK", "type": "INT", "nullable": false, "references": "KS_SERVICIOS_TRABAJADOR.ST_IDSERVICIO_TRABAJADOR_PK", "onDelete": "CASCADE" }
+      ],
+      "indexes": [
+        { "name": "IDX_ST_CUOTA_ESTADO", "columns": ["STC_ESTADO"] },
+        { "name": "IDX_ST_CUOTA_FECHA", "columns": ["STC_FECHA_COBRO"] }
+      ]
+    },
+    {
+      "name": "KS_GASTOS",
+      "columns": [
+        { "name": "GS_IDGASTO_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "GS_CONCEPTO", "type": "VARCHAR(255)", "nullable": false },
+        { "name": "GS_DESCRIPCION", "type": "VARCHAR(255)", "nullable": true },
+        { "name": "GS_FECHA", "type": "DATETIME", "nullable": false },
+        { "name": "GS_VALOR", "type": "DECIMAL(15,2)", "nullable": false },
+        { "name": "SC_IDSUCURSAL_FK", "type": "INT", "nullable": true, "references": "KS_SUCURSALES.SC_IDSUCURSAL_PK" }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_CREDITOS",
+      "columns": [
+        { "name": "CR_IDCREDITO_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "CR_VALOR_PENDIENTE", "type": "DECIMAL(15,2)", "nullable": false },
+        { "name": "CR_FECHA", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP" },
+        { "name": "FC_IDFACTURA_FK", "type": "INT", "nullable": false, "references": "KS_FACTURAS.FC_IDFACTURA_PK" }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_CREDITO_ABONOS",
+      "columns": [
+        { "name": "AB_IDABONO_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "AB_VALOR", "type": "DECIMAL(15,2)", "nullable": false },
+        { "name": "AB_EVIDENCIA_URL", "type": "VARCHAR(255)", "nullable": true },
+        { "name": "AB_FECHA", "type": "DATETIME", "nullable": false, "default": "CURRENT_TIMESTAMP" },
+        { "name": "CR_IDCREDITO_FK", "type": "INT", "nullable": false, "references": "KS_CREDITOS.CR_IDCREDITO_PK", "onDelete": "CASCADE" }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_SOLICITUDES_PRODUCTOS",
+      "columns": [
+        { "name": "SP_IDSOLICITUD_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "SP_CANTIDAD", "type": "INT", "nullable": false },
+        { "name": "SP_ESTADO", "type": "ENUM('PENDIENTE','ENTREGADO','CANCELADO')", "default": "PENDIENTE" },
+        { "name": "SP_FECHA_SOLICITUD", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP" },
+        { "name": "SP_FECHA_ENTREGA", "type": "DATETIME", "nullable": true },
+        { "name": "SP_COMENTARIOS", "type": "TEXT", "nullable": true },
+        { "name": "SC_IDSUCURSAL_FK", "type": "INT", "nullable": false, "references": "KS_SUCURSALES.SC_IDSUCURSAL_PK" },
+        { "name": "PR_IDPRODUCTO_FK", "type": "INT", "nullable": false, "references": "KS_PRODUCTOS.PR_IDPRODUCTO_PK" },
+        { "name": "TR_IDTRABAJADOR_FK", "type": "INT", "nullable": true, "references": "KS_TRABAJADORES.TR_IDTRABAJADOR_PK" }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_NOMINAS",
+      "columns": [
+        { "name": "NM_IDNOMINA_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "NM_TIPO", "type": "VARCHAR(50)", "default": "TECNICO" },
+        { "name": "NM_FECHA_INICIO", "type": "DATE", "nullable": false },
+        { "name": "NM_FECHA_FIN", "type": "DATE", "nullable": false },
+        { "name": "NM_TOTAL_PAGADO", "type": "DECIMAL(15,2)", "default": 0 },
+        { "name": "NM_ESTADO", "type": "ENUM('PROCESANDO','CERRADA','CONFIRMADA','ANULADA')", "default": "PROCESANDO" },
+        { "name": "NM_FECHA_CIERRE", "type": "DATETIME", "nullable": true },
+        { "name": "NM_FECHA_CREACION", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP" }
+      ],
+      "indexes": [
+        { "name": "IDX_NOMINA_FECHAS", "columns": ["NM_FECHA_INICIO", "NM_FECHA_FIN"] },
+        { "name": "IDX_NOMINA_ESTADO", "columns": ["NM_ESTADO"] },
+        { "name": "IDX_NOMINA_TIPO", "columns": ["NM_TIPO"] }
+      ]
+    },
+    {
+      "name": "KS_NOMINA_DETALLES",
+      "columns": [
+        { "name": "ND_IDDETALLE_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "ND_BASE", "type": "DECIMAL(15,2)", "default": 0 },
+        { "name": "ND_COMISIONES", "type": "DECIMAL(15,2)", "default": 0 },
+        { "name": "ND_BONOS", "type": "DECIMAL(15,2)", "default": 0 },
+        { "name": "ND_DEDUCCIONES_SERVICIOS_TRABAJADOR", "type": "DECIMAL(15,2)", "default": 0 },
+        { "name": "ND_DEDUCCIONES_VALES", "type": "DECIMAL(15,2)", "default": 0 },
+        { "name": "ND_TOTAL_NETO", "type": "DECIMAL(15,2)", "nullable": false },
+        { "name": "NM_IDNOMINA_FK", "type": "INT", "nullable": false, "references": "KS_NOMINAS.NM_IDNOMINA_PK", "onDelete": "CASCADE" },
+        { "name": "TR_IDTRABAJADOR_FK", "type": "INT", "nullable": false, "references": "KS_TRABAJADORES.TR_IDTRABAJADOR_PK" }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "KS_NOMINA_CONFIG",
+      "description": "Porcentaje global de comisión por servicios (versionado por fecha)",
+      "columns": [
+        { "name": "NC_IDCONFIG_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "NC_PORCENTAJE_SERVICIO", "type": "DECIMAL(5,2)", "default": 50 },
+        { "name": "NC_FECHA_INICIO", "type": "DATE", "nullable": false },
+        { "name": "NC_FECHA_CREACION", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP" }
+      ],
+      "indexes": [
+        { "name": "IDX_NOMINA_CONFIG_FECHA", "columns": ["NC_FECHA_INICIO"] }
+      ]
+    },
+    {
+      "name": "KS_VALES",
+      "description": "Adelantos de nómina al trabajador (cuotas descontadas en liquidación)",
+      "columns": [
+        { "name": "VL_IDVALE_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "TR_IDTRABAJADOR_FK", "type": "INT", "nullable": false, "references": "KS_TRABAJADORES.TR_IDTRABAJADOR_PK", "onDelete": "CASCADE" },
+        { "name": "VL_MONTO", "type": "DECIMAL(15,2)", "nullable": false },
+        { "name": "VL_FECHA", "type": "DATE", "nullable": true },
+        { "name": "VL_ESTADO", "type": "ENUM('PENDIENTE','DESCONTADO','ANULADO')", "default": "PENDIENTE" },
+        { "name": "NM_IDNOMINA_FK", "type": "INT", "nullable": true, "references": "KS_NOMINAS.NM_IDNOMINA_PK", "onDelete": "SET NULL" },
+        { "name": "VL_OBSERVACIONES", "type": "TEXT", "nullable": true },
+        { "name": "VL_FECHA_CREACION", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP" },
+        { "name": "VL_CUOTAS", "type": "INT", "nullable": false, "default": 1 },
+        { "name": "VL_CUOTAS_PAGADAS", "type": "INT", "nullable": false, "default": 0 },
+        { "name": "VL_FECHA_DESEMBOLSO", "type": "DATE", "nullable": true },
+        { "name": "VL_FECHA_INICIO_COBRO", "type": "DATE", "nullable": true }
+      ],
+      "indexes": [
+        { "name": "IDX_ADELANTO_TRABAJADOR", "columns": ["TR_IDTRABAJADOR_FK"] },
+        { "name": "IDX_ADELANTO_ESTADO", "columns": ["VL_ESTADO"] }
+      ]
+    }
+  ]
+}

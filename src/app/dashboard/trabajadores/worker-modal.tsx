@@ -212,7 +212,7 @@ export function WorkerModal({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="rounded-xl">
-                            <SelectItem value="none">Sin sucursal (Global)</SelectItem>
+                            <SelectItem value="none">(Todas las sucursales)</SelectItem>
                             {sedes.map((sede) => (
                               <SelectItem key={sede.SC_IDSUCURSAL_PK} value={sede.SC_IDSUCURSAL_PK.toString()}>
                                 {sede.SC_NOMBRE}
