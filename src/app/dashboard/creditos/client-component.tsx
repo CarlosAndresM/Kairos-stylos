@@ -47,7 +47,7 @@ import { Loader2 } from 'lucide-react'
 import { DashboardBanner } from '@/components/layout/dashboard-banner'
 import { compressImage } from '@/lib/image-utils'
 
-export default function CreditsPage() {
+export default function CreditsPage({ sessionUser }: { sessionUser?: any }) {
   // Estados principales
   const [mounted, setMounted] = React.useState(false)
   const [credits, setCredits] = React.useState<any[]>([])
@@ -266,7 +266,7 @@ export default function CreditsPage() {
                       {credit.sucursal_nombre}
                     </TableCell>
                     <TableCell className="text-[11px] text-slate-500">
-                      {credit.FC_CLIENTE_TELEFONO}
+                      {sessionUser?.role === 'ADMINISTRADOR_TOTAL' ? credit.FC_CLIENTE_TELEFONO : '*** **** ***'}
                     </TableCell>
                     <TableCell className="text-xs font-bold text-slate-700 dark:text-slate-300">
                       {credit.cliente_display || credit.FC_CLIENTE_NOMBRE}

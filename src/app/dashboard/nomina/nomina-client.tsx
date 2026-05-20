@@ -161,8 +161,7 @@ export default function NominaClient() {
   };
 
   const handleSaveConfig = async () => {
-    const configDate = new Date(configStartDate);
-    configDate.setHours(12, 0, 0, 0); // Evitar problemas de zona horaria
+    const configDate = new Date(configStartDate + 'T12:00:00');
 
     const payload = {
       NC_PORCENTAJE_SERVICIO: parseFloat(svcPercent),

@@ -25,7 +25,7 @@ export default async function ClientesPage() {
         subtitle="Historial dinámico de clientes generado desde facturación."
       />
 
-      <ClientClient initialClients={clients} />
+      <ClientClient initialClients={clients} sessionUser={sessionUser} />
     </div>
   );
 }

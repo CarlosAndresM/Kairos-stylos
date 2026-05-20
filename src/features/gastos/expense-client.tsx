@@ -7,7 +7,10 @@ import {
   CircleDollarSign,
   TrendingDown,
   Loader2,
-  Search
+  Search,
+  X,
+  Camera,
+  ImageIcon
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -67,7 +70,8 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
     GS_DESCRIPCION: '',
     GS_VALOR: 0,
     GS_FECHA: new Date(),
-    SC_IDSUCURSAL_FK: user?.branchId || null
+    SC_IDSUCURSAL_FK: user?.branchId || null,
+    GS_COMPROBANTES: []
   })
 
   React.useEffect(() => {
@@ -117,6 +121,51 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
       SC_IDSUCURSAL_FK: user?.role === 'ADMINISTRADOR_PUNTO' ? user?.branchId : null
     })
     setIsModalOpen(true)
+  }
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [isUploadingImage, setIsUploadingImage] = React.useState(false)
+
+  const handleComprobanteUpload = async (file: File) => {
+    setIsUploadingImage(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: form
+      })
+      const data = await res.json()
+      if (data.url) {
+        setFormData(prev => ({
+          ...prev,
+          GS_COMPROBANTES: [...(prev.GS_COMPROBANTES || []), data.url]
+        }))
+        toast.success("Imagen adjuntada")
+      } else {
+        toast.error("Error", "No se pudo subir la imagen")
+      }
+    } catch (error) {
+      toast.error("Error de sistema")
+    } finally {
+      setIsUploadingImage(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleRemoveComprobante = async (urlToRemove: string) => {
+    // Si es temporal, intentamos eliminarla de DO
+    if (urlToRemove.includes('/temp/')) {
+      try {
+        await fetch(`/api/upload?url=${encodeURIComponent(urlToRemove)}`, { method: 'DELETE' })
+      } catch (e) {
+        console.error("Error eliminando archivo temporal:", e)
+      }
+    }
+    setFormData(prev => ({
+      ...prev,
+      GS_COMPROBANTES: (prev.GS_COMPROBANTES || []).filter(u => u !== urlToRemove)
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -228,12 +277,13 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                   />
                 </TableHead>
                 <TableHead className="text-[10px] font-bold uppercase text-slate-500 tracking-widest text-right px-6">Valor</TableHead>
+                <TableHead className="text-[10px] font-bold uppercase text-slate-500 tracking-widest text-center px-4">Recibos</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-20 text-slate-400 font-medium italic text-sm">
+                  <TableCell colSpan={6} className="text-center py-20 text-slate-400 font-medium italic text-sm">
                     No se encontraron registros que coincidan con la búsqueda.
                   </TableCell>
                 </TableRow>
@@ -269,6 +319,31 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                     <TableCell className="text-right font-black text-slate-900 text-base tabular-nums px-6">
                       <span className="text-xs text-slate-400 mr-1 font-bold italic">$</span>
                       {(Number(item.valor) || 0).toLocaleString('es-CO')}
+                    </TableCell>
+                    <TableCell className="text-center px-4">
+                      {item.comprobantes && item.comprobantes.length > 0 ? (
+                        <div className="flex justify-center -space-x-2">
+                          {item.comprobantes.slice(0, 3).map((url, idx) => (
+                            <a
+                              key={idx}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="size-8 rounded-full border-2 border-white shadow-sm overflow-hidden bg-slate-100 hover:scale-110 transition-transform hover:z-10 relative"
+                              title="Ver comprobante"
+                            >
+                              <img src={url} alt={`Comprobante ${idx + 1}`} className="object-cover w-full h-full" />
+                            </a>
+                          ))}
+                          {item.comprobantes.length > 3 && (
+                            <div className="size-8 rounded-full border-2 border-white shadow-sm bg-slate-100 flex items-center justify-center relative z-0">
+                              <span className="text-[10px] font-bold text-slate-500">+{item.comprobantes.length - 3}</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-slate-300">-</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
@@ -352,9 +427,59 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                   type="date"
                   className="rounded-xl border-slate-200 font-bold h-11 focus:border-[#FF7E5F]"
                   value={formData.GS_FECHA ? format(new Date(formData.GS_FECHA), "yyyy-MM-dd") : ''}
-                  onChange={e => setFormData({ ...formData, GS_FECHA: new Date(e.target.value) })}
+                  onChange={e => {
+                    if (!e.target.value) return;
+                    setFormData({ ...formData, GS_FECHA: new Date(e.target.value + 'T12:00:00') })
+                  }}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Comprobantes (Fotos)</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleComprobanteUpload(file)
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isUploadingImage}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-8 gap-2 rounded-lg border-dashed border-slate-300 text-slate-500 hover:text-slate-900 hover:border-slate-400"
+                  >
+                    {isUploadingImage ? <Loader2 className="size-3.5 animate-spin" /> : <Camera className="size-3.5" />}
+                    <span className="text-[10px] uppercase font-bold">Adjuntar</span>
+                  </Button>
+                </div>
+              </div>
+
+              {formData.GS_COMPROBANTES && formData.GS_COMPROBANTES.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {formData.GS_COMPROBANTES.map((url, idx) => (
+                    <div key={idx} className="relative group rounded-lg overflow-hidden border border-slate-200 size-16 bg-slate-50 flex-shrink-0">
+                      <img src={url} alt="Comprobante" className="object-cover w-full h-full opacity-90 group-hover:opacity-100 transition-opacity" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveComprobante(url)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <DialogFooter className="pt-4 flex gap-3">

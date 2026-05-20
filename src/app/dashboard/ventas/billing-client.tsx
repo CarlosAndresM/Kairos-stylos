@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/table'
 import { BillingModal } from '@/app/dashboard/ventas/billing-modal'
 import { getInvoiceById, deleteInvoice, verifyAdminPassword, getInvoicesByFilter } from '@/features/billing/services'
+import { getUnifiedExpenses } from '@/features/gastos/services'
 import { toast } from '@/lib/toast-helper'
 import { addDays, subDays, startOfDay, format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -78,6 +79,8 @@ export function BillingClient({
   const [selectedInvoice, setSelectedInvoice] = React.useState<any>(null)
   const [isFetchingInfo, setIsFetchingInfo] = React.useState(false)
   const [invoices, setInvoices] = React.useState<any[]>(initialInvoices)
+  const [expenses, setExpenses] = React.useState<any[]>([])
+  const [activeTab, setActiveTab] = React.useState<'VENTAS' | 'GASTOS'>('VENTAS')
   const [isLoading, setIsLoading] = React.useState(false)
 
   // Filtros interactivos (APEX style)
@@ -99,6 +102,12 @@ export function BillingClient({
         setInvoices(res.data)
       } else {
         toast.error('Error al cargar ventas del día')
+      }
+
+      const branchId = sessionUser?.role === 'ADMINISTRADOR_PUNTO' ? sessionUser?.branchId : undefined;
+      const expRes = await getUnifiedExpenses(branchId, dateStr, dateStr);
+      if (expRes.success && expRes.data) {
+        setExpenses(expRes.data);
       }
     } catch (error) {
       toast.error('Error de red')
@@ -257,6 +266,27 @@ export function BillingClient({
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 items-center flex-1 sm:justify-end">
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+              <button
+                onClick={() => setActiveTab('VENTAS')}
+                className={cn(
+                  "px-6 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-lg",
+                  activeTab === 'VENTAS' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                )}
+              >
+                VENTAS
+              </button>
+              <button
+                onClick={() => setActiveTab('GASTOS')}
+                className={cn(
+                  "px-6 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-lg flex items-center gap-2",
+                  activeTab === 'GASTOS' ? "bg-white text-rose-500 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                )}
+              >
+                GASTOS
+              </button>
+            </div>
+
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
               <Input
@@ -278,7 +308,7 @@ export function BillingClient({
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div className={cn("bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm", activeTab !== 'VENTAS' && 'hidden')}>
           <div className="overflow-x-auto max-h-[65vh] overflow-y-auto">
             <Table>
               <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10">
@@ -478,6 +508,68 @@ export function BillingClient({
                       </div>
                     </TableCell>
                   </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
+        <div className={cn("bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm", activeTab !== 'GASTOS' && 'hidden')}>
+          <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between backdrop-blur-sm">
+            <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-2">
+              💸 Gastos del Día
+            </h3>
+            <span className="text-[10px] font-bold uppercase text-slate-400 italic bg-white px-2 py-0.5 rounded-full border border-slate-100">
+              {expenses.length} registros
+            </span>
+          </div>
+          <div className="overflow-x-auto max-h-[65vh] overflow-y-auto">
+            <Table>
+              <TableHeader className="bg-slate-50/30">
+                <TableRow className="hover:bg-transparent border-b border-slate-100">
+                  <TableHead className="px-6 py-4 text-[10px] font-bold uppercase text-slate-500">Concepto / Detalle</TableHead>
+                  <TableHead className="px-4 py-4 text-[10px] font-bold uppercase text-slate-500 text-center">Sucursal</TableHead>
+                  <TableHead className="px-4 py-4 text-[10px] font-bold uppercase text-slate-500 text-center">Tipo</TableHead>
+                  <TableHead className="px-6 py-4 text-[10px] font-bold uppercase text-slate-500 text-right">Valor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {expenses.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-10 text-slate-400 font-medium italic text-sm">
+                      No hay gastos registrados para este día.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  expenses.map((item, i) => (
+                    <TableRow key={i} className="hover:bg-slate-50/50 transition-colors border-b border-slate-100/50">
+                      <TableCell className="px-6 py-4">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-bold text-slate-900">{item.concepto}</span>
+                          {item.descripcion && (
+                            <span className="text-[10px] font-medium text-slate-400 italic truncate max-w-[300px]">{item.descripcion}</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 text-center">
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200">
+                          {item.sucursal || 'GENERAL'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="px-4 text-center">
+                        <span className={cn(
+                          "px-2.5 py-1 rounded-full text-[10px] font-bold tracking-tight border",
+                          item.tipo === 'NOMINA' ? "bg-orange-50 text-orange-600 border-orange-100" : "bg-amber-50 text-amber-600 border-amber-100"
+                        )}>
+                          {item.tipo}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right font-black text-slate-900 text-base tabular-nums px-6">
+                        <span className="text-xs text-slate-400 mr-1 font-bold italic">$</span>
+                        {(Number(item.valor) || 0).toLocaleString('es-CO')}
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>

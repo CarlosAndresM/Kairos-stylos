@@ -719,6 +719,7 @@ export function BillingModal({
                               disabled={isPaid}
                               placeholder="Celular..."
                               icon="phone"
+                              sessionUser={sessionUser}
                             />
                             <FormMessage className="text-[10px]" />
                           </FormItem>
@@ -737,6 +738,7 @@ export function BillingModal({
                               disabled={isPaid}
                               placeholder="Escribe para buscar o agregar..."
                               icon="user"
+                              sessionUser={sessionUser}
                             />
                             <FormMessage className="text-[10px]" />
                           </FormItem>

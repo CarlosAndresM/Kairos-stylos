@@ -7,6 +7,7 @@ export const gastoSchema = z.object({
   GS_VALOR: z.number().positive("El valor debe ser mayor a 0"),
   GS_FECHA: z.coerce.date(),
   SC_IDSUCURSAL_FK: z.number().nullable().optional(),
+  GS_COMPROBANTES: z.array(z.string()).nullable().optional(),
 });
 
 export type GastoData = z.infer<typeof gastoSchema>;
@@ -19,4 +20,5 @@ export type UnifiedGasto = {
   valor: number;
   tipo: 'MANUAL' | 'NOMINA';
   sucursal: string;
+  comprobantes?: string[] | null;
 };

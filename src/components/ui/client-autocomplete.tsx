@@ -19,6 +19,7 @@ interface ClientAutocompleteProps {
   placeholder?: string
   disabled?: boolean
   icon?: 'user' | 'phone'
+  sessionUser?: any
 }
 
 export function ClientAutocomplete({
@@ -28,7 +29,8 @@ export function ClientAutocomplete({
   clients: allClients,
   placeholder,
   disabled,
-  icon = 'user'
+  icon = 'user',
+  sessionUser
 }: ClientAutocompleteProps) {
   const [open, setOpen] = React.useState(false)
   const [filteredClients, setFilteredClients] = React.useState<Client[]>([])
@@ -98,7 +100,9 @@ export function ClientAutocomplete({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-slate-500">
                     <Phone className="size-3 text-[#FF7E5F]" />
-                    <span className="text-sm font-bold text-slate-800">{client.CL_TELEFONO}</span>
+                    <span className="text-sm font-bold text-slate-800">
+                      {sessionUser?.role === 'ADMINISTRADOR_TOTAL' ? client.CL_TELEFONO : '*** **** ***'}
+                    </span>
                   </div>
                   <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase font-sans">Historial</span>
                 </div>

@@ -6,10 +6,15 @@ export const metadata: Metadata = {
   description: "Gestión de cuentas por cobrar y créditos de clientes",
 };
 
-export default function CreditsPage() {
+import { getCurrentUserSession } from "@/features/dashboard/services";
+
+export default async function CreditsPage() {
+  const sessionRes = await getCurrentUserSession();
+  const sessionUser = sessionRes.success ? sessionRes.data : null;
+
   return (
     <div className="pb-12">
-      <CreditsClient />
+      <CreditsClient sessionUser={sessionUser} />
     </div>
   );
 }

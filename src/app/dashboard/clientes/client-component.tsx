@@ -19,9 +19,10 @@ import { LoadingGate } from '@/components/ui/loading-gate'
 
 interface ClientClientProps {
   initialClients: any[]
+  sessionUser?: any
 }
 
-export function ClientClient({ initialClients }: ClientClientProps) {
+export function ClientClient({ initialClients, sessionUser }: ClientClientProps) {
   const [searchTerm, setSearchTerm] = React.useState('')
   const [activeFilters, setActiveFilters] = React.useState<{ [key: string]: string[] }>({})
 
@@ -52,6 +53,7 @@ export function ClientClient({ initialClients }: ClientClientProps) {
 
   const getFilterOptions = (col: string) => {
     if (col === 'has_debt') return ['CON DEUDA', 'SIN DEUDA'];
+    if (col === 'telefono' && sessionUser?.role !== 'ADMINISTRADOR_TOTAL') return [];
     return Array.from(new Set(initialClients.map(c => c[col]?.toString() || ''))).filter(Boolean).sort();
   }
 
@@ -89,12 +91,16 @@ export function ClientClient({ initialClients }: ClientClientProps) {
                     />
                   </TableHead>
                   <TableHead className="h-10 py-0 px-4 w-[150px]">
-                    <TableFilter
-                      label="Teléfono"
-                      options={getFilterOptions('telefono')}
-                      selectedValues={activeFilters['telefono'] || []}
-                      onFilterChange={(vals: string[]) => handleFilterChange('telefono', vals)}
-                    />
+                    {sessionUser?.role === 'ADMINISTRADOR_TOTAL' ? (
+                      <TableFilter
+                        label="Teléfono"
+                        options={getFilterOptions('telefono')}
+                        selectedValues={activeFilters['telefono'] || []}
+                        onFilterChange={(vals: string[]) => handleFilterChange('telefono', vals)}
+                      />
+                    ) : (
+                      <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">Teléfono</span>
+                    )}
                   </TableHead>
                   <TableHead className="h-10 py-0 px-4 font-black text-slate-500 uppercase tracking-widest text-[10px] text-center w-[100px]">Visitas</TableHead>
                   <TableHead className="h-10 py-0 px-4 font-black text-slate-500 uppercase tracking-widest text-[10px] text-right w-[140px]">Total Gastado</TableHead>
@@ -123,7 +129,7 @@ export function ClientClient({ initialClients }: ClientClientProps) {
                         </TableCell>
                         <TableCell className="py-2 px-4">
                           <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
-                            {client.telefono}
+                            {sessionUser?.role === 'ADMINISTRADOR_TOTAL' ? client.telefono : '*** **** ***'}
                           </span>
                         </TableCell>
                         <TableCell className="py-2 px-4 text-center">

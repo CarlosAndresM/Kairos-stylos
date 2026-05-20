@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
     TrendingUp,
+    TrendingDown,
     Users,
     Wallet,
     CreditCard,
@@ -511,6 +512,14 @@ export function DashboardClient() {
                                             count: stats?.ventas_count || 0
                                         },
                                         {
+                                            title: 'GASTOS',
+                                            value: `$ ${(stats?.total_gastos || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
+                                            sub: 'SALIDAS Y EGRESOS DEL PERIODO',
+                                            icon: TrendingDown,
+                                            color: 'from-rose-500 to-rose-400',
+                                            count: 0
+                                        },
+                                        {
                                             title: 'SERVICIOS EN CURSO',
                                             value: (stats?.por_cobrar_count || 0).toString(),
                                             sub: 'SERVICIOS PENDIENTES POR PAGAR',
@@ -520,8 +529,8 @@ export function DashboardClient() {
                                         },
                                         {
                                             title: 'TOTAL EN CAJA',
-                                            value: `$ ${(stats?.total_caja || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
-                                            sub: 'DIRECTO + ABONOS DE DEUDA',
+                                            value: `$ ${(stats?.total_caja_neto || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
+                                            sub: `BRUTO: $ ${(stats?.total_caja || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                                             icon: Wallet,
                                             color: 'from-emerald-600 to-teal-500',
                                             count: stats?.total_caja_count || 0
@@ -586,8 +595,7 @@ export function DashboardClient() {
                                         <Card
                                             key={i}
                                             className={cn(
-                                                "border border-slate-200 rounded-2xl shadow-sm overflow-hidden relative group transition-all hover:shadow-md cursor-pointer",
-                                                stat.title === 'VENTAS' ? "col-span-2 lg:col-span-2 hover:ring-2 hover:ring-[#FF7E5F]/50" : "hover:ring-2 hover:ring-[#FF7E5F]/50",
+                                                "border border-slate-200 rounded-2xl shadow-sm overflow-hidden relative group transition-all hover:shadow-md cursor-pointer hover:ring-2 hover:ring-[#FF7E5F]/50",
                                                 "bg-white dark:bg-slate-900"
                                             )}
                                             onClick={() => {
@@ -606,10 +614,9 @@ export function DashboardClient() {
                                                 <div className="relative">
                                                     <div className={cn(
                                                         "p-2.5 rounded-xl shadow-lg bg-gradient-to-br",
-                                                        (stat.title === 'SERVICIO TRABAJADOR' || stat.title === 'VALES') ? "from-slate-900 to-slate-800 shadow-black/20" : stat.color + " shadow-coral-500/10",
-                                                        stat.title === 'VENTAS' ? "p-4" : ""
+                                                        (stat.title === 'SERVICIO TRABAJADOR' || stat.title === 'VALES') ? "from-slate-900 to-slate-800 shadow-black/20" : stat.color + " shadow-coral-500/10"
                                                     )}>
-                                                        <stat.icon className={cn("text-white", stat.title === 'VENTAS' ? "size-6" : "size-4")} />
+                                                        <stat.icon className="text-white size-5" />
                                                     </div>
                                                     {stat.count > 0 && (
                                                         <div className="absolute -top-2 -right-2 bg-slate-900 text-white text-[9px] font-black size-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm animate-in zoom-in-50 duration-300">
@@ -622,13 +629,14 @@ export function DashboardClient() {
                                                 <div className={cn(
                                                     "font-black leading-none tracking-tight",
                                                     (stat.title === 'SERVICIO TRABAJADOR' || stat.title === 'VALES') ? "text-slate-900" : "text-slate-900 dark:text-white",
-                                                    stat.title === 'VENTAS' ? "text-5xl" : "text-2xl"
+                                                    "text-3xl"
                                                 )}>
                                                     {stat.value}
                                                 </div>
                                                 <div className={cn(
                                                     "text-[10px] font-medium mt-2 uppercase italic leading-tight",
-                                                    (stat.title === 'SERVICIO TRABAJADOR' || stat.title === 'VALES') ? "text-slate-800/70" : "text-slate-400"
+                                                    (stat.title === 'SERVICIO TRABAJADOR' || stat.title === 'VALES') ? "text-slate-800/70" : "text-slate-400",
+                                                    stat.title === 'TOTAL EN CAJA' ? "text-slate-500 dark:text-slate-300 font-bold" : ""
                                                 )}>{stat.sub}</div>
                                             </CardContent>
                                         </Card>
@@ -1136,17 +1144,32 @@ export function DashboardClient() {
                                 <div className="flex-1 overflow-auto p-6">
                                     <Table>
                                         <TableHeader>
-                                            <TableRow className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-800 bg-slate-50/50">
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Concepto / ID</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Fecha</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">{detailType === 'VALES' ? 'Nombre' : 'Cliente'}</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Técnicos</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Detalle</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Servicios</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Productos</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right border border-slate-200">Total</TableHead>
-                                                <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right w-[60px] border border-slate-200">Ver</TableHead>
-                                            </TableRow>
+                                            {detailType === 'Técnico' ? (
+                                                <TableRow className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-800 bg-slate-50/50">
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Factura</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Fecha</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Cliente</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Técnico</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Ítem</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Tipo</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right border border-slate-200">Total ($)</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right border border-slate-200">Comisión ($)</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right border border-slate-200">Local ($)</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right w-[60px] border border-slate-200">Ver</TableHead>
+                                                </TableRow>
+                                            ) : (
+                                                <TableRow className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-800 bg-slate-50/50">
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Concepto / ID</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Fecha</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">{detailType === 'VALES' ? 'Nombre' : 'Cliente'}</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Técnicos</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Detalle</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Servicios</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Productos</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right border border-slate-200">Total</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right w-[60px] border border-slate-200">Ver</TableHead>
+                                                </TableRow>
+                                            )}
                                         </TableHeader>
                                         <TableBody>
                                             {detailType === 'VENTAS' && (specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PAGADO').map((f: any) => (
@@ -1233,6 +1256,22 @@ export function DashboardClient() {
                                                     ))}
                                                 </>
                                             )}
+
+                                            {detailType === 'GASTOS' && (specificData?.gastos || []).map((g: any, idx: number) => (
+                                                <TableRow key={`gasto-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
+                                                    <TableCell className="font-bold text-sm py-4">{g.GS_CONCEPTO}</TableCell>
+                                                    <TableCell className="text-xs font-medium text-slate-500 tabular-nums">{format(new Date(g.GS_FECHA), 'dd/MM/yyyy')}</TableCell>
+                                                    <TableCell className="text-xs font-bold uppercase text-slate-700">{g.sucursal_nombre || 'GENERAL'}</TableCell>
+                                                    <TableCell className="text-[11px] font-black text-rose-600 uppercase italic max-w-[150px] truncate">-</TableCell>
+                                                    <TableCell className="text-xs font-medium text-slate-400 italic max-w-[200px] truncate" title={g.GS_DESCRIPCION}>{g.GS_DESCRIPCION || '-'}</TableCell>
+                                                    <TableCell className="text-[11px] font-bold text-rose-600 max-w-[200px] truncate">-</TableCell>
+                                                    <TableCell className="text-[11px] font-bold text-rose-600 max-w-[200px] truncate">-</TableCell>
+                                                    <TableCell className="text-right font-black text-sm text-rose-600">$ {(Number(g.GS_VALOR) || 0).toLocaleString('es-CO')}</TableCell>
+                                                    <TableCell className="text-right p-0">
+                                                        <span className="text-slate-200">-</span>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
 
                                             {detailType === 'ABONO A DEUDAS' && (specificData?.abonos || []).map((ab: any) => (
                                                 <TableRow key={`abono-${ab.AB_IDABONO_PK}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
@@ -1353,12 +1392,20 @@ export function DashboardClient() {
                                                         <TableCell className="text-xs font-medium text-slate-500 tabular-nums">{format(new Date(s.FC_FECHA), 'dd/MM/yyyy')}</TableCell>
                                                         <TableCell className="text-xs font-bold uppercase text-slate-700">{s.cliente_display || 'GENERAL'}</TableCell>
                                                         <TableCell className="text-xs font-black text-[#FF7E5F] uppercase">{s.tecnico_nombre}</TableCell>
-                                                        <TableCell className="text-xs font-medium text-slate-400 italic"> - </TableCell>
-                                                        <TableCell className="text-xs font-medium text-slate-800 font-bold">{s.servicio_nombre}</TableCell>
-                                                        <TableCell className="text-xs font-medium text-slate-400 italic"> - </TableCell>
-                                                        <TableCell className="text-right font-black text-sm text-[#FF7E5F]">$ {(Number(s.FD_VALOR) || 0).toLocaleString('es-CO')}</TableCell>
+                                                        <TableCell className="text-xs font-bold text-slate-800 max-w-[200px] truncate" title={s.item_nombre}>{s.item_nombre}</TableCell>
+                                                        <TableCell className="text-[10px] font-bold text-slate-500 tracking-wider">
+                                                            <span className={cn(
+                                                                "px-2 py-0.5 rounded-full border",
+                                                                s.tipo_item === 'SERVICIO' ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                                            )}>
+                                                                {s.tipo_item}
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-black text-sm text-slate-900 tabular-nums">$ {(Number(s.valor_total) || 0).toLocaleString('es-CO')}</TableCell>
+                                                        <TableCell className="text-right font-black text-sm text-[#FF7E5F] tabular-nums">$ {(Number(s.comision) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</TableCell>
+                                                        <TableCell className="text-right font-bold text-xs text-slate-400 tabular-nums">$ {(Number(s.local_share) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</TableCell>
                                                         <TableCell className="text-right p-0">
-                                                            <Button variant="ghost" size="icon" onClick={() => handleOpenInvoice({ FC_IDFACTURA_PK: s.FC_IDFACTURA_FK || s.FC_IDFACTURA_PK }, true)} className="size-10 hover:bg-slate-100 rounded-lg">
+                                                            <Button variant="ghost" size="icon" onClick={() => handleOpenInvoice({ FC_IDFACTURA_PK: s.FC_IDFACTURA_PK }, true)} className="size-10 hover:bg-slate-100 rounded-lg">
                                                                 <Eye className="size-5 text-slate-400 hover:text-slate-900" />
                                                             </Button>
                                                         </TableCell>

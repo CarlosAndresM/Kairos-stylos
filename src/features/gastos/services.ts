@@ -5,19 +5,47 @@ import { ApiResponse } from "@/lib/api-response";
 import { revalidatePath } from "next/cache";
 import { GastoData, UnifiedGasto, gastoSchema } from "./schema";
 import { toLocalDateString } from "@/lib/date-utils";
+import { finalizeUpload } from "@/lib/file-utils";
 
 /**
  * Obtener lista unificada de gastos (Manuales + Nómina Confirmada)
+ * @param sucursalId - Filtrar por sucursal (undefined = todas)
+ * @param dateFrom   - Fecha inicio (undefined = sin límite)
+ * @param dateTo     - Fecha fin   (undefined = sin límite)
  */
-export async function getUnifiedExpenses(sucursalId?: number): Promise<ApiResponse<UnifiedGasto[]>> {
+export async function getUnifiedExpenses(
+  sucursalId?: number,
+  dateFrom?: string,
+  dateTo?: string
+): Promise<ApiResponse<UnifiedGasto[]>> {
   try {
-    let manualFilter = "";
+    const conditions: string[] = [];
     const params: any[] = [];
 
     if (sucursalId) {
-      manualFilter = " WHERE GS.SC_IDSUCURSAL_FK = ?";
+      conditions.push("GS.SC_IDSUCURSAL_FK = ?");
       params.push(sucursalId);
     }
+
+    if (dateFrom) {
+      conditions.push("DATE(GS.GS_FECHA) >= ?");
+      params.push(dateFrom);
+    }
+
+    if (dateTo) {
+      conditions.push("DATE(GS.GS_FECHA) <= ?");
+      params.push(dateTo);
+    }
+
+    const manualWhere = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+
+    // Condiciones para nómina (solo fecha, sin filtro de sucursal ya que nómina es GENERAL)
+    const nominaConditions: string[] = [];
+    const nominaParams: any[] = [];
+    if (dateFrom) { nominaConditions.push("DATE(NM_FECHA_CIERRE) >= ?"); nominaParams.push(dateFrom); }
+    if (dateTo)   { nominaConditions.push("DATE(NM_FECHA_CIERRE) <= ?"); nominaParams.push(dateTo); }
+    nominaConditions.push("NM_ESTADO = 'CONFIRMADA'");
+    const nominaWhere = `WHERE ${nominaConditions.join(" AND ")}`;
 
     const query = `
       SELECT 
@@ -27,10 +55,12 @@ export async function getUnifiedExpenses(sucursalId?: number): Promise<ApiRespon
         GS_FECHA as fecha, 
         GS_VALOR as valor, 
         'MANUAL' as tipo,
-        CONVERT(COALESCE(SC.SC_NOMBRE, 'GENERAL') USING utf8mb4) as sucursal
+        CONVERT(COALESCE(SC.SC_NOMBRE, 'GENERAL') USING utf8mb4) as sucursal,
+        GS.SC_IDSUCURSAL_FK as sucursal_id,
+        GS_COMPROBANTES as comprobantes_json
       FROM KS_GASTOS GS
       LEFT JOIN KS_SUCURSALES SC ON GS.SC_IDSUCURSAL_FK = SC.SC_IDSUCURSAL_PK
-      ${manualFilter}
+      ${manualWhere}
       
       UNION ALL
       
@@ -41,19 +71,26 @@ export async function getUnifiedExpenses(sucursalId?: number): Promise<ApiRespon
         NM_FECHA_CIERRE as fecha, 
         NM_TOTAL_PAGADO as valor, 
         'NOMINA' as tipo,
-        'GENERAL' as sucursal
+        'GENERAL' as sucursal,
+        NULL as sucursal_id,
+        NULL as comprobantes_json
       FROM KS_NOMINAS
-      WHERE NM_ESTADO = 'CONFIRMADA'
+      ${nominaWhere}
       ORDER BY fecha DESC
     `;
 
-    const [rows] = await db.query(query, params) as any;
-    return { success: true, data: rows };
+    const [rows] = await db.query(query, [...params, ...nominaParams]) as any;
+    const data = rows.map((r: any) => ({
+      ...r,
+      comprobantes: r.comprobantes_json ? (typeof r.comprobantes_json === 'string' ? JSON.parse(r.comprobantes_json) : r.comprobantes_json) : null
+    }));
+    return { success: true, data };
   } catch (error) {
     console.error("Error getUnifiedExpenses:", error);
     return { success: false, data: null, error: "Error al obtener la lista de gastos" };
   }
 }
+
 
 /**
  * Registrar un gasto manual
@@ -62,15 +99,30 @@ export async function createExpense(data: GastoData): Promise<ApiResponse<number
   try {
     const validated = gastoSchema.parse(data);
 
+    let finalComprobantes: string[] = [];
+    if (validated.GS_COMPROBANTES && validated.GS_COMPROBANTES.length > 0) {
+      for (const url of validated.GS_COMPROBANTES) {
+        if (url.includes('/temp/')) {
+          const finalUrl = await finalizeUpload(url, `GASTO-${Date.now()}`);
+          finalComprobantes.push(finalUrl);
+        } else {
+          finalComprobantes.push(url);
+        }
+      }
+    }
+
+    const comprobantesJson = finalComprobantes.length > 0 ? JSON.stringify(finalComprobantes) : null;
+
     const [result]: any = await db.execute(
-      `INSERT INTO KS_GASTOS (GS_CONCEPTO, GS_DESCRIPCION, GS_FECHA, GS_VALOR, SC_IDSUCURSAL_FK)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO KS_GASTOS (GS_CONCEPTO, GS_DESCRIPCION, GS_FECHA, GS_VALOR, SC_IDSUCURSAL_FK, GS_COMPROBANTES)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [
         validated.GS_CONCEPTO,
         validated.GS_DESCRIPCION || '',
         toLocalDateString(validated.GS_FECHA),
         validated.GS_VALOR,
-        validated.SC_IDSUCURSAL_FK || null
+        validated.SC_IDSUCURSAL_FK || null,
+        comprobantesJson
       ]
     );
 

@@ -160,11 +160,21 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
 
     const [prestamosLibreInversionResult]: any = await db.execute(prestamosQuery, prestamosParams);
 
+    // 8. Gastos (Para afectar el Neto en Caja)
+    let gastosQuery = `SELECT COALESCE(SUM(GS_VALOR), 0) as total FROM KS_GASTOS WHERE DATE(GS_FECHA) BETWEEN ? AND ?`;
+    const gastosParams: any[] = [dateFrom, dateTo];
+    if (sucursalId !== -1) {
+        gastosQuery += ` AND SC_IDSUCURSAL_FK = ?`;
+        gastosParams.push(sucursalId);
+    }
+    const [gastosResult]: any = await db.execute(gastosQuery, gastosParams);
+    const totalGastosPeriodo = Number(gastosResult[0]?.total || 0);
+
     const totalVentasPagadas = Number(salesResult[0]?.total || 0);
     const totalAbonosRecibidos = Number(abonosResult[0]?.total || 0);
     const totalAbonosCount = Number(abonosResult[0]?.count || 0);
 
-    // Recibido en Caja = (Efectivo + Transferencia + Datafono de Facturas Pagadas) + Abonos
+    // Recibido en Caja Bruto = (Efectivo + Transferencia + Datafono de Facturas Pagadas) + Abonos
     const totalCaja = (metodos['EFECTIVO'] || 0) + (metodos['TRANSFERENCIA'] || 0) + (metodos['DATAFONO'] || 0) + totalAbonosRecibidos;
     const totalCajaCount = (metodosCount['EFECTIVO'] || 0) + (metodosCount['TRANSFERENCIA'] || 0) + (metodosCount['DATAFONO'] || 0) + totalAbonosCount;
 
@@ -190,6 +200,8 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
         ventas_count: Number(salesResult[0]?.count || 0),
         total_caja: totalCaja,
         total_caja_count: totalCajaCount,
+        total_gastos: totalGastosPeriodo,
+        total_caja_neto: totalCaja - totalGastosPeriodo,
         metodos_pago: {
           ...metodos,
           'SERVICIO DE TRABAJADOR': totalServicioTrabajadorCard
@@ -240,26 +252,27 @@ export async function getDashboardCharts(sucursalId: number, dateFrom: string, d
     // 1. Top Technicians by earnings (Services commission + Product commission)
     const [topTechs]: any = await db.execute(
       `SELECT t.TR_NOMBRE as name, 
-              COUNT(DISTINCT srv.FD_IDDETALLE_PK) as count, 
-              SUM(COALESCE(srv.FD_VALOR, 0)) as total_servicios,
-              SUM(COALESCE(prd.FP_VALOR, 0)) as total_productos,
-              (SUM(COALESCE(srv.FD_VALOR, 0)) * (${svcPercent}/100) + SUM(COALESCE(prd.FP_COMISION_VALOR, 0))) as total_pagar
+              COALESCE(srv.count, 0) as count, 
+              COALESCE(srv.total_servicios, 0) as total_servicios,
+              COALESCE(prd.total_productos, 0) as total_productos,
+              (COALESCE(srv.total_servicios, 0) * (${svcPercent}/100) + COALESCE(prd.total_comision, 0)) as total_pagar
        FROM KS_TRABAJADORES t
        LEFT JOIN (
-           SELECT fd.TR_IDTECNICO_FK, fd.FD_VALOR, fd.FD_IDDETALLE_PK
+           SELECT fd.TR_IDTECNICO_FK, COUNT(fd.FD_IDDETALLE_PK) as count, SUM(fd.FD_VALOR) as total_servicios
            FROM KS_FACTURA_DETALLES fd
            JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
            WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
+           GROUP BY fd.TR_IDTECNICO_FK
        ) srv ON t.TR_IDTRABAJADOR_PK = srv.TR_IDTECNICO_FK
        LEFT JOIN (
-           SELECT fp.TR_IDTECNICO_FK, fp.FP_VALOR, fp.FP_COMISION_VALOR
+           SELECT fp.TR_IDTECNICO_FK, SUM(fp.FP_VALOR) as total_productos, SUM(fp.FP_COMISION_VALOR) as total_comision
            FROM KS_FACTURA_PRODUCTOS fp
            JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
            WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
+           GROUP BY fp.TR_IDTECNICO_FK
        ) prd ON t.TR_IDTRABAJADOR_PK = prd.TR_IDTECNICO_FK
        JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
        WHERE r.RL_NOMBRE = 'TECNICO' AND t.TR_ACTIVO = TRUE ${sucursalChartFilter}
-       GROUP BY t.TR_IDTRABAJADOR_PK
        HAVING total_servicios > 0 OR total_productos > 0
        ORDER BY total_pagar DESC
        LIMIT 10`,
@@ -456,18 +469,48 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
       sucursalId !== -1 ? [...baseParams, sucursalId] : baseParams
     );
 
-    // 8. Servicios detallados (para el detalle de técnicos en el ranking)
+    // Fetch Config for Service Percentage
+    const [configRows]: any = await db.execute(
+      "SELECT NC_PORCENTAJE_SERVICIO FROM KS_NOMINA_CONFIG WHERE NC_FECHA_INICIO <= ? ORDER BY NC_FECHA_INICIO DESC LIMIT 1",
+      [dateFrom]
+    );
+    const svcPercent = Number(configRows[0]?.NC_PORCENTAJE_SERVICIO || 50);
+
+    // 8. Servicios detallados (Servicios + Productos para el detalle de técnicos en el ranking)
     const [serviciosDetalle]: any = await db.execute(
-      `SELECT fd.*, sv.SV_NOMBRE as servicio_nombre, t.TR_NOMBRE as tecnico_nombre, f.FC_NUMERO_FACTURA, f.FC_FECHA,
-       COALESCE(f.FC_CLIENTE_NOMBRE, tc.TR_NOMBRE) as cliente_display
+      `SELECT f.FC_IDFACTURA_PK, f.FC_NUMERO_FACTURA, f.FC_FECHA,
+              COALESCE(f.FC_CLIENTE_NOMBRE, tc.TR_NOMBRE) as cliente_display,
+              t.TR_NOMBRE as tecnico_nombre,
+              sv.SV_NOMBRE as item_nombre,
+              'SERVICIO' as tipo_item,
+              fd.FD_VALOR as valor_total,
+              (fd.FD_VALOR * (${svcPercent} / 100)) as comision,
+              (fd.FD_VALOR - (fd.FD_VALOR * (${svcPercent} / 100))) as local_share
        FROM KS_FACTURA_DETALLES fd
        JOIN KS_SERVICIOS sv ON fd.SV_IDSERVICIO_FK = sv.SV_IDSERVICIO_PK
        JOIN KS_TRABAJADORES t ON fd.TR_IDTECNICO_FK = t.TR_IDTRABAJADOR_PK
        JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        LEFT JOIN KS_TRABAJADORES tc ON f.TR_IDCLIENTE_FK = tc.TR_IDTRABAJADOR_PK
        WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? ${sucursalFilter}
-       ORDER BY f.FC_FECHA DESC`,
-      sucursalId !== -1 ? [...baseParams, sucursalId] : baseParams
+       
+       UNION ALL
+       
+       SELECT f.FC_IDFACTURA_PK, f.FC_NUMERO_FACTURA, f.FC_FECHA,
+              COALESCE(f.FC_CLIENTE_NOMBRE, tc.TR_NOMBRE) as cliente_display,
+              t.TR_NOMBRE as tecnico_nombre,
+              p.PR_NOMBRE as item_nombre,
+              'PRODUCTO' as tipo_item,
+              fp.FP_VALOR as valor_total,
+              fp.FP_COMISION_VALOR as comision,
+              (fp.FP_VALOR - fp.FP_COMISION_VALOR) as local_share
+       FROM KS_FACTURA_PRODUCTOS fp
+       JOIN KS_PRODUCTOS p ON fp.PR_IDPRODUCTO_FK = p.PR_IDPRODUCTO_PK
+       JOIN KS_TRABAJADORES t ON fp.TR_IDTECNICO_FK = t.TR_IDTRABAJADOR_PK
+       JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+       LEFT JOIN KS_TRABAJADORES tc ON f.TR_IDCLIENTE_FK = tc.TR_IDTRABAJADOR_PK
+       WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? ${sucursalFilter}
+       ORDER BY FC_FECHA DESC`,
+      sucursalId !== -1 ? [...baseParams, sucursalId, ...baseParams, sucursalId] : [...baseParams, ...baseParams]
     );
 
     // 9. Servicios de Trabajador REALES (vouchers entre técnicos)
@@ -491,6 +534,21 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
     const serviciosRealParams = sucursalId !== -1 ? [dateFrom, dateTo, sucursalId, sucursalId] : [dateFrom, dateTo];
     const [serviciosReal]: any = await db.execute(serviciosRealQuery, serviciosRealParams);
 
+    // 10. Gastos (Para el detalle de GASTOS)
+    let gastosQuery = `
+      SELECT g.*, COALESCE(s.SC_NOMBRE, 'GENERAL') as sucursal_nombre 
+      FROM KS_GASTOS g 
+      LEFT JOIN KS_SUCURSALES s ON g.SC_IDSUCURSAL_FK = s.SC_IDSUCURSAL_PK
+      WHERE DATE(g.GS_FECHA) BETWEEN ? AND ?
+    `;
+    const gastosParams: any[] = [dateFrom, dateTo];
+    if (sucursalId !== -1) {
+      gastosQuery += " AND g.SC_IDSUCURSAL_FK = ?";
+      gastosParams.push(sucursalId);
+    }
+    gastosQuery += " ORDER BY g.GS_FECHA DESC";
+    const [gastos]: any = await db.execute(gastosQuery, gastosParams);
+
     return {
       success: true,
       data: {
@@ -500,13 +558,19 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
         productos: (productos || []).map((p: any) => ({ ...p, FP_VALOR: Number(p.FP_VALOR || 0) })),
         abonos: (abonos || []).map((a: any) => ({ ...a, AB_VALOR: Number(a.AB_VALOR || 0), cr_valor_pendiente: Number(a.cr_valor_pendiente || 0) })),
         pagos: (pagos || []).map((p: any) => ({ ...p, PF_VALOR: Number(p.PF_VALOR || 0) })),
-        serviciosDetalle: (serviciosDetalle || []).map((s: any) => ({ ...s, FD_VALOR: Number(s.FD_VALOR || 0) })),
+        serviciosDetalle: (serviciosDetalle || []).map((s: any) => ({ 
+          ...s, 
+          valor_total: Number(s.valor_total || 0),
+          comision: Number(s.comision || 0),
+          local_share: Number(s.local_share || 0)
+        })),
         serviciosReal: (serviciosReal || []).map((s: any) => ({
           ...s,
           ST_VALOR_TOTAL: Number(s.ST_VALOR_TOTAL || 0),
           FC_IDFACTURA_FK: s.FC_IDFACTURA_FK || s.fc_idfactura_fk // Unify casing for frontend filter
         })),
-        adelantos: (valesRegistros || []).map((v: any) => ({ ...v, VL_MONTO: Number(v.VL_MONTO || 0) })),
+        gastos: (gastos || []).map((g: any) => ({ ...g, GS_VALOR: Number(g.GS_VALOR || 0) })),
+        adelantos: (valesRegistros || []).map((v: any) => ({ ...v, VL_MONTO: Number(v.VL_MONTO || 0) }))
       },
       error: null
     };
