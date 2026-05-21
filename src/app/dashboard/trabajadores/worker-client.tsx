@@ -40,6 +40,7 @@ interface WorkerClientProps {
 
 export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucursalId }: WorkerClientProps) {
   const isTotalAdmin = currentRole === 'ADMINISTRADOR_TOTAL'
+  const canManageWorkers = currentRole === 'ADMINISTRADOR_TOTAL' || currentRole === 'ADMINISTRADOR_PUNTO'
 
   const [searchTerm, setSearchTerm] = React.useState('')
   const [isModalOpen, setIsModalOpen] = React.useState(false)
@@ -172,7 +173,7 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
 
           <Button
             onClick={() => handleOpenModal()}
-            disabled={!isTotalAdmin}
+            disabled={!canManageWorkers}
             className="w-full sm:w-auto bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white font-bold gap-2 rounded-xl shadow-lg shadow-[#FF7E5F]/20 h-10 px-6 border-none"
           >
             <Plus className="size-4" />
@@ -308,7 +309,7 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                         <DropdownMenuContent align="end" className="w-52 rounded-xl shadow-xl border border-slate-100 dark:border-slate-800 p-1 bg-white dark:bg-slate-900 z-50">
                           <DropdownMenuItem
                             onClick={() => handleOpenModal(worker)}
-                            disabled={!isTotalAdmin}
+                            disabled={!canManageWorkers}
                             className="gap-2 rounded-lg font-medium text-xs text-slate-700 dark:text-slate-200 cursor-pointer"
                           >
                             <Edit2 className="size-3.5 text-slate-400" />
@@ -317,7 +318,7 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
 
                           <DropdownMenuItem
                             onClick={() => handleToggleStatus(worker)}
-                            disabled={!isTotalAdmin}
+                            disabled={!canManageWorkers}
                             className="gap-2 rounded-lg font-medium text-xs text-slate-700 dark:text-slate-200 cursor-pointer"
                           >
                             <Power className="size-3.5 text-slate-400" />
