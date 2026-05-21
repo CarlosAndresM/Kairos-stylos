@@ -41,7 +41,7 @@ import { ComboboxSearch } from '@/components/ui/combobox-search'
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { format, addDays, subDays, startOfWeek, endOfWeek } from 'date-fns'
+import { format, addDays, subDays, addMonths, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 import { es } from 'date-fns/locale'
 import {
     getDashboardInitialData,
@@ -96,7 +96,7 @@ export function DashboardClient() {
     const [selectedSede, setSelectedSede] = React.useState<number>(-1) // -1 for GLOBAL
     const [currentDate, setCurrentDate] = React.useState<Date>(new Date())
     const [viewMode, setViewMode] = React.useState<'GENERAL' | 'ESPECIFICO'>('ESPECIFICO')
-    const [filterType, setFilterType] = React.useState<'DIA' | 'RANGO'>('DIA')
+    const [filterType, setFilterType] = React.useState<'DIA' | 'RANGO' | 'MES'>('DIA')
     const [dateRange, setDateRange] = React.useState<{ from: Date; to: Date | undefined }>({
         from: startOfWeek(new Date(), { weekStartsOn: 0 }),
         to: endOfWeek(new Date(), { weekStartsOn: 0 })
@@ -183,6 +183,9 @@ export function DashboardClient() {
             if (filterType === 'RANGO') {
                 from = format(dateRange.from, 'yyyy-MM-dd')
                 to = format(dateRange.to || dateRange.from, 'yyyy-MM-dd')
+            } else if (filterType === 'MES') {
+                from = format(startOfMonth(currentDate), 'yyyy-MM-dd')
+                to = format(endOfMonth(currentDate), 'yyyy-MM-dd')
             }
 
             const res = await getDashboardFullData(selectedSede, from, to)
@@ -216,6 +219,10 @@ export function DashboardClient() {
             const newTo = addDays(prev.to || prev.from, days);
             return { from: newFrom, to: newTo };
         })
+    }
+
+    const navigateMonthly = (dir: 'prev' | 'next') => {
+        setCurrentDate(prev => dir === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1))
     }
 
 
@@ -327,7 +334,9 @@ export function DashboardClient() {
                         ? format(currentDate, "EEEE, d 'de' MMMM", { locale: es })
                         : filterType === 'RANGO'
                             ? `${format(dateRange.from, "d 'de' MMMM", { locale: es })} - ${dateRange.to ? format(dateRange.to, "d 'de' MMMM", { locale: es }) : ''}`
-                            : "Resumen"
+                            : filterType === 'MES'
+                                ? format(currentDate, "MMMM yyyy", { locale: es })
+                                : "Resumen"
                 }
                 actions={
                     <UserProfileDropdown userName={user?.username || 'Admin'} userRole={user?.role || 'ADMINISTRADOR'} />
@@ -391,6 +400,15 @@ export function DashboardClient() {
                                 )}
                             >
                                 POR RANGO
+                            </button>
+                            <button
+                                onClick={() => setFilterType('MES')}
+                                className={cn(
+                                    "px-5 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-lg",
+                                    filterType === 'MES' ? "bg-[#FF7E5F] text-white shadow-md shadow-coral-500/20" : "text-slate-500 hover:text-slate-700"
+                                )}
+                            >
+                                POR MES
                             </button>
                         </div>
 
@@ -469,6 +487,26 @@ export function DashboardClient() {
                                     )}
                                 </div>
                                 <Button variant="ghost" size="icon" onClick={() => navigateWeeklyRange('next')} className="h-9 w-9 rounded-none hover:bg-slate-50 text-slate-400">
+                                    <ChevronRight className="size-4" />
+                                </Button>
+                            </div>
+                        ) : filterType === 'MES' ? (
+                            <div className="flex items-center gap-1 bg-white dark:bg-slate-950 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                <Button variant="ghost" size="icon" onClick={() => navigateMonthly('prev')} className="h-9 w-9 rounded-none hover:bg-slate-50 text-slate-400">
+                                    <ChevronLeft className="size-4" />
+                                </Button>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="ghost" className="h-9 px-4 rounded-none font-bold text-[11px] uppercase tracking-tight flex gap-2 border-x border-slate-100 text-slate-700 hover:bg-slate-50">
+                                            <CalendarIcon className="size-4 text-[#FF7E5F]" />
+                                            {format(currentDate, "MMMM yyyy", { locale: es })}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0 border border-slate-200 rounded-2xl shadow-xl" align="start">
+                                        <Calendar mode="single" selected={currentDate} onSelect={(d) => d && setCurrentDate(d)} />
+                                    </PopoverContent>
+                                </Popover>
+                                <Button variant="ghost" size="icon" onClick={() => navigateMonthly('next')} className="h-9 w-9 rounded-none hover:bg-slate-50 text-slate-400">
                                     <ChevronRight className="size-4" />
                                 </Button>
                             </div>
