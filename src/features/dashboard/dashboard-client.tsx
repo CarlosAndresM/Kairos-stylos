@@ -521,11 +521,11 @@ export function DashboardClient() {
                                         },
                                         {
                                             title: 'SERVICIOS EN CURSO',
-                                            value: (stats?.por_cobrar_count || 0).toString(),
+                                            value: `$ ${(stats?.por_cobrar_total || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                                             sub: 'SERVICIOS PENDIENTES POR PAGAR',
                                             icon: History,
                                             color: 'from-amber-600 to-orange-400',
-                                            count: 0
+                                            count: stats?.por_cobrar_count || 0
                                         },
                                         {
                                             title: 'TOTAL EN CAJA',
@@ -619,7 +619,7 @@ export function DashboardClient() {
                                                         <stat.icon className="text-white size-5" />
                                                     </div>
                                                     {stat.count > 0 && (
-                                                        <div className="absolute -top-2 -right-2 bg-slate-900 text-white text-[9px] font-black size-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm animate-in zoom-in-50 duration-300">
+                                                        <div className="absolute -top-2.5 -right-2.5 bg-slate-900 text-white text-[11px] font-black size-6 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm animate-in zoom-in-50 duration-300">
                                                             {stat.count}
                                                         </div>
                                                     )}
