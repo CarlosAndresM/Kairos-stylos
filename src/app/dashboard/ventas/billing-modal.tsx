@@ -443,14 +443,12 @@ export function BillingModal({
   */
 
   // Mapeo para comboboxes
-  const technicianOptions = technicians
+  const technicianOptions = React.useMemo(() => technicians
     .filter(t => t.RL_NOMBRE === 'TECNICO')
-    .map(t => ({ label: `${t.TR_NOMBRE} (${t.RL_NOMBRE})`, value: t.TR_IDTRABAJADOR_PK }))
+    .map(t => ({ label: `${t.TR_NOMBRE} (${t.RL_NOMBRE})`, value: t.TR_IDTRABAJADOR_PK })), [technicians])
 
-  const workerOptions = technicians.map(t => ({ label: `${t.TR_NOMBRE} (${t.RL_NOMBRE})`, value: t.TR_IDTRABAJADOR_PK }))
-
-  const serviceOptions = services.map(s => ({ label: s.SV_NOMBRE, value: s.SV_IDSERVICIO_PK }))
-  const productOptions = products.map(p => ({ label: p.PR_NOMBRE, value: p.PR_IDPRODUCTO_PK }))
+  const serviceOptions = React.useMemo(() => services.map(s => ({ label: s.SV_NOMBRE, value: s.SV_IDSERVICIO_PK })), [services])
+  const productOptions = React.useMemo(() => products.map(p => ({ label: p.PR_NOMBRE, value: p.PR_IDPRODUCTO_PK })), [products])
 
   const getPeriodLabel = React.useCallback((date: Date | null) => {
     if (!date) return null;
@@ -590,6 +588,19 @@ export function BillingModal({
     try {
       // Inyectar el total calculado antes de enviar
       const finalData = { ...data, FC_TOTAL: total };
+
+      // Validar foto obligatoria en transferencia
+      const hasTransferenciaSinEvidencia = finalData.payments.some(p => {
+        const method = paymentMethods.find(pm => pm.MP_IDMETODO_PK === p.MP_IDMETODO_FK);
+        return method?.MP_NOMBRE.toUpperCase() === 'TRANSFERENCIA' && (!p.PF_EVIDENCIA_URL || p.PF_EVIDENCIA_URL.trim() === '');
+      });
+
+      if (hasTransferenciaSinEvidencia) {
+        toast.error('Comprobante obligatorio', 'Debe adjuntar la foto para el pago por Transferencia');
+        setIsLoading(false);
+        return;
+      }
+
       console.log("Submitting Invoice Data:", finalData);
       const res = await saveInvoice(finalData)
       if (res.success) {
@@ -921,9 +932,9 @@ export function BillingModal({
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-slate-50 border-b border-slate-200">
+                  <div className="overflow-x-auto overflow-y-auto max-h-[40vh] relative">
+                    <table className="w-full text-sm hidden lg:table">
+                      <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
                         <tr>
                           <th className="text-left text-[11px] font-bold uppercase text-slate-500 tracking-wider px-4 py-3 w-[30%]">Servicio</th>
                           <th className="text-left text-[11px] font-bold uppercase text-slate-500 tracking-wider px-4 py-3 w-[25%]">Tecnico</th>
@@ -1017,7 +1028,7 @@ export function BillingModal({
                           </tr>
                         ))}
                       </tbody>
-                      <tfoot className="border-t-2 border-slate-200 bg-slate-50">
+                      <tfoot className="border-t-2 border-slate-200 bg-slate-50 sticky bottom-0 z-10">
                         <tr>
                           <td colSpan={2} className="px-4 py-3 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">Total</td>
                           <td className="px-4 py-3 text-right">
@@ -1027,6 +1038,107 @@ export function BillingModal({
                         </tr>
                       </tfoot>
                     </table>
+                  </div>
+
+                  {/* ── MOBILE VIEW (CARDS) ── */}
+                  <div className="lg:hidden flex flex-col gap-3 p-3 bg-slate-50">
+                    {serviceFields.map((sField, index) => (
+                      <div key={sField.id} className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col gap-3 relative">
+                        {/* Botón de eliminar (esquina sup derecha) */}
+                        {!isPaid && (
+                          <button type="button" onClick={() => removeService(index)} className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                            <Trash2 className="size-4" />
+                          </button>
+                        )}
+                        
+                        {/* Selector de Servicio */}
+                        <div className="pr-8">
+                          <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Servicio</label>
+                          <FormField control={form.control} name={`services.${index}.SV_IDSERVICIO_FK`} render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <ComboboxSearch options={serviceOptions} value={field.value} disabled={isPaid}
+                                  onValueChange={(val) => { field.onChange(val); const sel = services.find(s => s.SV_IDSERVICIO_PK === val); if (sel) form.setValue(`services.${index}.FD_VALOR`, sel.SV_VALOR || 0) }}
+                                  placeholder="Elegir servicio..." className="h-10 text-sm w-full" />
+                              </FormControl>
+                              <FormMessage className="text-[10px]" />
+                            </FormItem>
+                          )} />
+                        </div>
+
+                        {/* Selector de Técnico */}
+                        <div>
+                          <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Técnico asignado</label>
+                          {isPaid ? (
+                            <div className="h-10 flex items-center px-3 bg-slate-50 border border-slate-100 rounded-md text-sm font-bold text-indigo-600 uppercase">
+                              {watchedServices[index]?.tr_tecnico_nombre || 'No asignado'}
+                            </div>
+                          ) : (
+                            <FormField control={form.control} name={`services.${index}.TR_IDTECNICO_FK`} render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <ComboboxSearch options={technicianOptions} value={field.value} disabled={isPaid}
+                                    onValueChange={(val) => field.onChange(val)}
+                                    placeholder="Seleccionar técnico..." className="h-10 text-sm w-full" />
+                                </FormControl>
+                                <FormMessage className="text-[10px]" />
+                              </FormItem>
+                            )} />
+                          )}
+                        </div>
+
+                        {/* Productos */}
+                        {watchedServices[index]?.products && watchedServices[index].products.length > 0 && (
+                          <div className="bg-slate-50/50 rounded-lg p-2 border border-slate-100">
+                            <label className="text-[10px] font-black uppercase text-slate-400 block mb-1.5">Productos vinculados</label>
+                            <div className="flex flex-col gap-1.5">
+                              {watchedServices[index].products.map((p: any, pIdx: number) => {
+                                const pName = products.find(cp => cp.PR_IDPRODUCTO_PK === p.PR_IDPRODUCTO_FK)?.PR_NOMBRE || 'Prod'
+                                return (
+                                  <div key={pIdx} className="bg-white border border-blue-100 rounded-md p-2 flex items-center justify-between shadow-sm">
+                                    <div className="flex flex-col">
+                                      <span className="text-xs font-bold text-blue-900 leading-none mb-0.5">{pName}</span>
+                                      <span className="text-[10px] text-slate-500">Téc: <span className="font-bold text-indigo-500">{p.tr_tecnico_nombre || 'Téc'}</span></span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-black text-blue-600 tabular-nums">${Number(p.FP_VALOR).toLocaleString('es-CO')}</span>
+                                      <div className="flex items-center">
+                                        <button type="button" onClick={() => handleEditProductManual(index, pIdx, p)} className="p-1.5 hover:bg-blue-50 text-blue-500 rounded">
+                                          <Pencil className="size-3" />
+                                        </button>
+                                        <button type="button" onClick={() => handleRemoveProductManual(index, pIdx)} className="p-1.5 hover:bg-red-50 text-red-500 rounded">
+                                          <Trash2 className="size-3" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Valor */}
+                        <div className="pt-2 border-t border-slate-100 mt-1 flex items-center justify-between">
+                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Valor Servicio</label>
+                          <FormField control={form.control} name={`services.${index}.FD_VALOR`} render={({ field }) => (
+                            <FormItem className="space-y-0 w-1/2">
+                              <FormControl>
+                                <NumericFormat value={field.value} disabled={isPaid} onValueChange={(values) => { const v = values.floatValue ?? 0; if (v !== field.value) field.onChange(v) }}
+                                  thousandSeparator="." decimalSeparator="," prefix="$ " allowNegative={false}
+                                  className="w-full h-10 bg-white border border-slate-200 rounded-lg text-right text-base font-black text-[#FF7E5F] px-3 focus:outline-none focus:ring-2 focus:ring-[#FF7E5F]/30 focus:border-[#FF7E5F] disabled:bg-slate-50 disabled:text-slate-400 transition-colors" />
+                              </FormControl>
+                            </FormItem>
+                          )} />
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Total Mobile */}
+                    <div className="bg-[#FF7E5F]/10 border border-[#FF7E5F]/20 rounded-xl p-4 mt-2 flex items-center justify-between">
+                      <span className="font-black uppercase tracking-wider text-slate-700 text-sm">Total a pagar</span>
+                      <span className="text-xl font-black text-[#FF7E5F] tabular-nums">$ {(total || 0).toLocaleString('es-CO')}</span>
+                    </div>
                   </div>
                 </div>
               </div>
