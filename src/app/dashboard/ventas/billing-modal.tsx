@@ -664,7 +664,7 @@ export function BillingModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && handleClose()}>
-      <DialogContent className="max-w-[98vw] lg:max-w-[1100px] h-[95vh] flex flex-col overflow-hidden p-0 gap-0">
+      <DialogContent className="max-w-[98vw] lg:max-w-[1100px] h-[95vh] max-h-[600px] flex flex-col overflow-hidden p-0 gap-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-100 flex-shrink-0">
           <DialogTitle className="text-xl font-bold text-slate-900">
             {isEditing ? 'Editar Factura' : 'Nueva Venta'}
