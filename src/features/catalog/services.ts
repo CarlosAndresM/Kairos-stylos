@@ -68,7 +68,7 @@ export async function getProducts(): Promise<ApiResponse> {
   try {
     // FORCE NO CACHE with a random comment
     const [rows] = await db.execute(
-      "SELECT PR_IDPRODUCTO_PK, PR_NOMBRE, PR_APLICA_COMISION, PR_PORCENTAJE_COMISION, PR_ACTIVO FROM KS_PRODUCTOS ORDER BY PR_NOMBRE ASC"
+      "SELECT PR_IDPRODUCTO_PK, PR_NOMBRE, PR_DESCRIPCION, PR_APLICA_COMISION, PR_PORCENTAJE_COMISION, PR_ACTIVO FROM KS_PRODUCTOS ORDER BY PR_NOMBRE ASC"
     );
 
     const products = (rows as any[]).map(p => ({
@@ -87,13 +87,13 @@ export async function saveProduct(data: ProductFormData): Promise<ApiResponse> {
   try {
     if (data.PR_IDPRODUCTO_PK) {
       await db.execute(
-        "UPDATE KS_PRODUCTOS SET PR_NOMBRE = ?, PR_APLICA_COMISION = ?, PR_PORCENTAJE_COMISION = ?, PR_ACTIVO = ? WHERE PR_IDPRODUCTO_PK = ?",
-        [data.PR_NOMBRE, data.PR_APLICA_COMISION, data.PR_PORCENTAJE_COMISION, data.PR_ACTIVO, data.PR_IDPRODUCTO_PK]
+        "UPDATE KS_PRODUCTOS SET PR_NOMBRE = ?, PR_DESCRIPCION = ?, PR_APLICA_COMISION = ?, PR_PORCENTAJE_COMISION = ?, PR_ACTIVO = ? WHERE PR_IDPRODUCTO_PK = ?",
+        [data.PR_NOMBRE, data.PR_DESCRIPCION || null, data.PR_APLICA_COMISION, data.PR_PORCENTAJE_COMISION, data.PR_ACTIVO, data.PR_IDPRODUCTO_PK]
       );
     } else {
       await db.execute(
-        "INSERT INTO KS_PRODUCTOS (PR_NOMBRE, PR_APLICA_COMISION, PR_PORCENTAJE_COMISION, PR_ACTIVO) VALUES (?, ?, ?, ?)",
-        [data.PR_NOMBRE, data.PR_APLICA_COMISION, data.PR_PORCENTAJE_COMISION, data.PR_ACTIVO]
+        "INSERT INTO KS_PRODUCTOS (PR_NOMBRE, PR_DESCRIPCION, PR_APLICA_COMISION, PR_PORCENTAJE_COMISION, PR_ACTIVO) VALUES (?, ?, ?, ?, ?)",
+        [data.PR_NOMBRE, data.PR_DESCRIPCION || null, data.PR_APLICA_COMISION, data.PR_PORCENTAJE_COMISION, data.PR_ACTIVO]
       );
     }
     revalidatePath("/dashboard/catalogos");

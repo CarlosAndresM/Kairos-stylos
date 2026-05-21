@@ -150,10 +150,9 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
     const prestamosQuery = `
       SELECT SUM(vl.VL_MONTO) as total, COUNT(*) as count
       FROM KS_VALES vl
-      ${sucursalId !== -1 ? 'JOIN KS_TRABAJADORES t ON vl.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK' : ''}
       WHERE DATE(vl.VL_FECHA_CREACION) BETWEEN ? AND ? 
       AND vl.VL_ESTADO != 'ANULADO'
-      ${sucursalId !== -1 ? 'AND t.SC_IDSUCURSAL_FK = ?' : ''}
+      ${sucursalId !== -1 ? 'AND vl.SC_IDSUCURSAL_FK = ?' : ''}
     `;
     const prestamosParams: any[] = [dateFrom, dateTo];
     if (sucursalId !== -1) prestamosParams.push(sucursalId);
@@ -262,6 +261,11 @@ export async function getDashboardCharts(sucursalId: number, dateFrom: string, d
            FROM KS_FACTURA_DETALLES fd
            JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
            WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
+           AND NOT EXISTS (
+             SELECT 1 FROM KS_PAGOS_FACTURA pf
+             JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+             WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+           )
            GROUP BY fd.TR_IDTECNICO_FK
        ) srv ON t.TR_IDTRABAJADOR_PK = srv.TR_IDTECNICO_FK
        LEFT JOIN (
@@ -269,6 +273,11 @@ export async function getDashboardCharts(sucursalId: number, dateFrom: string, d
            FROM KS_FACTURA_PRODUCTOS fp
            JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
            WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
+           AND NOT EXISTS (
+             SELECT 1 FROM KS_PAGOS_FACTURA pf
+             JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+             WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+           )
            GROUP BY fp.TR_IDTECNICO_FK
        ) prd ON t.TR_IDTRABAJADOR_PK = prd.TR_IDTECNICO_FK
        JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
@@ -436,10 +445,10 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
     const valeQuerySpecific = `
       SELECT v.*, t.TR_NOMBRE as trabajador_nombre
       FROM KS_VALES v
-      ${sucursalId !== -1 ? 'JOIN KS_TRABAJADORES t ON v.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK' : 'LEFT JOIN KS_TRABAJADORES t ON v.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK'}
+      LEFT JOIN KS_TRABAJADORES t ON v.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK
       WHERE DATE(v.VL_FECHA_CREACION) BETWEEN ? AND ?
       AND v.VL_ESTADO != 'ANULADO'
-      ${sucursalId !== -1 ? 'AND t.SC_IDSUCURSAL_FK = ?' : ''}
+      ${sucursalId !== -1 ? 'AND v.SC_IDSUCURSAL_FK = ?' : ''}
       ORDER BY v.VL_FECHA_CREACION DESC
     `;
     const valeParamsSpecific: any[] = [dateFrom, dateTo];
@@ -492,6 +501,11 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
        JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        LEFT JOIN KS_TRABAJADORES tc ON f.TR_IDCLIENTE_FK = tc.TR_IDTRABAJADOR_PK
        WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? ${sucursalFilter}
+       AND NOT EXISTS (
+         SELECT 1 FROM KS_PAGOS_FACTURA pf
+         JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+         WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+       )
        
        UNION ALL
        
@@ -509,6 +523,11 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
        JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        LEFT JOIN KS_TRABAJADORES tc ON f.TR_IDCLIENTE_FK = tc.TR_IDTRABAJADOR_PK
        WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? ${sucursalFilter}
+       AND NOT EXISTS (
+         SELECT 1 FROM KS_PAGOS_FACTURA pf
+         JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+         WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+       )
        ORDER BY FC_FECHA DESC`,
       sucursalId !== -1 ? [...baseParams, sucursalId, ...baseParams, sucursalId] : [...baseParams, ...baseParams]
     );
@@ -589,7 +608,12 @@ export async function getTechnicianStats(workerId: number, dateFrom: string, dat
       `SELECT SUM(fd.FD_VALOR) as total, COUNT(*) as count
         FROM KS_FACTURA_DETALLES fd
         JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
-        WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'`,
+        WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
+        AND NOT EXISTS (
+          SELECT 1 FROM KS_PAGOS_FACTURA pf
+          JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+          WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+        )`,
       params
     );
 
@@ -598,7 +622,12 @@ export async function getTechnicianStats(workerId: number, dateFrom: string, dat
       `SELECT SUM(fp.FP_VALOR) as total, COUNT(*) as count
         FROM KS_FACTURA_PRODUCTOS fp
         JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
-        WHERE fp.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'`,
+        WHERE fp.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
+        AND NOT EXISTS (
+          SELECT 1 FROM KS_PAGOS_FACTURA pf
+          JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+          WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+        )`,
       params
     );
 
@@ -644,6 +673,11 @@ export async function getTechnicianCharts(workerId: number, dateFrom: string, da
        FROM KS_FACTURA_DETALLES fd
        JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
+       AND NOT EXISTS (
+         SELECT 1 FROM KS_PAGOS_FACTURA pf
+         JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+         WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+       )
        GROUP BY DATE(f.FC_FECHA)
        ORDER BY DATE(f.FC_FECHA) ASC`,
       [workerId, dateFrom, dateTo]
@@ -665,6 +699,11 @@ export async function getTechnicianServices(workerId: number, dateFrom: string, 
        JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        JOIN KS_SERVICIOS s ON fd.SV_IDSERVICIO_FK = s.SV_IDSERVICIO_PK
        WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
+       AND NOT EXISTS (
+         SELECT 1 FROM KS_PAGOS_FACTURA pf
+         JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+         WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+       )
        
        UNION ALL
        
@@ -673,6 +712,11 @@ export async function getTechnicianServices(workerId: number, dateFrom: string, 
        JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        JOIN KS_PRODUCTOS p ON fp.PR_IDPRODUCTO_FK = p.PR_IDPRODUCTO_PK
        WHERE fp.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
+       AND NOT EXISTS (
+         SELECT 1 FROM KS_PAGOS_FACTURA pf
+         JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+         WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+       )
        
        ORDER BY FC_FECHA DESC`,
       [workerId, dateFrom, dateTo, workerId, dateFrom, dateTo]

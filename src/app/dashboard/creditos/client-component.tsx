@@ -236,7 +236,7 @@ export default function CreditsPage({ sessionUser }: { sessionUser?: any }) {
 
       {/* Main Table */}
       <LoadingGate>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div className="px-4 sm:px-6 lg:px-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50">

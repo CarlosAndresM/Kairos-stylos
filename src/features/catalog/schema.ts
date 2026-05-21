@@ -9,6 +9,7 @@ export const serviceSchema = z.object({
 export const productSchema = z.object({
   PR_IDPRODUCTO_PK: z.number().optional(),
   PR_NOMBRE: z.string().min(1, 'El nombre del producto es obligatorio').max(255),
+  PR_DESCRIPCION: z.string().max(1000).nullable().optional(),
   PR_APLICA_COMISION: z.boolean().default(false),
   PR_PORCENTAJE_COMISION: z.coerce.number().min(0).max(100).default(0),
   PR_ACTIVO: z.boolean().default(true),

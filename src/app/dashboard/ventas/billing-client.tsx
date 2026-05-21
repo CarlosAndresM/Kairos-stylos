@@ -221,7 +221,7 @@ export function BillingClient({
 
   return (
     <LoadingGate>
-      <div className="space-y-4 md:space-y-6">
+      <div className="space-y-4 md:space-y-6 px-4 sm:px-6 lg:px-8">
         {/* Date Navigation & Actions Header */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-sm">

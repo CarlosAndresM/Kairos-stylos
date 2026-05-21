@@ -133,3 +133,50 @@ export async function createExpense(data: GastoData): Promise<ApiResponse<number
     return { success: false, data: null, error: "Error al registrar el gasto" };
   }
 }
+
+/**
+ * Actualizar un gasto manual
+ */
+export async function updateExpense(data: GastoData): Promise<ApiResponse<null>> {
+  try {
+    const validated = gastoSchema.parse(data);
+    if (!validated.GS_IDGASTO_PK) {
+      return { success: false, data: null, error: "ID de gasto es requerido para actualizar" };
+    }
+
+    let finalComprobantes: string[] = [];
+    if (validated.GS_COMPROBANTES && validated.GS_COMPROBANTES.length > 0) {
+      for (const url of validated.GS_COMPROBANTES) {
+        if (url.includes('/temp/')) {
+          const finalUrl = await finalizeUpload(url, `GASTO-${Date.now()}`);
+          finalComprobantes.push(finalUrl);
+        } else {
+          finalComprobantes.push(url);
+        }
+      }
+    }
+
+    const comprobantesJson = finalComprobantes.length > 0 ? JSON.stringify(finalComprobantes) : null;
+
+    await db.execute(
+      `UPDATE KS_GASTOS 
+       SET GS_CONCEPTO = ?, GS_DESCRIPCION = ?, GS_FECHA = ?, GS_VALOR = ?, SC_IDSUCURSAL_FK = ?, GS_COMPROBANTES = ?
+       WHERE GS_IDGASTO_PK = ?`,
+      [
+        validated.GS_CONCEPTO,
+        validated.GS_DESCRIPCION || '',
+        toLocalDateString(validated.GS_FECHA),
+        validated.GS_VALOR,
+        validated.SC_IDSUCURSAL_FK || null,
+        comprobantesJson,
+        validated.GS_IDGASTO_PK
+      ]
+    );
+
+    revalidatePath("/dashboard/gastos");
+    return { success: true, data: null, message: "Gasto actualizado correctamente" };
+  } catch (error) {
+    console.error("Error updateExpense:", error);
+    return { success: false, data: null, error: "Error al actualizar el gasto" };
+  }
+}

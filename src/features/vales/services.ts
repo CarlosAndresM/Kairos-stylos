@@ -43,6 +43,30 @@ export async function createValeService(input: unknown) {
   }
 }
 
+export async function updateValeService(input: unknown) {
+  try {
+    const { UpdateValeSchema } = await import('@/features/vales/schema');
+    const validated = UpdateValeSchema.parse(input);
+    
+    if (!validated.VL_FECHA && validated.VL_FECHA_DESEMBOLSO) {
+      validated.VL_FECHA = validated.VL_FECHA_DESEMBOLSO;
+    }
+
+    const { updateValeMutation } = await import('@/features/vales/mutations');
+    const success = await updateValeMutation(validated);
+    if (!success) {
+      return { success: false, data: null, error: 'No se pudo actualizar. El vale no existe, no está pendiente o ya tiene cuotas pagadas.' };
+    }
+    return { success: true, data: { success: true } };
+  } catch (error: any) {
+    console.error('updateValeService error:', error);
+    if (error.name === 'ZodError') {
+      return { success: false, data: null, error: 'Datos inválidos', meta: { issues: error.issues } };
+    }
+    return { success: false, data: null, error: 'Error al actualizar el vale', meta: { error: error.message } };
+  }
+}
+
 export async function anularValeService(id: number) {
   try {
     const success = await anularValeMutation(id);

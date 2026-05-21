@@ -118,7 +118,7 @@ export default function AdminClient({ initialAdmins, roles, sedes }: AdminClient
 
   return (
     <LoadingGate>
-      <div className="space-y-6">
+      <div className="space-y-6 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />

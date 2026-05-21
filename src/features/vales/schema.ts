@@ -8,6 +8,12 @@ export const CreateValeSchema = z.object({
   VL_FECHA_INICIO_COBRO: z.string().optional(),
   VL_CUOTAS: z.coerce.number().min(1, 'Debe ser al menos 1 cuota').default(1),
   VL_OBSERVACIONES: z.string().optional(),
+  SC_IDSUCURSAL_FK: z.coerce.number({ required_error: 'La sucursal es requerida' }),
+});
+
+export const UpdateValeSchema = CreateValeSchema.extend({
+  VL_IDVALE_PK: z.coerce.number({ required_error: 'El ID del vale es requerido' }),
 });
 
 export type CreateValeInput = z.infer<typeof CreateValeSchema>;
+export type UpdateValeInput = z.infer<typeof UpdateValeSchema>;

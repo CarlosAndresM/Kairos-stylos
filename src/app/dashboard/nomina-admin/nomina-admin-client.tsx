@@ -213,7 +213,7 @@ export default function NominaAdminClient() {
   const currentRangeLabel = `${format(startDate, "dd MMM", { locale: es })} - ${format(endDate, "dd MMM yyyy", { locale: es })}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 sm:px-6 lg:px-8">
       <DashboardBanner
         title={<>Nómina <span className="text-[#FF7E5F]">Administradores</span> de Punto</>}
         subtitle="Liquidación quincenal para administradores con salarios manuales."

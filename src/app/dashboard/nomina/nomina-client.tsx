@@ -240,7 +240,7 @@ export default function NominaClient() {
   const currentRangeLabel = `${format(startDate, "dd MMM", { locale: es })} - ${format(endDate, "dd MMM yyyy", { locale: es })}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 sm:px-6 lg:px-8">
       <DashboardBanner
         title={<>Gestión <span className="text-[#FF7E5F]">Nómina</span> Técnicos</>}
         subtitle="Cálculo semanal de comisiones y sueldos para técnicos."

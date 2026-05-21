@@ -29,7 +29,7 @@ export default async function DashboardLayout({
       {/* Main Content Area - en móvil ocupa todo el ancho */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Dynamic Content */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar relative">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative">
           {/* Enhanced Background Glows - Rosados/Naranjas con Blur más intensos */}
           <div className="absolute top-[-10%] right-[-10%] w-[70%] h-[70%] bg-gradient-to-br from-[#FF7E5F]/20 via-rose-300/10 to-transparent blur-[120px] -z-10 pointer-events-none animate-pulse duration-[8s]" />
           <div className="absolute bottom-[-10%] left-[-10%] w-[70%] h-[70%] bg-gradient-to-tr from-[#FEB47B]/20 via-pink-300/10 to-transparent blur-[120px] -z-10 pointer-events-none animate-pulse duration-[12s]" />

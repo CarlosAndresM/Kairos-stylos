@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Plus, XCircle, Search, Calendar as CalendarIcon, Wallet, Info, Eye, Trash2 } from 'lucide-react';
+import { Plus, XCircle, Search, Calendar as CalendarIcon, Wallet, Info, Eye, Trash2, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LoadingGate } from '@/components/ui/loading-gate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -52,6 +53,8 @@ interface Vale {
   VL_OBSERVACIONES: string | null;
   TR_NOMBRE: string;
   RL_NOMBRE: string;
+  SUCURSAL_NOMBRE?: string;
+  SC_IDSUCURSAL_FK?: number;
   VL_FECHA_DESEMBOLSO: string | null;
   VL_FECHA_INICIO_COBRO: string | null;
   VL_FECHA_CREACION: string;
@@ -66,9 +69,11 @@ interface Trabajador {
 interface ValesClientProps {
   initialVales: Vale[];
   trabajadores: Trabajador[];
+  sucursales: any[];
+  sessionUser?: any;
 }
 
-export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
+export function ValesClient({ initialVales, trabajadores, sucursales, sessionUser }: ValesClientProps) {
   const [vales, setVales] = useState<Vale[]>(initialVales);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -83,6 +88,7 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
   const [trabajadorId, setTrabajadorId] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [observaciones, setObservaciones] = useState('');
+  const [sucursalId, setSucursalId] = useState<string>('');
 
   const [selectedVale, setSelectedVale] = useState<Vale | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -213,9 +219,34 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
     return schedule;
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleOpenCreate = () => {
+    setSelectedVale(null);
+    setMonto('');
+    setCuotas('1');
+    setTrabajadorId('');
+    setObservaciones('');
+    setSucursalId('');
+    setSelectedRole('');
+    setIsCreateModalOpen(true);
+  };
+
+  const handleOpenEdit = () => {
+    if (!selectedVale) return;
+    setMonto(selectedVale.VL_MONTO.toString());
+    setCuotas(selectedVale.VL_CUOTAS.toString());
+    setTrabajadorId(selectedVale.TR_IDTRABAJADOR_FK.toString());
+    setObservaciones(selectedVale.VL_OBSERVACIONES || '');
+    setSucursalId(selectedVale.SC_IDSUCURSAL_FK?.toString() || '');
+    setSelectedRole(selectedVale.RL_NOMBRE);
+    if (selectedVale.VL_FECHA_DESEMBOLSO) setFechaDesembolso(safeFormat(selectedVale.VL_FECHA_DESEMBOLSO, 'yyyy-MM-dd'));
+    if (selectedVale.VL_FECHA_INICIO_COBRO) setFechaInicioCobro(safeFormat(selectedVale.VL_FECHA_INICIO_COBRO, 'yyyy-MM-dd'));
+    setIsDetailsOpen(false);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!monto || !trabajadorId || !fechaDesembolso) {
+    if (!monto || !trabajadorId || !fechaDesembolso || !sucursalId) {
       toast.error('Campos incompletos', 'Por favor llena todos los campos obligatorios');
       return;
     }
@@ -224,6 +255,7 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
     try {
       const payload = {
         TR_IDTRABAJADOR_FK: parseInt(trabajadorId, 10),
+        SC_IDSUCURSAL_FK: parseInt(sucursalId, 10),
         VL_MONTO: parseFloat(monto),
         VL_CUOTAS: parseInt(cuotas, 10) || 1,
         VL_FECHA_DESEMBOLSO: fechaDesembolso,
@@ -231,8 +263,12 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
         VL_OBSERVACIONES: observaciones
       };
 
-      const res = await fetch('/api/vales', {
-        method: 'POST',
+      const isEditing = !!selectedVale;
+      const url = isEditing ? `/api/vales/${selectedVale.VL_IDVALE_PK}` : '/api/vales';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
@@ -240,17 +276,11 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
       const data = await res.json();
 
       if (data.success) {
-        toast.success('Vale registrado', 'El vale se ha creado exitosamente.');
+        toast.success(isEditing ? 'Vale actualizado' : 'Vale registrado', isEditing ? 'Los datos se guardaron.' : 'El vale se ha creado exitosamente.');
         setIsCreateModalOpen(false);
-        // Reset form
-        setMonto('');
-        setCuotas('1');
-        setTrabajadorId('');
-        setObservaciones('');
-        // Recargar la página para obtener la tabla fresca
         window.location.reload();
       } else {
-        toast.error('Error', data.error || 'No se pudo crear el vale');
+        toast.error('Error', data.error || 'No se pudo guardar el vale');
       }
     } catch (error) {
       toast.error('Error de red', 'No se pudo contactar con el servidor');
@@ -288,7 +318,8 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <LoadingGate>
+      <div className="space-y-6 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
@@ -301,7 +332,7 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
         </div>
 
         <Button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={handleOpenCreate}
           className="w-full sm:w-auto bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white shadow-lg shadow-[#FF7E5F]/20 rounded-xl"
         >
           <Plus className="mr-2 size-4" />
@@ -331,6 +362,7 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
                     onFilterChange={(vals: string[]) => handleFilterChange('ROL', vals)}
                   />
                 </TableHead>
+                <TableHead>Sucursal</TableHead>
                 <TableHead>Monto</TableHead>
                 <TableHead className="py-0 px-2">
                   <TableFilter
@@ -371,6 +403,9 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
                         {vale.RL_NOMBRE}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-xs text-slate-500 font-medium truncate max-w-[120px]">
+                      {vale.SUCURSAL_NOMBRE || '-'}
+                    </TableCell>
                     <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
                       <span>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(vale.VL_MONTO))}</span>
                     </TableCell>
@@ -397,6 +432,16 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        {sessionUser?.role?.includes('ADMINISTRADOR') && vale.VL_CUOTAS_PAGADAS === 0 && vale.VL_ESTADO === 'PENDIENTE' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => { setSelectedVale(vale); setIsDetailsOpen(false); handleOpenEdit(); }}
+                            title="Editar"
+                          >
+                            <Edit2 className="size-4 text-slate-500" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -405,17 +450,6 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
                         >
                           <Eye className="size-4 text-slate-500" />
                         </Button>
-                        {vale.VL_ESTADO === 'PENDIENTE' && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleAnular(vale.VL_IDVALE_PK)}
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
-                            title="Anular Vale"
-                          >
-                            <XCircle className="size-4" />
-                          </Button>
-                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -429,13 +463,13 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Registrar Vale de Nómina</DialogTitle>
+            <DialogTitle>{selectedVale ? 'Editar Vale' : 'Registrar Vale de Nómina'}</DialogTitle>
             <DialogDescription>
-              Asigna un vale a un trabajador que será descontado en su próximo pago.
+              {selectedVale ? 'Modifica los datos del vale seleccionado.' : 'Asigna un vale a un trabajador que será descontado en su próximo pago.'}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreate} className="space-y-4 py-4">
+          <form onSubmit={handleSave} className="space-y-4 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Rol del Trabajador</Label>
@@ -464,6 +498,22 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
                   disabled={!selectedRole && workerOptions.length === 0}
                 />
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Sucursal (Origen del dinero)</Label>
+              <Select value={sucursalId} onValueChange={setSucursalId} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona una sucursal..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {sucursales.map(s => (
+                    <SelectItem key={s.SC_IDSUCURSAL_PK} value={s.SC_IDSUCURSAL_PK.toString()}>
+                      {s.SC_NOMBRE}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -610,11 +660,15 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
           {selectedVale && (
             <div className="space-y-6 pt-4">
               {/* Resumen */}
-              <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Trabajador</p>
                   <p className="font-semibold text-slate-900 dark:text-slate-100">{selectedVale.TR_NOMBRE}</p>
                   <Badge variant="secondary" className="text-[9px] uppercase">{selectedVale.RL_NOMBRE}</Badge>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Sucursal</p>
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">{selectedVale.SUCURSAL_NOMBRE || '-'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Monto Total</p>
@@ -692,13 +746,33 @@ export function ValesClient({ initialVales, trabajadores }: ValesClientProps) {
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setIsDetailsOpen(false)} className="w-full">
-              Cerrar Detalles
-            </Button>
+          <DialogFooter className="flex justify-between items-center w-full sm:justify-between pt-4">
+            {sessionUser?.role?.includes('ADMINISTRADOR') && selectedVale?.VL_ESTADO === 'PENDIENTE' && (
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                   handleAnular(selectedVale.VL_IDVALE_PK);
+                   setIsDetailsOpen(false);
+                }}
+              >
+                <XCircle className="size-4 mr-2" />
+                {selectedVale.VL_CUOTAS_PAGADAS === 0 ? 'Eliminar Vale' : 'Anular Vale'}
+              </Button>
+            )}
+            <div className="flex gap-2 ml-auto">
+              {sessionUser?.role?.includes('ADMINISTRADOR') && selectedVale?.VL_CUOTAS_PAGADAS === 0 && selectedVale?.VL_ESTADO === 'PENDIENTE' && (
+                 <Button variant="outline" onClick={handleOpenEdit}>
+                   <Edit2 className="size-4 mr-2" /> Editar
+                 </Button>
+              )}
+              <Button variant="secondary" onClick={() => setIsDetailsOpen(false)}>
+                Cerrar Detalles
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
+    </LoadingGate>
   );
 }

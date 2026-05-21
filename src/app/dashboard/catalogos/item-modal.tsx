@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Form,
   FormControl,
@@ -44,6 +45,7 @@ export function ItemModal({ isOpen, onClose, onSave, editingItem, type }: ItemMo
       SV_ACTIVO: true
     } : {
       PR_NOMBRE: '',
+      PR_DESCRIPCION: '',
       PR_APLICA_COMISION: false,
       PR_PORCENTAJE_COMISION: 0,
       PR_ACTIVO: true
@@ -67,6 +69,7 @@ export function ItemModal({ isOpen, onClose, onSave, editingItem, type }: ItemMo
             } 
           : { 
               PR_IDPRODUCTO_PK: editingItem.PR_IDPRODUCTO_PK,
+              PR_DESCRIPCION: editingItem.PR_DESCRIPCION || '',
               PR_APLICA_COMISION: !!editingItem.PR_APLICA_COMISION,
               PR_PORCENTAJE_COMISION: editingItem.PR_PORCENTAJE_COMISION || 0
             }
@@ -78,6 +81,7 @@ export function ItemModal({ isOpen, onClose, onSave, editingItem, type }: ItemMo
         SV_ACTIVO: true
       } : {
         PR_NOMBRE: '',
+        PR_DESCRIPCION: '',
         PR_APLICA_COMISION: false,
         PR_PORCENTAJE_COMISION: 0,
         PR_ACTIVO: true
@@ -103,7 +107,7 @@ export function ItemModal({ isOpen, onClose, onSave, editingItem, type }: ItemMo
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px] rounded-3xl">
+      <DialogContent className="sm:max-w-[600px] rounded-3xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-black">
             {editingItem ? 'Editar' : 'Nuevo'} {type === 'service' ? 'Servicio' : 'Producto'}
@@ -111,12 +115,12 @@ export function ItemModal({ isOpen, onClose, onSave, editingItem, type }: ItemMo
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             <FormField
               control={form.control}
               name={nameField}
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="md:col-span-2">
                   <FormLabel>Nombre</FormLabel>
                   <FormControl>
                     <Input placeholder="Ej. Corte de Cabello" {...field} className="rounded-xl" />
@@ -131,21 +135,43 @@ export function ItemModal({ isOpen, onClose, onSave, editingItem, type }: ItemMo
               <>
                 <FormField
                   control={form.control}
+                  name="PR_DESCRIPCION"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Descripción (Opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Ej. Shampoo hidratante de 500ml" 
+                          {...field} 
+                          value={field.value || ''}
+                          className="rounded-xl resize-none" 
+                          rows={3} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="PR_APLICA_COMISION"
                   render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+                    <FormItem className="flex flex-col justify-center rounded-xl border border-slate-200 dark:border-slate-800 p-4 min-h-[100px]">
                       <div className="space-y-0.5">
                         <FormLabel className="text-base">Aplica Comisión</FormLabel>
                         <p className="text-xs text-muted-foreground italic">
                           ¿El técnico recibe comisión por venderlo?
                         </p>
                       </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
+                      <div className="flex items-center justify-between mt-2">
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </div>
                     </FormItem>
                   )}
                 />
@@ -155,10 +181,10 @@ export function ItemModal({ isOpen, onClose, onSave, editingItem, type }: ItemMo
                     control={form.control}
                     name="PR_PORCENTAJE_COMISION"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex flex-col justify-center rounded-xl border border-slate-200 dark:border-slate-800 p-4 min-h-[100px]">
                         <FormLabel>Porcentaje de Comisión (%)</FormLabel>
                         <FormControl>
-                          <Input type="number" step="0.01" placeholder="0.00" {...field} className="rounded-xl" />
+                          <Input type="number" step="0.01" placeholder="0.00" {...field} className="rounded-xl mt-2" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -172,7 +198,7 @@ export function ItemModal({ isOpen, onClose, onSave, editingItem, type }: ItemMo
               control={form.control}
               name={activeField}
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+                <FormItem className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 p-4 md:col-span-2">
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Activo</FormLabel>
                     <p className="text-xs text-muted-foreground italic">
@@ -189,7 +215,7 @@ export function ItemModal({ isOpen, onClose, onSave, editingItem, type }: ItemMo
               )}
             />
 
-            <DialogFooter className="pt-4">
+            <DialogFooter className="pt-4 md:col-span-2">
               <Button
                 type="button"
                 variant="ghost"

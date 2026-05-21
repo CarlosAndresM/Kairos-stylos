@@ -113,7 +113,7 @@ export function CatalogClient({ initialServices, initialProducts }: CatalogClien
 
   return (
     <LoadingGate>
-      <div className="space-y-6">
+      <div className="space-y-6 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
@@ -266,6 +266,9 @@ export function CatalogClient({ initialServices, initialProducts }: CatalogClien
                           onFilterChange={(vals: string[]) => handleFilterChange('PR_NOMBRE', vals)}
                         />
                       </TableHead>
+                      <TableHead className="px-6 h-12 text-center w-[120px]">
+                        <span className="font-bold uppercase tracking-wider text-[10px] text-slate-500">Comisión</span>
+                      </TableHead>
                       <TableHead className="px-6 h-12 text-center">
                         <TableFilter
                           label="Estado"
@@ -288,6 +291,13 @@ export function CatalogClient({ initialServices, initialProducts }: CatalogClien
                         </TableCell>
                         <TableCell className="px-6 py-4 font-bold text-slate-900 dark:text-white text-xs">
                           {product.PR_NOMBRE}
+                        </TableCell>
+                        <TableCell className="px-6 py-4 text-center">
+                          {product.PR_APLICA_COMISION ? (
+                             <Badge variant="outline" className="border-[#FF7E5F]/30 bg-[#FF7E5F]/10 text-[#FF7E5F] font-black">{product.PR_PORCENTAJE_COMISION}%</Badge>
+                          ) : (
+                             <span className="text-slate-400 text-[10px] font-bold uppercase italic">N/A</span>
+                          )}
                         </TableCell>
                         <TableCell className="px-6 py-4 text-center">
                           <span className={cn(

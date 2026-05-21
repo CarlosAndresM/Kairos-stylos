@@ -7,10 +7,12 @@ export async function getVales(sucursalId?: number) {
     SELECT 
       v.*, 
       t.TR_NOMBRE,
-      r.RL_NOMBRE
+      r.RL_NOMBRE,
+      s.SC_NOMBRE AS SUCURSAL_NOMBRE
     FROM KS_VALES v
     JOIN KS_TRABAJADORES t ON v.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK
     JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+    LEFT JOIN KS_SUCURSALES s ON v.SC_IDSUCURSAL_FK = s.SC_IDSUCURSAL_PK
     WHERE 1=1
   `;
 
@@ -30,10 +32,12 @@ export async function getValesPendientes() {
     SELECT 
       v.*, 
       t.TR_NOMBRE,
-      r.RL_NOMBRE
+      r.RL_NOMBRE,
+      s.SC_NOMBRE AS SUCURSAL_NOMBRE
     FROM KS_VALES v
     JOIN KS_TRABAJADORES t ON v.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK
     JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+    LEFT JOIN KS_SUCURSALES s ON v.SC_IDSUCURSAL_FK = s.SC_IDSUCURSAL_PK
     WHERE v.VL_ESTADO = 'PENDIENTE'
     ORDER BY v.VL_FECHA_CREACION DESC
   `);
@@ -45,10 +49,12 @@ export async function getValesByTrabajador(trabajadorId: number) {
     SELECT 
       v.*, 
       t.TR_NOMBRE,
-      r.RL_NOMBRE
+      r.RL_NOMBRE,
+      s.SC_NOMBRE AS SUCURSAL_NOMBRE
     FROM KS_VALES v
     JOIN KS_TRABAJADORES t ON v.TR_IDTRABAJADOR_FK = t.TR_IDTRABAJADOR_PK
     JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+    LEFT JOIN KS_SUCURSALES s ON v.SC_IDSUCURSAL_FK = s.SC_IDSUCURSAL_PK
     WHERE v.TR_IDTRABAJADOR_FK = ?
     ORDER BY v.VL_FECHA_CREACION DESC
   `, [trabajadorId]);

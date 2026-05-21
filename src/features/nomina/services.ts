@@ -152,7 +152,12 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
         `SELECT SUM(fd.FD_VALOR) as total 
          FROM KS_FACTURA_DETALLES fd 
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
-         WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?)`,
+         WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?)
+         AND NOT EXISTS (
+           SELECT 1 FROM KS_PAGOS_FACTURA pf
+           JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+           WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+         )`,
         [worker.TR_IDTRABAJADOR_PK, data.startDate, data.endDate]
       );
       const svcTotal = Number(services[0].total || 0);
@@ -163,7 +168,12 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
         `SELECT SUM(fp.FP_COMISION_VALOR) as total 
          FROM KS_FACTURA_PRODUCTOS fp
          JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
-         WHERE fp.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?) AND f.FC_ESTADO = 'PAGADO'`,
+         WHERE fp.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?) AND f.FC_ESTADO = 'PAGADO'
+         AND NOT EXISTS (
+           SELECT 1 FROM KS_PAGOS_FACTURA pf
+           JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+           WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+         )`,
         [worker.TR_IDTRABAJADOR_PK, data.startDate, data.endDate]
       );
       const prdComm = Number(products[0].total || 0);
@@ -608,6 +618,11 @@ export async function getNominaAudit(workerId: number, startDate: Date, endDate:
       WHERE fd.TR_IDTECNICO_FK = ? 
       AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?)
       AND f.FC_ESTADO != 'CANCELADO'
+      AND NOT EXISTS (
+        SELECT 1 FROM KS_PAGOS_FACTURA pf
+        JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+        WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+      )
 
       UNION ALL
 
@@ -627,6 +642,11 @@ export async function getNominaAudit(workerId: number, startDate: Date, endDate:
       WHERE fp.TR_IDTECNICO_FK = ? 
       AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?)
       AND f.FC_ESTADO != 'CANCELADO'
+      AND NOT EXISTS (
+        SELECT 1 FROM KS_PAGOS_FACTURA pf
+        JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+        WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+      )
 
       ORDER BY FC_FECHA DESC`,
       [svcPercent, workerId, startDate, endDate, workerId, startDate, endDate]

@@ -1,8 +1,9 @@
 import { Metadata } from 'next';
 import { getAllValesService } from '@/features/vales/services';
-import { getTrabajadores } from '@/features/trabajadores/services';
+import { getTrabajadores, getSedes } from '@/features/trabajadores/services';
 import { ValesClient } from '@/app/dashboard/vales/vales-client';
 import { DashboardBanner } from '@/components/layout/dashboard-banner';
+import { getCurrentUserSession } from "@/features/dashboard/services";
 
 export const metadata: Metadata = {
   title: 'Vales | kairos Stylos',
@@ -10,12 +11,16 @@ export const metadata: Metadata = {
 };
 
 export default async function ValesPage() {
-  const [valesRes, trabajadoresRes] = await Promise.all([
+  const [valesRes, trabajadoresRes, sedesRes, sessionRes] = await Promise.all([
     getAllValesService(),
-    getTrabajadores()
+    getTrabajadores(),
+    getSedes(),
+    getCurrentUserSession()
   ]);
 
   const vales = valesRes.success ? valesRes.data : [];
+  const sessionUser = sessionRes.success ? sessionRes.data : null;
+  const sucursales = sedesRes.success ? sedesRes.data : [];
 
   // Excluir administradores de la lista de trabajadores elegibles para adelantos
   const trabajadores = (trabajadoresRes.success ? trabajadoresRes.data : [])?.filter(
@@ -32,6 +37,8 @@ export default async function ValesPage() {
       <ValesClient
         initialVales={(vales || []) as any[]}
         trabajadores={(trabajadores || []) as any[]}
+        sucursales={(sucursales || []) as any[]}
+        sessionUser={sessionUser}
       />
     </div>
   );

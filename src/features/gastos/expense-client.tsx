@@ -10,7 +10,8 @@ import {
   Search,
   X,
   Camera,
-  ImageIcon
+  ImageIcon,
+  Edit2
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -45,7 +46,7 @@ import {
 import { TableFilter } from '@/components/ui/table-filter'
 import { toast } from '@/lib/toast-helper'
 import { UnifiedGasto, GastoData } from './schema'
-import { createExpense } from './services'
+import { createExpense, updateExpense } from './services'
 import { getSedes } from '@/features/trabajadores/services'
 import { DashboardBanner } from '@/components/layout/dashboard-banner'
 import { NumericFormat } from 'react-number-format'
@@ -60,6 +61,8 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [sedes, setSedes] = React.useState<any[]>([])
+  const [pendingDeletions, setPendingDeletions] = React.useState<string[]>([])
+  const [pendingUploadFiles, setPendingUploadFiles] = React.useState<{url: string, file: File}[]>([])
 
   const [searchTerm, setSearchTerm] = React.useState('')
   const [activeFilters, setActiveFilters] = React.useState<{ [key: string]: string[] }>({})
@@ -112,55 +115,50 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
     setActiveFilters(prev => ({ ...prev, [col]: values }))
   }
 
-  const handleOpenModal = () => {
-    setFormData({
-      GS_CONCEPTO: '',
-      GS_DESCRIPCION: '',
-      GS_VALOR: 0,
-      GS_FECHA: new Date(),
-      SC_IDSUCURSAL_FK: user?.role === 'ADMINISTRADOR_PUNTO' ? user?.branchId : null
-    })
+  const handleOpenModal = (expense?: UnifiedGasto) => {
+    setPendingDeletions([])
+    pendingUploadFiles.forEach(p => URL.revokeObjectURL(p.url))
+    setPendingUploadFiles([])
+    if (expense) {
+      setFormData({
+        GS_IDGASTO_PK: expense.id,
+        GS_CONCEPTO: expense.concepto,
+        GS_DESCRIPCION: expense.descripcion || '',
+        GS_VALOR: expense.valor,
+        GS_FECHA: new Date(expense.fecha),
+        SC_IDSUCURSAL_FK: (expense as any).sucursal_id || null,
+        GS_COMPROBANTES: expense.comprobantes || []
+      })
+    } else {
+      setFormData({
+        GS_CONCEPTO: '',
+        GS_DESCRIPCION: '',
+        GS_VALOR: 0,
+        GS_FECHA: new Date(),
+        SC_IDSUCURSAL_FK: user?.role === 'ADMINISTRADOR_PUNTO' ? user?.branchId : null
+      })
+    }
     setIsModalOpen(true)
   }
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [isUploadingImage, setIsUploadingImage] = React.useState(false)
 
-  const handleComprobanteUpload = async (file: File) => {
-    setIsUploadingImage(true)
-    try {
-      const form = new FormData()
-      form.append('file', file)
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: form
-      })
-      const data = await res.json()
-      if (data.url) {
-        setFormData(prev => ({
-          ...prev,
-          GS_COMPROBANTES: [...(prev.GS_COMPROBANTES || []), data.url]
-        }))
-        toast.success("Imagen adjuntada")
-      } else {
-        toast.error("Error", "No se pudo subir la imagen")
-      }
-    } catch (error) {
-      toast.error("Error de sistema")
-    } finally {
-      setIsUploadingImage(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
+  const handleComprobanteUpload = (file: File) => {
+    const objectUrl = URL.createObjectURL(file)
+    setPendingUploadFiles(prev => [...prev, { url: objectUrl, file }])
+    setFormData(prev => ({
+      ...prev,
+      GS_COMPROBANTES: [...(prev.GS_COMPROBANTES || []), objectUrl]
+    }))
   }
 
-  const handleRemoveComprobante = async (urlToRemove: string) => {
-    // Si es temporal, intentamos eliminarla de DO
-    if (urlToRemove.includes('/temp/')) {
-      try {
-        await fetch(`/api/upload?url=${encodeURIComponent(urlToRemove)}`, { method: 'DELETE' })
-      } catch (e) {
-        console.error("Error eliminando archivo temporal:", e)
-      }
+  const handleRemoveComprobante = (urlToRemove: string) => {
+    if (urlToRemove.startsWith('blob:')) {
+      setPendingUploadFiles(prev => prev.filter(p => p.url !== urlToRemove))
+      URL.revokeObjectURL(urlToRemove)
+    } else {
+      setPendingDeletions(prev => [...prev, urlToRemove])
     }
     setFormData(prev => ({
       ...prev,
@@ -177,13 +175,57 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
 
     setIsSubmitting(true)
     try {
-      const res = await createExpense(formData)
+      if (pendingDeletions.length > 0) {
+        for (const url of pendingDeletions) {
+          if (url.includes('/temp/')) {
+            try {
+              await fetch(`/api/upload?url=${encodeURIComponent(url)}`, { method: 'DELETE' })
+            } catch (e) {
+              console.error("Error eliminando archivo:", e)
+            }
+          }
+        }
+      }
+
+      let uploadedUrls: string[] = []
+      if (pendingUploadFiles.length > 0) {
+        for (const item of pendingUploadFiles) {
+          const form = new FormData()
+          form.append('file', item.file)
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            body: form
+          })
+          const data = await res.json()
+          if (data.url) {
+            uploadedUrls.push(data.url)
+          } else {
+            toast.error("Error", "No se pudo subir una imagen")
+            setIsSubmitting(false)
+            return
+          }
+        }
+      }
+
+      const finalComprobantes = (formData.GS_COMPROBANTES || [])
+        .filter(url => !url.startsWith('blob:'))
+        .concat(uploadedUrls)
+
+      const dataToSave = {
+        ...formData,
+        GS_COMPROBANTES: finalComprobantes
+      }
+
+      const res = dataToSave.GS_IDGASTO_PK 
+        ? await updateExpense(dataToSave)
+        : await createExpense(dataToSave)
+        
       if (res.success) {
-        toast.success("Gasto registrado")
+        toast.success(formData.GS_IDGASTO_PK ? "Gasto actualizado" : "Gasto registrado")
         setIsModalOpen(false)
         window.location.reload()
       } else {
-        toast.error("Error", res.error || "No se pudo registrar el gasto")
+        toast.error("Error", res.error || "No se pudo guardar el gasto")
       }
     } catch (error) {
       toast.error("Error de sistema")
@@ -278,6 +320,9 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                 </TableHead>
                 <TableHead className="text-[10px] font-bold uppercase text-slate-500 tracking-widest text-right px-6">Valor</TableHead>
                 <TableHead className="text-[10px] font-bold uppercase text-slate-500 tracking-widest text-center px-4">Recibos</TableHead>
+                {user?.role?.includes('ADMINISTRADOR') && (
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-500 tracking-widest text-center w-[80px]">Acciones</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -345,6 +390,20 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                         <span className="text-slate-300">-</span>
                       )}
                     </TableCell>
+                    {user?.role?.includes('ADMINISTRADOR') && (
+                      <TableCell className="text-center px-4">
+                        {item.tipo === 'MANUAL' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenModal(item)}
+                            className="h-8 w-8 p-0 text-slate-400 hover:text-[#FF7E5F] hover:bg-[#FF7E5F]/5"
+                          >
+                            <Edit2 className="size-4" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
@@ -355,65 +414,66 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
 
       {/* Registration Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="rounded-2xl border-none sm:max-w-[450px] p-0 overflow-hidden bg-white shadow-2xl">
-          <DialogHeader className="p-8 pb-6">
-            <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight">Registrar Nuevo Gasto</DialogTitle>
-            <DialogDescription className="text-sm text-slate-500 font-medium italic">Ingresa los detalles de la salida de dinero.</DialogDescription>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Registrar Nuevo Gasto</DialogTitle>
+            <DialogDescription>Ingresa los detalles de la salida de dinero.</DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="concepto" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Concepto (Categoría)</Label>
+          <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="concepto">Concepto (Categoría)</Label>
               <Input
                 id="concepto"
                 placeholder="Ej. Arriendo, Servicios, Insumos..."
-                className="rounded-xl border-slate-200 font-bold focus:border-[#FF7E5F] h-11 transition-all"
                 value={formData.GS_CONCEPTO}
                 onChange={e => setFormData({ ...formData, GS_CONCEPTO: e.target.value })}
                 required
+                disabled={isSubmitting}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="descripcion" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Descripción / Detalle</Label>
+            <div className="grid gap-2">
+              <Label htmlFor="descripcion">Descripción / Detalle</Label>
               <Input
                 id="descripcion"
                 placeholder="Ej. Pago Luz Marzo, Compra de Tintes..."
-                className="rounded-xl border-slate-200 font-medium h-11 focus:border-[#FF7E5F] transition-all"
                 value={formData.GS_DESCRIPCION}
                 onChange={e => setFormData({ ...formData, GS_DESCRIPCION: e.target.value })}
+                disabled={isSubmitting}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="valor" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Valor ($)</Label>
+            <div className="grid gap-2">
+              <Label htmlFor="valor">Valor ($)</Label>
               <NumericFormat
                 thousandSeparator="."
                 decimalSeparator=","
                 prefix="$ "
                 placeholder="$ 0"
-                className="w-full h-14 border border-slate-200 rounded-xl px-4 text-2xl font-black text-[#FF7E5F] focus:outline-none focus:border-[#FF7E5F] transition-all bg-white"
+                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.GS_VALOR || ''}
                 onValueChange={(values) => setFormData({ ...formData, GS_VALOR: Number(values.value) })}
                 required
+                disabled={isSubmitting}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sucursal</Label>
+              <div className="grid gap-2">
+                <Label>Sucursal</Label>
                 <Select
                   value={formData.SC_IDSUCURSAL_FK?.toString() || 'general'}
                   onValueChange={val => setFormData({ ...formData, SC_IDSUCURSAL_FK: val === 'general' ? null : Number(val) })}
-                  disabled={user?.role === 'ADMINISTRADOR_PUNTO'}
+                  disabled={user?.role === 'ADMINISTRADOR_PUNTO' || isSubmitting}
                 >
-                  <SelectTrigger className="rounded-xl border-slate-200 font-bold h-11 focus:ring-0 focus:border-[#FF7E5F]">
+                  <SelectTrigger>
                     <SelectValue placeholder="General" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-slate-200">
-                    <SelectItem value="general" className="text-[11px] font-bold uppercase">Negocio General</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="general">Negocio General</SelectItem>
                     {sedes.map(s => (
-                      <SelectItem key={s.SC_IDSUCURSAL_PK} value={s.SC_IDSUCURSAL_PK.toString()} className="text-[11px] font-bold uppercase">
+                      <SelectItem key={s.SC_IDSUCURSAL_PK} value={s.SC_IDSUCURSAL_PK.toString()}>
                         {s.SC_NOMBRE}
                       </SelectItem>
                     ))}
@@ -421,23 +481,23 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha</Label>
+              <div className="grid gap-2">
+                <Label>Fecha</Label>
                 <Input
                   type="date"
-                  className="rounded-xl border-slate-200 font-bold h-11 focus:border-[#FF7E5F]"
-                  value={formData.GS_FECHA ? format(new Date(formData.GS_FECHA), "yyyy-MM-dd") : ''}
+                  value={formData.GS_FECHA && !isNaN(new Date(formData.GS_FECHA).getTime()) ? format(new Date(formData.GS_FECHA), "yyyy-MM-dd") : ''}
                   onChange={e => {
                     if (!e.target.value) return;
                     setFormData({ ...formData, GS_FECHA: new Date(e.target.value + 'T12:00:00') })
                   }}
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Comprobantes (Fotos)</Label>
+                <Label>Comprobantes (Fotos)</Label>
                 <div className="flex items-center gap-2">
                   <input
                     type="file"
@@ -449,17 +509,17 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                       const file = e.target.files?.[0]
                       if (file) handleComprobanteUpload(file)
                     }}
+                    disabled={isSubmitting}
                   />
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={isUploadingImage}
+                    disabled={isSubmitting}
                     onClick={() => fileInputRef.current?.click()}
-                    className="h-8 gap-2 rounded-lg border-dashed border-slate-300 text-slate-500 hover:text-slate-900 hover:border-slate-400"
                   >
-                    {isUploadingImage ? <Loader2 className="size-3.5 animate-spin" /> : <Camera className="size-3.5" />}
-                    <span className="text-[10px] uppercase font-bold">Adjuntar</span>
+                    <Camera className="mr-2 h-4 w-4" />
+                    Adjuntar
                   </Button>
                 </div>
               </div>
@@ -467,14 +527,15 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
               {formData.GS_COMPROBANTES && formData.GS_COMPROBANTES.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2">
                   {formData.GS_COMPROBANTES.map((url, idx) => (
-                    <div key={idx} className="relative group rounded-lg overflow-hidden border border-slate-200 size-16 bg-slate-50 flex-shrink-0">
+                    <div key={idx} className="relative group rounded-md overflow-hidden border border-slate-200 size-16 bg-slate-50 flex-shrink-0">
                       <img src={url} alt="Comprobante" className="object-cover w-full h-full opacity-90 group-hover:opacity-100 transition-opacity" />
                       <button
                         type="button"
                         onClick={() => handleRemoveComprobante(url)}
                         className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        disabled={isSubmitting}
                       >
-                        <X className="size-3" />
+                        <X className="h-3 w-3" />
                       </button>
                     </div>
                   ))}
@@ -482,21 +543,19 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
               )}
             </div>
 
-            <DialogFooter className="pt-4 flex gap-3">
+            <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsModalOpen(false)}
-                className="flex-1 rounded-xl border-slate-200 font-bold h-12 hover:bg-slate-50"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 rounded-xl bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white font-bold h-12 shadow-lg shadow-coral-500/10 active:scale-95 transition-all"
               >
-                {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4 mr-1" />}
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Guardar
               </Button>
             </DialogFooter>

@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { getTrabajadores, getRoles, getSedes } from "@/features/trabajadores/services";
 import AdminClient from "@/app/dashboard/usuarios-admin/admin-client";
+import { DashboardBanner } from "@/components/layout/dashboard-banner";
 
 export const metadata: Metadata = {
   title: "Administradores | kairos Stylos",
@@ -28,16 +29,10 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-8 pb-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-slate-800 to-emerald-600 dark:from-emerald-400 dark:via-white dark:to-emerald-400">
-            Usuarios Administradores
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium italic">
-            Gestiona el acceso de nivel administrativo al sistema.
-          </p>
-        </div>
-      </div>
+      <DashboardBanner 
+        title={<>Usuarios <span className="text-[#FF7E5F] font-bold">Administradores</span></>}
+        subtitle="Gestiona el acceso de nivel administrativo al sistema."
+      />
 
       <AdminClient 
         initialAdmins={admins || []} 
