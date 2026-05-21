@@ -447,6 +447,9 @@ export function BillingModal({
     .filter(t => t.RL_NOMBRE === 'TECNICO')
     .map(t => ({ label: `${t.TR_NOMBRE} (${t.RL_NOMBRE})`, value: t.TR_IDTRABAJADOR_PK })), [technicians])
 
+  const workerOptions = React.useMemo(() => technicians
+    .map(t => ({ label: `${t.TR_NOMBRE} (${t.RL_NOMBRE})`, value: t.TR_IDTRABAJADOR_PK })), [technicians])
+
   const serviceOptions = React.useMemo(() => services.map(s => ({ label: s.SV_NOMBRE, value: s.SV_IDSERVICIO_PK })), [services])
   const productOptions = React.useMemo(() => products.map(p => ({ label: p.PR_NOMBRE, value: p.PR_IDPRODUCTO_PK })), [products])
 
