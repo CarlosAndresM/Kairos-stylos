@@ -50,3 +50,19 @@ export async function anularValeMutation(idVale: number) {
   );
   return result.affectedRows > 0;
 }
+
+export async function eliminarValeMutation(idVale: number) {
+  const [result] = await db.query<ResultSetHeader>(
+    `DELETE FROM KS_VALES WHERE VL_IDVALE_PK = ? AND VL_CUOTAS_PAGADAS = 0`,
+    [idVale]
+  );
+  return result.affectedRows > 0;
+}
+
+export async function deshacerAnularValeMutation(idVale: number) {
+  const [result] = await db.query<ResultSetHeader>(
+    `UPDATE KS_VALES SET VL_ESTADO = 'PENDIENTE' WHERE VL_IDVALE_PK = ? AND VL_ESTADO = 'ANULADO'`,
+    [idVale]
+  );
+  return result.affectedRows > 0;
+}

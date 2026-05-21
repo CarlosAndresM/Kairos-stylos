@@ -39,6 +39,7 @@ import { SolicitudModal } from './solicitud-modal'
 import { updateSolicitudStatus, deleteSolicitud } from '@/features/solicitudes/services'
 import { toast } from '@/lib/toast-helper'
 import { cn } from '@/lib/utils'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface SolicitudesClientProps {
   initialSolicitudes: any[]
@@ -57,6 +58,19 @@ export function SolicitudesClient({
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [solicitudes, setSolicitudes] = React.useState<any[]>(initialSolicitudes)
   const [isUpdating, setIsUpdating] = React.useState<number | null>(null)
+  const [confirmState, setConfirmState] = React.useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    confirmText?: string;
+    variant?: 'default' | 'destructive' | 'warning';
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: () => {},
+  })
 
   // Sincronizar con props iniciales cuando cambien (por revalidatePath)
   React.useEffect(() => {
@@ -91,20 +105,28 @@ export function SolicitudesClient({
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar esta solicitud?')) return
-
-    try {
-      const res = await deleteSolicitud(id)
-      if (res.success) {
-        toast.success('Solicitud eliminada')
-        setSolicitudes(prev => prev.filter(s => s.SP_IDSOLICITUD_PK !== id))
-      } else {
-        toast.error('Error', res.error || 'No se pudo eliminar.')
+  const handleDelete = (id: number) => {
+    const sol = solicitudes.find(s => s.SP_IDSOLICITUD_PK === id)
+    setConfirmState({
+      isOpen: true,
+      title: '¿Eliminar Solicitud?',
+      description: `¿Estás seguro de que deseas eliminar la solicitud de "${sol?.producto_nombre}" (${sol?.SP_CANTIDAD} uds) para la sucursal "${sol?.sucursal_nombre}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          const res = await deleteSolicitud(id)
+          if (res.success) {
+            toast.success('Solicitud eliminada')
+            setSolicitudes(prev => prev.filter(s => s.SP_IDSOLICITUD_PK !== id))
+          } else {
+            toast.error('Error', res.error || 'No se pudo eliminar.')
+          }
+        } catch (error) {
+          toast.error('Error de sistema')
+        }
       }
-    } catch (error) {
-      toast.error('Error de sistema')
-    }
+    })
   }
 
   const getStatusBadge = (status: string) => {
@@ -261,6 +283,16 @@ export function SolicitudesClient({
         products={products}
         sedes={sedes}
         sessionUser={sessionUser}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+        title={confirmState.title}
+        description={confirmState.description}
+        confirmText={confirmState.confirmText}
+        variant={confirmState.variant}
+        onConfirm={confirmState.onConfirm}
       />
     </div>
   )

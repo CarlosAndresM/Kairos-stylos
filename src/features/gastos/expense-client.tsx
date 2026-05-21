@@ -11,7 +11,11 @@ import {
   X,
   Camera,
   ImageIcon,
-  Edit2
+  Edit2,
+  MoreVertical,
+  Trash2,
+  ExternalLink,
+  AlertCircle
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -34,6 +38,12 @@ import {
   DialogFooter,
   DialogDescription
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -46,7 +56,7 @@ import {
 import { TableFilter } from '@/components/ui/table-filter'
 import { toast } from '@/lib/toast-helper'
 import { UnifiedGasto, GastoData } from './schema'
-import { createExpense, updateExpense } from './services'
+import { createExpense, updateExpense, deleteExpense } from './services'
 import { getSedes } from '@/features/trabajadores/services'
 import { DashboardBanner } from '@/components/layout/dashboard-banner'
 import { NumericFormat } from 'react-number-format'
@@ -63,6 +73,10 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
   const [sedes, setSedes] = React.useState<any[]>([])
   const [pendingDeletions, setPendingDeletions] = React.useState<string[]>([])
   const [pendingUploadFiles, setPendingUploadFiles] = React.useState<{url: string, file: File}[]>([])
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
+  const [gastoToDelete, setGastoToDelete] = React.useState<UnifiedGasto | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
 
   const [searchTerm, setSearchTerm] = React.useState('')
   const [activeFilters, setActiveFilters] = React.useState<{ [key: string]: string[] }>({})
@@ -223,7 +237,36 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
       if (res.success) {
         toast.success(formData.GS_IDGASTO_PK ? "Gasto actualizado" : "Gasto registrado")
         setIsModalOpen(false)
-        window.location.reload()
+
+        if (formData.GS_IDGASTO_PK) {
+          const editedId = formData.GS_IDGASTO_PK;
+          setData(prev => prev.map(item => {
+            if (item.id === editedId && item.tipo === 'MANUAL') {
+              return {
+                ...item,
+                concepto: formData.GS_CONCEPTO,
+                descripcion: formData.GS_DESCRIPCION || '',
+                fecha: new Date(formData.GS_FECHA),
+                valor: formData.GS_VALOR,
+                sucursal: sedes.find(s => s.SC_IDSUCURSAL_PK === formData.SC_IDSUCURSAL_FK)?.SC_NOMBRE || 'GENERAL',
+                comprobantes: finalComprobantes
+              }
+            }
+            return item;
+          }));
+        } else {
+          const newGasto: UnifiedGasto = {
+            id: res.data as number,
+            concepto: formData.GS_CONCEPTO,
+            descripcion: formData.GS_DESCRIPCION || '',
+            fecha: new Date(formData.GS_FECHA),
+            valor: formData.GS_VALOR,
+            tipo: 'MANUAL',
+            sucursal: sedes.find(s => s.SC_IDSUCURSAL_PK === formData.SC_IDSUCURSAL_FK)?.SC_NOMBRE || 'GENERAL',
+            comprobantes: finalComprobantes
+          }
+          setData(prev => [newGasto, ...prev]);
+        }
       } else {
         toast.error("Error", res.error || "No se pudo guardar el gasto")
       }
@@ -231,6 +274,29 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
       toast.error("Error de sistema")
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!gastoToDelete) return
+    setIsDeleting(true)
+    try {
+      const res = await deleteExpense(gastoToDelete.id)
+      if (res.success) {
+        toast.success("Gasto eliminado", "El gasto ha sido eliminado correctamente.")
+        setIsDeleteModalOpen(false)
+
+        const deletedId = gastoToDelete.id;
+        setData(prev => prev.filter(item => !(item.id === deletedId && item.tipo === 'MANUAL')));
+
+        setGastoToDelete(null)
+      } else {
+        toast.error("Error", res.error || "No se pudo eliminar el gasto")
+      }
+    } catch (e) {
+      toast.error("Error de sistema al eliminar")
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -392,16 +458,47 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                     </TableCell>
                     {user?.role?.includes('ADMINISTRADOR') && (
                       <TableCell className="text-center px-4">
-                        {item.tipo === 'MANUAL' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenModal(item)}
-                            className="h-8 w-8 p-0 text-slate-400 hover:text-[#FF7E5F] hover:bg-[#FF7E5F]/5"
-                          >
-                            <Edit2 className="size-4" />
-                          </Button>
-                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                            >
+                              <MoreVertical className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40 border border-slate-100 dark:border-slate-800 rounded-xl p-1 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md shadow-lg">
+                            {item.tipo === 'MANUAL' ? (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => handleOpenModal(item)}
+                                  className="rounded-lg gap-2 font-medium cursor-pointer"
+                                >
+                                  <Edit2 className="size-3.5 text-slate-500" />
+                                  <span>Editar Gasto</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setGastoToDelete(item)
+                                    setIsDeleteModalOpen(true)
+                                  }}
+                                  className="rounded-lg gap-2 font-medium text-rose-600 focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-950/30 cursor-pointer"
+                                >
+                                  <Trash2 className="size-3.5" />
+                                  <span>Eliminar Gasto</span>
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => window.location.href = '/dashboard/nomina'}
+                                className="rounded-lg gap-2 font-medium cursor-pointer text-slate-600 dark:text-slate-300 focus:bg-slate-50 dark:focus:bg-slate-900"
+                              >
+                                <ExternalLink className="size-3.5 text-slate-500" />
+                                <span>Ver Nómina</span>
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     )}
                   </TableRow>
@@ -460,7 +557,7 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
+              <div className="grid gap-2 min-w-0">
                 <Label>Sucursal</Label>
                 <Select
                   value={formData.SC_IDSUCURSAL_FK?.toString() || 'general'}
@@ -481,7 +578,7 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                 </Select>
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid gap-2 min-w-0">
                 <Label>Fecha</Label>
                 <Input
                   type="date"
@@ -560,6 +657,79 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Confirmación de Eliminación para Gasto */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={(open) => !open && setIsDeleteModalOpen(false)}>
+        <DialogContent className="sm:max-w-[400px] border border-slate-100 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl rounded-2xl p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+          <DialogHeader className="p-6 pb-4 flex flex-col items-center text-center">
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/30 text-rose-500 rounded-full w-12 h-12 flex items-center justify-center mb-3 shadow-inner">
+              <AlertCircle className="size-6 animate-pulse" />
+            </div>
+            <DialogTitle className="text-lg font-bold tracking-tight text-slate-950 dark:text-slate-50">
+              ¿Eliminar Gasto?
+            </DialogTitle>
+            <DialogDescription className="text-[11px] text-slate-400 font-medium max-w-[280px] pt-1">
+              Esta acción es irreversible y removerá el registro del historial de egresos.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="px-6 pb-6 space-y-4">
+            {gastoToDelete && (
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-semibold text-slate-500">Concepto:</span>
+                  <span className="font-bold text-slate-950 dark:text-slate-50">{gastoToDelete.concepto}</span>
+                </div>
+                {gastoToDelete.descripcion && (
+                  <div className="flex justify-between items-start text-xs gap-4">
+                    <span className="font-semibold text-slate-500 shrink-0">Detalle:</span>
+                    <span className="font-medium text-slate-700 dark:text-slate-300 text-right truncate max-w-[180px]">{gastoToDelete.descripcion}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-semibold text-slate-500">Valor:</span>
+                  <span className="font-black text-rose-600 dark:text-rose-400 text-sm">
+                    $ {gastoToDelete.valor.toLocaleString('es-CO')}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-semibold text-slate-500">Fecha:</span>
+                  <span className="font-medium text-slate-700 dark:text-slate-300">
+                    {gastoToDelete.fecha ? format(new Date(gastoToDelete.fecha), "dd MMM, yyyy", { locale: es }) : '--'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-rose-50/40 dark:bg-rose-950/20 border border-rose-100/50 dark:border-rose-900/30">
+              <AlertCircle className="size-4 text-rose-500 shrink-0 mt-0.5" />
+              <p className="text-[10px] font-semibold text-rose-700 dark:text-rose-400 tracking-tight leading-normal">
+                Al confirmar, este gasto se borrará definitivamente y afectará el total general de egresos del negocio.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="p-4 bg-slate-50/50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-800/80 gap-2 flex flex-col sm:flex-row-reverse">
+            <Button
+              type="button"
+              disabled={isDeleting}
+              onClick={handleDeleteConfirm}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl h-10 px-6 shadow-md shadow-rose-600/10 text-xs uppercase tracking-wider flex-1 sm:flex-none min-w-[140px] transition-all hover:scale-[1.01] active:scale-[0.99]"
+            >
+              {isDeleting && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+              Confirmar
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="rounded-xl font-bold text-xs uppercase tracking-wider h-10 px-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex-1 sm:flex-none"
+            >
+              Cancelar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

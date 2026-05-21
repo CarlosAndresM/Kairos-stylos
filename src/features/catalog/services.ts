@@ -54,8 +54,15 @@ export async function deleteService(id: number): Promise<ApiResponse> {
     await db.execute("DELETE FROM KS_SERVICIOS WHERE SV_IDSERVICIO_PK = ?", [id]);
     revalidatePath("/dashboard/catalogos");
     return { success: true, data: null, error: null };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error deleting service:", error);
+    if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.errno === 1451) {
+      return { 
+        success: false, 
+        data: null, 
+        error: "Este servicio ya ha sido registrado en facturas existentes. No se puede eliminar física y contablemente para no dañar los históricos de ventas. Por favor, cámbielo a 'Inactivo' en su lugar." 
+      };
+    }
     return { success: false, data: null, error: "Error al eliminar el servicio. Verifique que no esté en uso." };
   }
 }
@@ -109,8 +116,15 @@ export async function deleteProduct(id: number): Promise<ApiResponse> {
     await db.execute("DELETE FROM KS_PRODUCTOS WHERE PR_IDPRODUCTO_PK = ?", [id]);
     revalidatePath("/dashboard/catalogos");
     return { success: true, data: null, error: null };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error deleting product:", error);
+    if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.errno === 1451) {
+      return { 
+        success: false, 
+        data: null, 
+        error: "Este producto ya ha sido registrado en facturas existentes. No se puede eliminar física y contablemente para no dañar los históricos de ventas. Por favor, cámbielo a 'Inactivo' en su lugar." 
+      };
+    }
     return { success: false, data: null, error: "Error al eliminar el producto. Verifique que no esté en uso." };
   }
 }

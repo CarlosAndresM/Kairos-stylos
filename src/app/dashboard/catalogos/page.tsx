@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { getServices, getProducts } from "@/features/catalog/services";
 import { CatalogClient } from "@/app/dashboard/catalogos/catalog-client";
 import { DashboardBanner } from "@/components/layout/dashboard-banner";
+import { getCurrentUserSession } from "@/features/dashboard/services";
 
 export const metadata: Metadata = {
   title: "Catálogos | kairos Stylos",
@@ -9,13 +10,15 @@ export const metadata: Metadata = {
 };
 
 export default async function CatalogosPage() {
-  const [servicesRes, productsRes] = await Promise.all([
+  const [servicesRes, productsRes, sessionRes] = await Promise.all([
     getServices(),
     getProducts(),
+    getCurrentUserSession(),
   ]);
 
   const services = servicesRes.success ? servicesRes.data : [];
   const products = productsRes.success ? productsRes.data : [];
+  const sessionUser = sessionRes.success ? sessionRes.data : null;
 
   return (
     <div className="space-y-8 pb-12">
@@ -27,6 +30,7 @@ export default async function CatalogosPage() {
       <CatalogClient
         initialServices={services as any[]}
         initialProducts={products as any[]}
+        sessionUser={sessionUser}
       />
     </div>
   );

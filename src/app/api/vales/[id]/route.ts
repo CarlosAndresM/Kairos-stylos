@@ -1,14 +1,26 @@
 import { NextResponse } from 'next/server';
-import { anularValeService, updateValeService } from '@/features/vales/services';
+import { anularValeService, updateValeService, eliminarValeService, deshacerAnularValeService } from '@/features/vales/services';
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = parseInt(params.id, 10);
+    const { id: rawId } = await params;
+    const id = parseInt(rawId, 10);
     if (isNaN(id)) {
       return NextResponse.json({ success: false, error: 'ID inválido', data: null }, { status: 400 });
     }
 
-    const response = await anularValeService(id);
+    const { searchParams } = new URL(req.url);
+    const action = searchParams.get('action');
+
+    let response;
+    if (action === 'anular') {
+      response = await anularValeService(id);
+    } else if (action === 'deshacer') {
+      response = await deshacerAnularValeService(id);
+    } else {
+      response = await eliminarValeService(id);
+    }
+
     if (!response.success) {
       return NextResponse.json(response, { status: 400 });
     }
@@ -19,9 +31,10 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = parseInt(params.id, 10);
+    const { id: rawId } = await params;
+    const id = parseInt(rawId, 10);
     if (isNaN(id)) {
       return NextResponse.json({ success: false, error: 'ID inválido', data: null }, { status: 400 });
     }

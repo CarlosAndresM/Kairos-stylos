@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Plus, Search, User, Phone, MapPin, Shield, Star, DollarSign, Wallet, Edit2, Power, Trash2 } from 'lucide-react'
+import { Plus, Search, User, Phone, MapPin, Shield, Star, DollarSign, Wallet, Edit2, Power, Trash2, MoreVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +22,13 @@ import { DeleteConfirmModal } from '@/app/dashboard/trabajadores/delete-confirm-
 import { toast } from '@/lib/toast-helper'
 import { LoadingGate } from '@/components/ui/loading-gate'
 import { NumericFormat } from 'react-number-format'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 
 interface WorkerClientProps {
   initialWorkers: WorkerWithStats[]
@@ -93,10 +100,16 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
   const handleSave = async (data: WorkerFormData) => {
     const res = await saveTrabajador(data)
     if (res.success) {
-      toast.success(data.TR_IDTRABAJADOR_PK ? 'Trabajador actualizado' : 'Trabajador creado')
+      toast.success(
+        data.TR_IDTRABAJADOR_PK ? 'TRABAJADOR ACTUALIZADO' : 'TRABAJADOR CREADO',
+        'La información del trabajador ha sido procesada correctamente.'
+      )
       setIsModalOpen(false)
     } else {
-      toast.error(res.error || 'Error al guardar')
+      toast.error(
+        'ERROR AL GUARDAR',
+        res.error || 'Ocurrió un error al intentar guardar el trabajador.'
+      )
     }
   }
 
@@ -104,9 +117,15 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
     const newStatus = !worker.TR_ACTIVO
     const res = await toggleWorkerStatus(worker.TR_IDTRABAJADOR_PK, newStatus)
     if (res.success) {
-      toast.success(`Trabajador ${newStatus ? 'activado' : 'desactivado'}`)
+      toast.success(
+        newStatus ? 'TRABAJADOR ACTIVADO' : 'TRABAJADOR DESACTIVADO',
+        `El estado del trabajador se ha actualizado correctamente.`
+      )
     } else {
-      toast.error(res.error || 'Error al cambiar estado')
+      toast.error(
+        'ERROR AL CAMBIAR ESTADO',
+        res.error || 'No se pudo actualizar el estado del trabajador.'
+      )
     }
   }
 
@@ -115,11 +134,24 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
 
     const res = await deleteWorker(workerToDelete.TR_IDTRABAJADOR_PK, password)
     if (res.success) {
-      toast.success('Trabajador eliminado definitivamente')
+      toast.success(
+        'TRABAJADOR ELIMINADO',
+        'El trabajador ha sido eliminado correctamente.'
+      )
       setIsDeleteModalOpen(false)
       setWorkerToDelete(null)
     } else {
-      toast.error(res.error || 'Error al eliminar')
+      if (res.error?.includes('facturas') || res.error?.includes('servicios') || res.error?.includes('productos')) {
+        toast.error(
+          'TRABAJADOR EN USO LABORAL',
+          res.error
+        )
+      } else {
+        toast.error(
+          'ERROR AL ELIMINAR',
+          res.error || 'Ocurrió un error inesperado al intentar eliminar.'
+        )
+      }
     }
   }
 
@@ -140,6 +172,7 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
 
           <Button
             onClick={() => handleOpenModal()}
+            disabled={!isTotalAdmin}
             className="w-full sm:w-auto bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white font-bold gap-2 rounded-xl shadow-lg shadow-[#FF7E5F]/20 h-10 px-6 border-none"
           >
             <Plus className="size-4" />
@@ -261,38 +294,49 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                         {worker.TR_ACTIVO ? 'ACTIVO' : 'INACTIVO'}
                       </span>
                     </TableCell>
-                    {isTotalAdmin && (
-                      <TableCell className="py-2 px-4 text-right border border-slate-200">
-                        <div className="flex justify-end gap-1 opacity-100 transition-opacity">
-                          <button
-                            onClick={() => handleToggleStatus(worker)}
-                            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 rounded-lg transition-all"
-                            title="Alternar estado"
+                    <TableCell className="py-2 px-4 text-right border border-slate-200">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
                           >
-                            <Power className="size-4" />
-                          </button>
-                          <button
+                            <span className="sr-only">Abrir menú</span>
+                            <MoreVertical className="size-4 text-slate-500" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52 rounded-xl shadow-xl border border-slate-100 dark:border-slate-800 p-1 bg-white dark:bg-slate-900 z-50">
+                          <DropdownMenuItem
                             onClick={() => handleOpenModal(worker)}
-                            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 rounded-lg transition-all"
-                            title="Editar"
+                            disabled={!isTotalAdmin}
+                            className="gap-2 rounded-lg font-medium text-xs text-slate-700 dark:text-slate-200 cursor-pointer"
                           >
-                            <Edit2 className="size-4" />
-                          </button>
-                          <button
+                            <Edit2 className="size-3.5 text-slate-400" />
+                            Editar Trabajador
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            onClick={() => handleToggleStatus(worker)}
+                            disabled={!isTotalAdmin}
+                            className="gap-2 rounded-lg font-medium text-xs text-slate-700 dark:text-slate-200 cursor-pointer"
+                          >
+                            <Power className="size-3.5 text-slate-400" />
+                            {worker.TR_ACTIVO ? 'Desactivar Acceso' : 'Activar Acceso'}
+                          </DropdownMenuItem>
+
+                          <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800 my-1" />
+
+                          <DropdownMenuItem
                             onClick={() => handleOpenDeleteModal(worker)}
-                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-400 hover:text-red-500 rounded-lg transition-all"
-                            title="Eliminar"
+                            disabled={!isTotalAdmin}
+                            className="gap-2 rounded-lg font-medium text-xs text-red-600 dark:text-red-400 focus:bg-red-50 focus:text-red-750 dark:focus:bg-red-950/30 cursor-pointer"
                           >
-                            <Trash2 className="size-4" />
-                          </button>
-                        </div>
-                      </TableCell>
-                    )}
-                    {!isTotalAdmin && (
-                      <TableCell className="py-2 px-4 text-right">
-                        <span className="text-[10px] text-slate-400 italic">Solo lectura</span>
-                      </TableCell>
-                    )}
+                            <Trash2 className="size-3.5" />
+                            Eliminar Trabajador
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {filteredWorkers.length === 0 && (

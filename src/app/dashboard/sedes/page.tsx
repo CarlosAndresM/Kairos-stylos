@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { getSedes } from "@/features/trabajadores/services";
 import { SedesClient } from "./sedes-client";
 import { DashboardBanner } from "@/components/layout/dashboard-banner";
+import { getCurrentUserSession } from "@/features/dashboard/services";
 
 export const metadata: Metadata = {
   title: "Sucursales | kairos Stylos",
@@ -9,8 +10,13 @@ export const metadata: Metadata = {
 };
 
 export default async function SedesPage() {
-  const res = await getSedes();
-  const sedes = res.success ? (res.data as any[]) : [];
+  const [sedesRes, sessionRes] = await Promise.all([
+    getSedes(),
+    getCurrentUserSession(),
+  ]);
+
+  const sedes = sedesRes.success ? (sedesRes.data as any[]) : [];
+  const sessionUser = sessionRes.success ? sessionRes.data : null;
 
   return (
     <div className="space-y-6 pb-6">
@@ -19,7 +25,7 @@ export default async function SedesPage() {
         subtitle="Gestión de puntos de venta y locales físicos."
       />
 
-      <SedesClient initialSedes={sedes} />
+      <SedesClient initialSedes={sedes} sessionUser={sessionUser} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { getVales, getValesPendientes, getValesByTrabajador } from '@/features/vales/queries';
-import { createValeMutation, anularValeMutation } from '@/features/vales/mutations';
+import { createValeMutation, anularValeMutation, eliminarValeMutation, deshacerAnularValeMutation } from '@/features/vales/mutations';
 import { CreateValeSchema } from '@/features/vales/schema';
 
 export async function getAllValesService(sucursalId?: number) {
@@ -77,5 +77,31 @@ export async function anularValeService(id: number) {
   } catch (error: any) {
     console.error('anularValeService error:', error);
     return { success: false, data: null, error: 'Error al anular el vale', meta: { error: error.message } };
+  }
+}
+
+export async function eliminarValeService(id: number) {
+  try {
+    const success = await eliminarValeMutation(id);
+    if (!success) {
+      return { success: false, data: null, error: 'No se pudo eliminar el vale. Podría tener cuotas cobradas.' };
+    }
+    return { success: true, data: { success: true } };
+  } catch (error: any) {
+    console.error('eliminarValeService error:', error);
+    return { success: false, data: null, error: 'Error al eliminar el vale', meta: { error: error.message } };
+  }
+}
+
+export async function deshacerAnularValeService(id: number) {
+  try {
+    const success = await deshacerAnularValeMutation(id);
+    if (!success) {
+      return { success: false, data: null, error: 'No se pudo deshacer la anulación. El vale no existe o no está anulado.' };
+    }
+    return { success: true, data: { success: true } };
+  } catch (error: any) {
+    console.error('deshacerAnularValeService error:', error);
+    return { success: false, data: null, error: 'Error al deshacer la anulación del vale', meta: { error: error.message } };
   }
 }

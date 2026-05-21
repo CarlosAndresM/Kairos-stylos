@@ -1,7 +1,4 @@
-import { toast as sonnerToast } from 'sonner'
-import { CustomToast, ToastVariant } from '@/components/ui/custom-toast'
-import * as React from 'react'
-
+import { toast as radixToast } from '@/hooks/use-toast'
 
 type ToastOptions = {
   description?: string
@@ -9,33 +6,24 @@ type ToastOptions = {
   duration?: number
 }
 
-const createToast = (variant: ToastVariant, defaultDuration: number) => {
+const createToast = (variant: 'success' | 'error' | 'info' | 'warning', _defaultDuration: number) => {
   return (title: string, descriptionOrOptions?: string | ToastOptions) => {
     let description: string | undefined
-    let id: string | number | undefined
-    let duration = defaultDuration
 
     if (typeof descriptionOrOptions === 'string') {
       description = descriptionOrOptions
     } else if (typeof descriptionOrOptions === 'object') {
       description = descriptionOrOptions.description
-      id = descriptionOrOptions.id
-      if (descriptionOrOptions.duration) {
-        duration = descriptionOrOptions.duration
-      }
     }
 
-    return sonnerToast.custom((toastId) => (
-      React.createElement(CustomToast, {
-        id: toastId,
-        title,
-        description,
-        variant: variant,
-        duration: duration
-      })
-    ), {
-      id,
-      duration,
+    // Map variant to Radix toast variant
+    // success -> success, error -> destructive, warning -> warning, info -> info
+    const radixVariant = variant === 'error' ? 'destructive' : variant
+
+    return radixToast({
+      variant: radixVariant as any,
+      title: title,
+      description: description,
     })
   }
 }
@@ -45,5 +33,7 @@ export const toast = {
   error: createToast('error', 5000),
   info: createToast('info', 4000),
   warning: createToast('warning', 4000),
-  dismiss: (id?: string | number) => sonnerToast.dismiss(id),
+  dismiss: (_id?: string | number) => {
+    // Radix toast handles dismissal internally via Radix primitives
+  },
 }

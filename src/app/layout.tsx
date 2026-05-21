@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 }
 
 import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/sonner"
+import { Toaster as RadixToaster } from "@/components/ui/toaster"
 
 export default function RootLayout({
   children,
@@ -47,7 +47,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          <Toaster position="bottom-right" />
+          <RadixToaster />
           <Analytics />
         </ThemeProvider>
         <script

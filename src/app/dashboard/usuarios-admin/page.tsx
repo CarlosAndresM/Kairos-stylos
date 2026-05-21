@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { getTrabajadores, getRoles, getSedes } from "@/features/trabajadores/services";
 import AdminClient from "@/app/dashboard/usuarios-admin/admin-client";
 import { DashboardBanner } from "@/components/layout/dashboard-banner";
+import { getCurrentUserSession } from "@/features/dashboard/services";
 
 export const metadata: Metadata = {
   title: "Administradores | kairos Stylos",
@@ -9,10 +10,11 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminPage() {
-  const [workersRes, rolesRes, sedesRes] = await Promise.all([
+  const [workersRes, rolesRes, sedesRes, sessionRes] = await Promise.all([
     getTrabajadores(),
     getRoles(),
     getSedes(),
+    getCurrentUserSession(),
   ]);
 
   // Filtrar para mostrar SOLO administradores en esta página
@@ -26,6 +28,7 @@ export default async function AdminPage() {
   );
 
   const sedes = sedesRes.success ? sedesRes.data : [];
+  const sessionUser = sessionRes.success ? sessionRes.data : null;
 
   return (
     <div className="space-y-8 pb-12">
@@ -38,6 +41,7 @@ export default async function AdminPage() {
         initialAdmins={admins || []} 
         roles={roles || []} 
         sedes={sedes || []} 
+        sessionUser={sessionUser}
       />
     </div>
   );

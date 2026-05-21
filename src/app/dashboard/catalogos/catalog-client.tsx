@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Plus, Search, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, MoreVertical } from 'lucide-react'
 import { LoadingGate } from '@/components/ui/loading-gate'
 import {
   Tabs,
@@ -26,18 +26,40 @@ import { ServiceFormData, ProductFormData } from '@/features/catalog/schema'
 import { saveService, saveProduct, deleteService, deleteProduct } from '@/features/catalog/services'
 import { toast } from '@/lib/toast-helper'
 import { TableFilter } from '@/components/ui/table-filter'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 
 interface CatalogClientProps {
   initialServices: any[]
   initialProducts: any[]
+  sessionUser?: any
 }
 
-export function CatalogClient({ initialServices, initialProducts }: CatalogClientProps) {
+export function CatalogClient({ initialServices, initialProducts, sessionUser }: CatalogClientProps) {
   const [activeTab, setActiveTab] = React.useState('servicios')
   const [searchTerm, setSearchTerm] = React.useState('')
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [editingItem, setEditingItem] = React.useState<any>(null)
   const [activeFilters, setActiveFilters] = React.useState<{ [key: string]: string[] }>({})
+  const [confirmState, setConfirmState] = React.useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    confirmText?: string;
+    variant?: 'default' | 'destructive' | 'warning';
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: () => {},
+  })
 
   const filteredServices = React.useMemo(() => {
     return initialServices.filter(s => {
@@ -91,24 +113,58 @@ export function CatalogClient({ initialServices, initialProducts }: CatalogClien
     const res = isService ? await saveService(data) : await saveProduct(data)
 
     if (res.success) {
-      toast.success(isService ? 'Servicio guardado' : 'Producto guardado')
+      toast.success(
+        isService ? 'SERVICIO GUARDADO' : 'PRODUCTO GUARDADO',
+        isService 
+          ? 'El servicio ha sido guardado correctamente.' 
+          : 'El producto ha sido guardado correctamente.'
+      )
       setIsModalOpen(false)
     } else {
-      toast.error(res.error || 'Error al guardar')
+      toast.error(
+        'ERROR AL GUARDAR',
+        res.error || 'Ocurrió un error inesperado al intentar guardar.'
+      )
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar este elemento? Esta acción no se puede deshacer.')) return
-
+  const handleDelete = (id: number) => {
     const isService = activeTab === 'servicios'
-    const res = isService ? await deleteService(id) : await deleteProduct(id)
+    const item = isService 
+      ? initialServices.find(s => s.SV_IDSERVICIO_PK === id) 
+      : initialProducts.find(p => p.PR_IDPRODUCTO_PK === id)
+    const itemName = isService ? item?.SV_NOMBRE : item?.PR_NOMBRE
 
-    if (res.success) {
-      toast.success(isService ? 'Servicio eliminado' : 'Producto eliminado')
-    } else {
-      toast.error(res.error || 'Error al eliminar')
-    }
+    setConfirmState({
+      isOpen: true,
+      title: isService ? '¿Eliminar Servicio?' : '¿Eliminar Producto?',
+      description: `¿Estás seguro de que deseas eliminar permanentemente a "${itemName}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+      onConfirm: async () => {
+        const res = isService ? await deleteService(id) : await deleteProduct(id)
+        if (res.success) {
+          toast.success(
+            isService ? 'SERVICIO ELIMINADO' : 'PRODUCTO ELIMINADO',
+            isService
+              ? 'El servicio ha sido eliminado del catálogo.'
+              : 'El producto ha sido eliminado del catálogo.'
+          )
+        } else {
+          if (res.error?.includes('Inactivo') || res.error?.includes('facturas')) {
+            toast.error(
+              isService ? 'SERVICIO EN USO CONTABLE' : 'PRODUCTO EN USO CONTABLE',
+              res.error
+            )
+          } else {
+            toast.error(
+              'ERROR AL ELIMINAR',
+              res.error || 'Ocurrió un error inesperado al intentar eliminar.'
+            )
+          }
+        }
+      }
+    })
   }
 
   return (
@@ -128,6 +184,7 @@ export function CatalogClient({ initialServices, initialProducts }: CatalogClien
 
           <Button
             onClick={() => handleOpenModal()}
+            disabled={sessionUser?.role !== 'ADMINISTRADOR_TOTAL'}
             className="w-full sm:w-auto bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white font-bold gap-2 rounded-xl shadow-lg shadow-[#FF7E5F]/20 h-10 px-6 text-xs uppercase"
           >
             <Plus className="size-4" />
@@ -210,24 +267,38 @@ export function CatalogClient({ initialServices, initialProducts }: CatalogClien
                           </span>
                         </TableCell>
                         <TableCell className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenModal(service)}
-                              className="h-8 w-8 p-0 text-slate-400 hover:text-[#FF7E5F] hover:bg-[#FF7E5F]/5"
-                            >
-                              <Edit2 className="size-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(service.SV_IDSERVICIO_PK)}
-                              className="h-8 w-8 p-0 text-slate-400 hover:text-red-500 hover:bg-red-50"
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                              >
+                                <span className="sr-only">Abrir menú</span>
+                                <MoreVertical className="size-4 text-slate-500" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl border border-slate-100 dark:border-slate-800 p-1 bg-white dark:bg-slate-900 z-50">
+                              <DropdownMenuItem
+                                onClick={() => handleOpenModal(service)}
+                                disabled={sessionUser?.role !== 'ADMINISTRADOR_TOTAL'}
+                                className="gap-2 rounded-lg font-medium text-xs text-slate-700 dark:text-slate-200 cursor-pointer"
+                              >
+                                <Edit2 className="size-3.5 text-slate-400" />
+                                Editar Servicio
+                              </DropdownMenuItem>
+
+                              <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800 my-1" />
+
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(service.SV_IDSERVICIO_PK)}
+                                disabled={sessionUser?.role !== 'ADMINISTRADOR_TOTAL'}
+                                className="gap-2 rounded-lg font-medium text-xs text-red-600 dark:text-red-400 focus:bg-red-50 focus:text-red-750 dark:focus:bg-red-950/30 cursor-pointer"
+                              >
+                                <Trash2 className="size-3.5" />
+                                Eliminar Servicio
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -310,24 +381,38 @@ export function CatalogClient({ initialServices, initialProducts }: CatalogClien
                           </span>
                         </TableCell>
                         <TableCell className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenModal(product)}
-                              className="h-8 w-8 p-0 text-slate-400 hover:text-[#FF7E5F] hover:bg-[#FF7E5F]/5"
-                            >
-                              <Edit2 className="size-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(product.PR_IDPRODUCTO_PK)}
-                              className="h-8 w-8 p-0 text-slate-400 hover:text-red-500 hover:bg-red-50"
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                              >
+                                <span className="sr-only">Abrir menú</span>
+                                <MoreVertical className="size-4 text-slate-500" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl border border-slate-100 dark:border-slate-800 p-1 bg-white dark:bg-slate-900 z-50">
+                              <DropdownMenuItem
+                                onClick={() => handleOpenModal(product)}
+                                disabled={sessionUser?.role !== 'ADMINISTRADOR_TOTAL'}
+                                className="gap-2 rounded-lg font-medium text-xs text-slate-700 dark:text-slate-200 cursor-pointer"
+                              >
+                                <Edit2 className="size-3.5 text-slate-400" />
+                                Editar Producto
+                              </DropdownMenuItem>
+
+                              <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800 my-1" />
+
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(product.PR_IDPRODUCTO_PK)}
+                                disabled={sessionUser?.role !== 'ADMINISTRADOR_TOTAL'}
+                                className="gap-2 rounded-lg font-medium text-xs text-red-600 dark:text-red-400 focus:bg-red-50 focus:text-red-750 dark:focus:bg-red-950/30 cursor-pointer"
+                              >
+                                <Trash2 className="size-3.5" />
+                                Eliminar Producto
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -352,6 +437,16 @@ export function CatalogClient({ initialServices, initialProducts }: CatalogClien
           onSave={handleSave}
           editingItem={editingItem}
           type={activeTab === 'servicios' ? 'service' : 'product'}
+        />
+
+        <ConfirmDialog
+          isOpen={confirmState.isOpen}
+          onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+          title={confirmState.title}
+          description={confirmState.description}
+          confirmText={confirmState.confirmText}
+          variant={confirmState.variant}
+          onConfirm={confirmState.onConfirm}
         />
       </div>
     </LoadingGate>

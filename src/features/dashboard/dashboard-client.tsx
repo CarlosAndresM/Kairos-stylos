@@ -85,6 +85,7 @@ import { UserProfileDropdown } from '@/components/layout/user-profile-dropdown'
 import { ProductAssociationModal } from './product-association-modal'
 import { getPeriodRange } from '@/lib/date-utils'
 import { isWithinInterval } from 'date-fns'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 const COLORS = ['#FF7E5F', '#FEB47B', '#FFD200', '#F7971E', '#FFDF00'];
 
@@ -112,6 +113,19 @@ export function DashboardClient() {
     const [adminPassword, setAdminPassword] = React.useState('')
     const [isDeleting, setIsDeleting] = React.useState(false)
     const [isFetchingInfo, setIsFetchingInfo] = React.useState(false)
+    const [confirmState, setConfirmState] = React.useState<{
+        isOpen: boolean;
+        title: string;
+        description: string;
+        confirmText?: string;
+        variant?: 'default' | 'destructive' | 'warning';
+        onConfirm: () => void | Promise<void>;
+    }>({
+        isOpen: false,
+        title: '',
+        description: '',
+        onConfirm: () => {},
+    })
 
     const [stats, setStats] = React.useState<any>(null)
     const [chartsData, setChartsData] = React.useState<any>(null)
@@ -224,20 +238,27 @@ export function DashboardClient() {
         setIsAddProductModalOpen(true)
     }
 
-    const handleDeleteProductAction = async (productRow: any) => {
-        if (!confirm("¿Desea eliminar este producto de la factura? El total se ajustará automáticamente.")) return
-
-        try {
-            const res = await deleteProductFromInvoice(productRow.FP_IDFACTURA_PRODUCTO_PK)
-            if (res.success) {
-                toast.success("Producto eliminado")
-                fetchData()
-            } else {
-                toast.error(res.error || "Error al eliminar")
+    const handleDeleteProductAction = (productRow: any) => {
+        setConfirmState({
+            isOpen: true,
+            title: '¿Eliminar Producto?',
+            description: `¿Estás seguro de que deseas eliminar "${productRow.PR_NOMBRE || 'este producto'}" de la factura? El total se ajustará automáticamente.`,
+            confirmText: 'Eliminar',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    const res = await deleteProductFromInvoice(productRow.FP_IDFACTURA_PRODUCTO_PK)
+                    if (res.success) {
+                        toast.success("Producto eliminado")
+                        fetchData()
+                    } else {
+                        toast.error(res.error || "Error al eliminar")
+                    }
+                } catch (e) {
+                    toast.error("Error de sistema")
+                }
             }
-        } catch (e) {
-            toast.error("Error de sistema")
-        }
+        })
     }
 
     const handleOpenInvoice = async (invoice: any, isView: boolean = false) => {
@@ -1503,6 +1524,16 @@ export function DashboardClient() {
                             pendingInvoices={(specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PENDIENTE')}
                             initialInvoiceId={apInitialInvoiceId}
                             editData={apEditData}
+                        />
+
+                        <ConfirmDialog
+                            isOpen={confirmState.isOpen}
+                            onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+                            onConfirm={confirmState.onConfirm}
+                            title={confirmState.title}
+                            description={confirmState.description}
+                            confirmText={confirmState.confirmText}
+                            variant={confirmState.variant}
                         />
 
                     </>

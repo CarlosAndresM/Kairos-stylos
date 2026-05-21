@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/dialog";
 import { VolantePago } from '@/components/nomina/volante-pago';
 import { NumericFormat } from 'react-number-format';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 function getQuincenas(month: Date) {
   const q1Start = startOfMonth(month);
@@ -85,6 +86,21 @@ export default function NominaAdminClient() {
 
   // Para Volantes
   const [showVolante, setShowVolante] = useState<any>(null);
+
+  // Estado para ConfirmDialog
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    confirmText?: string;
+    variant?: 'default' | 'destructive' | 'warning';
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: () => {},
+  });
 
 
   useEffect(() => {
@@ -164,32 +180,58 @@ export default function NominaAdminClient() {
 
   const handleBorrar = async () => {
     if (!nominaBatch) return;
-    if (!confirm("¿Está seguro de borrar este proceso de nómina?")) return;
 
-    setLoading(true);
-    const res = await deleteNomina(nominaBatch.NM_IDNOMINA_PK);
-    if (res.success) {
-      toast.success(res.message || "Operación exitosa");
-      await fetchNomina();
-    } else {
-      toast.error(res.error || "Ocurrió un error");
-    }
-    setLoading(false);
+    setConfirmState({
+      isOpen: true,
+      title: '¿Borrar proceso de nómina?',
+      description: '¿Está seguro de borrar este proceso de nómina? Esta acción es irreversible y afectará los registros actuales.',
+      confirmText: 'Borrar',
+      variant: 'destructive',
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          const res = await deleteNomina(nominaBatch.NM_IDNOMINA_PK);
+          if (res.success) {
+            toast.success(res.message || "Operación exitosa");
+            await fetchNomina();
+          } else {
+            toast.error(res.error || "Ocurrió un error");
+          }
+        } catch (e) {
+          toast.error("Error de sistema");
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   const handleDesconfirmar = async () => {
     if (!nominaBatch) return;
-    if (!confirm("¿Está seguro de desconfirmar esta nómina? Esto devolverá los vales a estado pendiente.")) return;
 
-    setLoading(true);
-    const res = await desconfirmarNomina(nominaBatch.NM_IDNOMINA_PK);
-    if (res.success) {
-      toast.success(res.message || "Operación exitosa");
-      await fetchNomina();
-    } else {
-      toast.error(res.error || "Ocurrió un error");
-    }
-    setLoading(false);
+    setConfirmState({
+      isOpen: true,
+      title: '¿Desconfirmar nómina?',
+      description: '¿Está seguro de desconfirmar esta nómina? Esto devolverá los vales a estado pendiente para que puedan ser modificados o reprocesados.',
+      confirmText: 'Desconfirmar',
+      variant: 'warning',
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          const res = await desconfirmarNomina(nominaBatch.NM_IDNOMINA_PK);
+          if (res.success) {
+            toast.success(res.message || "Operación exitosa");
+            await fetchNomina();
+          } else {
+            toast.error(res.error || "Ocurrió un error");
+          }
+        } catch (e) {
+          toast.error("Error de sistema");
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
 
@@ -523,6 +565,16 @@ export default function NominaAdminClient() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        description={confirmState.description}
+        confirmText={confirmState.confirmText}
+        variant={confirmState.variant}
+      />
 
     </div>
   );

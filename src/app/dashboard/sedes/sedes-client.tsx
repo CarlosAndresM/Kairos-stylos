@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Plus, Search, Edit2, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Loader2, MoreVertical } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -34,12 +34,20 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { sedeSchema, SedeFormData } from '@/features/trabajadores/schema'
 import { saveSede, deleteSede } from '@/features/trabajadores/services'
 import { toast } from '@/lib/toast-helper'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 
 interface SedesClientProps {
   initialSedes: any[]
+  sessionUser?: any
 }
 
-export function SedesClient({ initialSedes }: SedesClientProps) {
+export function SedesClient({ initialSedes, sessionUser }: SedesClientProps) {
   const [searchTerm, setSearchTerm] = React.useState('')
   const [activeFilters, setActiveFilters] = React.useState<{ [key: string]: string[] }>({})
   const [isModalOpen, setIsModalOpen] = React.useState(false)
@@ -104,14 +112,23 @@ export function SedesClient({ initialSedes }: SedesClientProps) {
     try {
       const res = await saveSede(data);
       if (res.success) {
-        toast.success(editingSede ? 'SUCURSAL ACTUALIZADA' : 'SUCURSAL CREADA');
+        toast.success(
+          editingSede ? 'SUCURSAL ACTUALIZADA' : 'SUCURSAL CREADA',
+          `La sucursal ha sido guardada correctamente.`
+        );
         setIsModalOpen(false);
         setEditingSede(null);
       } else {
-        toast.error(res.error || 'ERROR AL GUARDAR');
+        toast.error(
+          'ERROR AL GUARDAR',
+          res.error || 'Ocurrió un error al intentar guardar la sucursal.'
+        );
       }
     } catch (error) {
-      toast.error('ERROR INESPERADO');
+      toast.error(
+        'ERROR INESPERADO',
+        'Ocurrió un error inesperado al procesar la solicitud.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -123,15 +140,31 @@ export function SedesClient({ initialSedes }: SedesClientProps) {
     try {
       const res = await deleteSede(sedeToDelete, adminPassword);
       if (res.success) {
-        toast.success('SUCURSAL ELIMINADA');
+        toast.success(
+          'SUCURSAL ELIMINADA',
+          'La sucursal ha sido eliminada correctamente.'
+        )
         setIsAuthOpen(false);
         setSedeToDelete(null);
         setAdminPassword('');
       } else {
-        toast.error(res.error || 'ERROR AL ELIMINAR');
+        if (res.error?.includes('trabajadores')) {
+          toast.error(
+            'SEDE EN USO DE PERSONAL',
+            res.error
+          )
+        } else {
+          toast.error(
+            'ERROR AL ELIMINAR',
+            res.error || 'Ocurrió un error inesperado al intentar eliminar.'
+          )
+        }
       }
     } catch (error) {
-      toast.error('ERROR INESPERADO');
+      toast.error(
+        'ERROR INESPERADO',
+        'Ocurrió un error inesperado al intentar eliminar la sucursal.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -154,6 +187,7 @@ export function SedesClient({ initialSedes }: SedesClientProps) {
 
           <Button
             onClick={() => { setEditingSede(null); setIsModalOpen(true); }}
+            disabled={sessionUser?.role !== 'ADMINISTRADOR_TOTAL'}
             className="w-full sm:w-auto bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white font-bold gap-2 rounded-xl shadow-lg shadow-[#FF7E5F]/20 h-10 px-6 text-xs uppercase"
           >
             <Plus className="size-4" />
@@ -209,24 +243,38 @@ export function SedesClient({ initialSedes }: SedesClientProps) {
                         {sede.SC_DIRECCION || '---'}
                       </TableCell>
                       <TableCell className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => { setEditingSede(sede); setIsModalOpen(true); }}
-                            className="h-8 w-8 p-0 text-slate-400 hover:text-[#FF7E5F] hover:bg-[#FF7E5F]/5"
-                          >
-                            <Edit2 className="size-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => { setSedeToDelete(sede.SC_IDSUCURSAL_PK); setIsAuthOpen(true); }}
-                            className="h-8 w-8 p-0 text-slate-400 hover:text-red-500 hover:bg-red-50"
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                            >
+                              <span className="sr-only">Abrir menú</span>
+                              <MoreVertical className="size-4 text-slate-500" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl border border-slate-100 dark:border-slate-800 p-1 bg-white dark:bg-slate-900 z-50">
+                            <DropdownMenuItem
+                              onClick={() => { setEditingSede(sede); setIsModalOpen(true); }}
+                              disabled={sessionUser?.role !== 'ADMINISTRADOR_TOTAL'}
+                              className="gap-2 rounded-lg font-medium text-xs text-slate-700 dark:text-slate-200 cursor-pointer"
+                            >
+                              <Edit2 className="size-3.5 text-slate-400" />
+                              Editar Sucursal
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800 my-1" />
+
+                            <DropdownMenuItem
+                              onClick={() => { setSedeToDelete(sede.SC_IDSUCURSAL_PK); setIsAuthOpen(true); }}
+                              disabled={sessionUser?.role !== 'ADMINISTRADOR_TOTAL'}
+                              className="gap-2 rounded-lg font-medium text-xs text-red-600 dark:text-red-400 focus:bg-red-50 focus:text-red-750 dark:focus:bg-red-950/30 cursor-pointer"
+                            >
+                              <Trash2 className="size-3.5" />
+                              Eliminar Sucursal
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))

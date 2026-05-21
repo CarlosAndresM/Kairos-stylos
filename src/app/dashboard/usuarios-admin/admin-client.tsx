@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Plus, Search, Shield, Phone, Power, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Search, Shield, Phone, Power, Edit2, Trash2, MoreVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -21,14 +21,22 @@ import { WorkerModal } from '@/app/dashboard/trabajadores/worker-modal'
 import { DeleteConfirmModal } from '@/app/dashboard/trabajadores/delete-confirm-modal'
 import { toast } from '@/lib/toast-helper'
 import { LoadingGate } from '@/components/ui/loading-gate'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 
 interface AdminClientProps {
   initialAdmins: WorkerWithStats[]
   roles: any[]
   sedes: any[]
+  sessionUser?: any
 }
 
-export default function AdminClient({ initialAdmins, roles, sedes }: AdminClientProps) {
+export default function AdminClient({ initialAdmins, roles, sedes, sessionUser }: AdminClientProps) {
   const [searchTerm, setSearchTerm] = React.useState('')
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
@@ -86,10 +94,16 @@ export default function AdminClient({ initialAdmins, roles, sedes }: AdminClient
   const handleSave = async (data: WorkerFormData) => {
     const res = await saveTrabajador(data)
     if (res.success) {
-      toast.success(data.TR_IDTRABAJADOR_PK ? 'Administrador actualizado' : 'Administrador creado')
+      toast.success(
+        data.TR_IDTRABAJADOR_PK ? 'ADMINISTRADOR ACTUALIZADO' : 'ADMINISTRADOR CREADO',
+        'La información del administrador ha sido procesada correctamente.'
+      )
       setIsModalOpen(false)
     } else {
-      toast.error(res.error || 'Error al guardar')
+      toast.error(
+        'ERROR AL GUARDAR',
+        res.error || 'Ocurrió un error al intentar guardar el administrador.'
+      )
     }
   }
 
@@ -97,9 +111,15 @@ export default function AdminClient({ initialAdmins, roles, sedes }: AdminClient
     const newStatus = !admin.TR_ACTIVO
     const res = await toggleWorkerStatus(admin.TR_IDTRABAJADOR_PK, newStatus)
     if (res.success) {
-      toast.success(`Administrador ${newStatus ? 'activado' : 'desactivado'}`)
+      toast.success(
+        newStatus ? 'ADMINISTRADOR ACTIVADO' : 'ADMINISTRADOR DESACTIVADO',
+        `El estado del administrador se ha actualizado correctamente.`
+      )
     } else {
-      toast.error(res.error || 'Error al cambiar estado')
+      toast.error(
+        'ERROR AL CAMBIAR ESTADO',
+        res.error || 'No se pudo actualizar el estado del administrador.'
+      )
     }
   }
 
@@ -108,11 +128,24 @@ export default function AdminClient({ initialAdmins, roles, sedes }: AdminClient
 
     const res = await deleteWorker(adminToDelete.TR_IDTRABAJADOR_PK, password)
     if (res.success) {
-      toast.success('Administrador eliminado definitivamente')
+      toast.success(
+        'ADMINISTRADOR ELIMINADO',
+        'El administrador ha sido eliminado correctamente.'
+      )
       setIsDeleteModalOpen(false)
       setAdminToDelete(null)
     } else {
-      toast.error(res.error || 'Error al eliminar')
+      if (res.error?.includes('facturas') || res.error?.includes('servicios') || res.error?.includes('productos')) {
+        toast.error(
+          'ADMINISTRADOR EN USO CONTABLE',
+          res.error
+        )
+      } else {
+        toast.error(
+          'ERROR AL ELIMINAR',
+          res.error || 'Ocurrió un error inesperado al intentar eliminar.'
+        )
+      }
     }
   }
 
@@ -212,35 +245,53 @@ export default function AdminClient({ initialAdmins, roles, sedes }: AdminClient
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-1">
-                         <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleStatus(admin)}
-                          className="h-8 w-8 p-0 text-slate-400 hover:text-[#FF7E5F] hover:bg-[#FF7E5F]/5"
-                          title="Alternar estado"
-                        >
-                          <Power className="size-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenModal(admin)}
-                          className="h-8 w-8 p-0 text-slate-400 hover:text-[#FF7E5F] hover:bg-[#FF7E5F]/5"
-                          title="Editar"
-                        >
-                          <Edit2 className="size-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenDeleteModal(admin)}
-                          className="h-8 w-8 p-0 text-slate-400 hover:text-red-500 hover:bg-red-50"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                          >
+                            <span className="sr-only">Abrir menú</span>
+                            <MoreVertical className="size-4 text-slate-500" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52 rounded-xl shadow-xl border border-slate-100 dark:border-slate-800 p-1 bg-white dark:bg-slate-900 z-50">
+                          <DropdownMenuItem
+                            onClick={() => handleOpenModal(admin)}
+                            disabled={sessionUser?.role !== 'ADMINISTRADOR_TOTAL'}
+                            className="gap-2 rounded-lg font-medium text-xs text-slate-700 dark:text-slate-200 cursor-pointer"
+                          >
+                            <Edit2 className="size-3.5 text-slate-400" />
+                            Editar Administrador
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            onClick={() => handleToggleStatus(admin)}
+                            disabled={
+                              sessionUser?.role !== 'ADMINISTRADOR_TOTAL' ||
+                              admin.TR_IDTRABAJADOR_PK === sessionUser?.id
+                            }
+                            className="gap-2 rounded-lg font-medium text-xs text-slate-700 dark:text-slate-200 cursor-pointer"
+                          >
+                            <Power className="size-3.5 text-slate-400" />
+                            {admin.TR_ACTIVO ? 'Desactivar Acceso' : 'Activar Acceso'}
+                          </DropdownMenuItem>
+
+                          <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800 my-1" />
+
+                          <DropdownMenuItem
+                            onClick={() => handleOpenDeleteModal(admin)}
+                            disabled={
+                              sessionUser?.role !== 'ADMINISTRADOR_TOTAL' ||
+                              admin.TR_IDTRABAJADOR_PK === sessionUser?.id
+                            }
+                            className="gap-2 rounded-lg font-medium text-xs text-red-600 dark:text-red-400 focus:bg-red-50 focus:text-red-750 dark:focus:bg-red-950/30 cursor-pointer"
+                          >
+                            <Trash2 className="size-3.5" />
+                            Eliminar Cuenta
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}

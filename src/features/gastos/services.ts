@@ -180,3 +180,21 @@ export async function updateExpense(data: GastoData): Promise<ApiResponse<null>>
     return { success: false, data: null, error: "Error al actualizar el gasto" };
   }
 }
+
+/**
+ * Eliminar un gasto manual
+ */
+export async function deleteExpense(id: number): Promise<ApiResponse<null>> {
+  try {
+    await db.execute(
+      `DELETE FROM KS_GASTOS WHERE GS_IDGASTO_PK = ?`,
+      [id]
+    );
+
+    revalidatePath("/dashboard/gastos");
+    return { success: true, data: null, message: "Gasto eliminado correctamente" };
+  } catch (error) {
+    console.error("Error deleteExpense:", error);
+    return { success: false, data: null, error: "Error al eliminar el gasto" };
+  }
+}

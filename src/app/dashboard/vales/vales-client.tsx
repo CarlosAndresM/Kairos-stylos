@@ -1,8 +1,15 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Plus, XCircle, Search, Calendar as CalendarIcon, Wallet, Info, Eye, Trash2, Edit2 } from 'lucide-react';
+import { Plus, XCircle, Search, Calendar as CalendarIcon, Wallet, Info, Eye, Trash2, Edit2, MoreVertical, AlertTriangle, Undo } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { LoadingGate } from '@/components/ui/loading-gate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,6 +99,19 @@ export function ValesClient({ initialVales, trabajadores, sucursales, sessionUse
 
   const [selectedVale, setSelectedVale] = useState<Vale | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    confirmText?: string;
+    variant?: 'default' | 'destructive' | 'warning';
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: () => {},
+  });
 
   const filteredVales = React.useMemo(() => {
     return vales.filter(v => {
@@ -289,23 +309,89 @@ export function ValesClient({ initialVales, trabajadores, sucursales, sessionUse
     }
   };
 
-  const handleAnular = async (id: number) => {
-    if (!confirm('¿Estás seguro de que deseas anular este vale?')) return;
+  const handleAnular = (id: number) => {
+    const vale = vales.find(v => v.VL_IDVALE_PK === id);
+    if (!vale) return;
 
-    try {
-      const res = await fetch(`/api/vales/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        toast.success('Vale anulado', 'El vale ha sido marcado como anulado.');
-        setVales(prev => prev.map(v =>
-          v.VL_IDVALE_PK === id ? { ...v, VL_ESTADO: 'ANULADO' } : v
-        ));
-      } else {
-        toast.error('Error', data.error || 'No se pudo anular el vale');
+    setConfirmState({
+      isOpen: true,
+      title: '¿Anular Vale?',
+      description: `¿Estás seguro de que deseas anular el vale de ${vale.TR_NOMBRE} por valor de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(vale.VL_MONTO))}? El estado cambiará a ANULADO y no se cobrarán las cuotas futuras.`,
+      confirmText: 'Anular',
+      variant: 'warning',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/vales/${id}?action=anular`, { method: 'DELETE' });
+          const data = await res.json();
+          if (data.success) {
+            toast.success('Vale anulado', 'El vale ha sido marcado como anulado con éxito.');
+            setVales(prev => prev.map(v =>
+              v.VL_IDVALE_PK === id ? { ...v, VL_ESTADO: 'ANULADO' } : v
+            ));
+          } else {
+            toast.error('Error', data.error || 'No se pudo anular el vale');
+          }
+        } catch (err) {
+          toast.error('Error', 'No se pudo procesar la solicitud');
+        }
       }
-    } catch (err) {
-      toast.error('Error', 'No se pudo anular');
-    }
+    });
+  };
+
+  const handleEliminar = (id: number) => {
+    const vale = vales.find(v => v.VL_IDVALE_PK === id);
+    if (!vale) return;
+
+    setConfirmState({
+      isOpen: true,
+      title: '¿Eliminar Vale?',
+      description: `¿Estás seguro de que deseas eliminar permanentemente el vale de ${vale.TR_NOMBRE} por valor de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(vale.VL_MONTO))}? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/vales/${id}?action=eliminar`, { method: 'DELETE' });
+          const data = await res.json();
+          if (data.success) {
+            toast.success('Vale eliminado', 'El vale ha sido eliminado físicamente del sistema.');
+            setVales(prev => prev.filter(v => v.VL_IDVALE_PK !== id));
+          } else {
+            toast.error('Error', data.error || 'No se pudo eliminar el vale');
+          }
+        } catch (err) {
+          toast.error('Error', 'No se pudo procesar la solicitud');
+        }
+      }
+    });
+  };
+
+  const handleDeshacerAnulacion = (id: number) => {
+    const vale = vales.find(v => v.VL_IDVALE_PK === id);
+    if (!vale) return;
+
+    setConfirmState({
+      isOpen: true,
+      title: '¿Deshacer Anulación?',
+      description: `¿Deseas restaurar el vale de ${vale.TR_NOMBRE} por valor de ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(vale.VL_MONTO))} a estado PENDIENTE?`,
+      confirmText: 'Restaurar',
+      variant: 'default',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/vales/${id}?action=deshacer`, { method: 'DELETE' });
+          const data = await res.json();
+          if (data.success) {
+            toast.success('Anulación revertida', 'El vale ha sido restablecido a estado PENDIENTE.');
+            setVales(prev => prev.map(v =>
+              v.VL_IDVALE_PK === id ? { ...v, VL_ESTADO: 'PENDIENTE' } : v
+            ));
+          } else {
+            toast.error('Error', data.error || 'No se pudo revertir la anulación del vale');
+          }
+        } catch (err) {
+          toast.error('Error', 'No se pudo procesar la solicitud');
+        }
+      }
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -374,7 +460,7 @@ export function ValesClient({ initialVales, trabajadores, sucursales, sessionUse
                 </TableHead>
                 <TableHead>Pago</TableHead>
                 <TableHead>Observaciones</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead className="text-center">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -430,27 +516,66 @@ export function ValesClient({ initialVales, trabajadores, sucursales, sessionUse
                     <TableCell className="max-w-[200px] truncate" title={vale.VL_OBSERVACIONES || ''}>
                       {vale.VL_OBSERVACIONES || '-'}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {sessionUser?.role?.includes('ADMINISTRADOR') && vale.VL_CUOTAS_PAGADAS === 0 && vale.VL_ESTADO === 'PENDIENTE' && (
+                    <TableCell className="text-center px-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
-                            size="icon"
-                            onClick={() => { setSelectedVale(vale); setIsDetailsOpen(false); handleOpenEdit(); }}
-                            title="Editar"
+                            className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
                           >
-                            <Edit2 className="size-4 text-slate-500" />
+                            <MoreVertical className="size-4" />
                           </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => { setSelectedVale(vale); setIsDetailsOpen(true); }}
-                          title="Ver detalles"
-                        >
-                          <Eye className="size-4 text-slate-500" />
-                        </Button>
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44 border border-slate-100 dark:border-slate-800 rounded-xl p-1 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md shadow-lg">
+                          <DropdownMenuItem
+                            onClick={() => { setSelectedVale(vale); setIsDetailsOpen(true); }}
+                            className="rounded-lg gap-2 font-medium cursor-pointer"
+                          >
+                            <Eye className="size-3.5 text-slate-500" />
+                            <span>Ver Detalles</span>
+                          </DropdownMenuItem>
+
+                          {sessionUser?.role?.includes('ADMINISTRADOR') && vale.VL_CUOTAS_PAGADAS === 0 && vale.VL_ESTADO === 'PENDIENTE' && (
+                            <DropdownMenuItem
+                              onClick={() => { setSelectedVale(vale); setIsDetailsOpen(false); handleOpenEdit(); }}
+                              className="rounded-lg gap-2 font-medium cursor-pointer"
+                            >
+                              <Edit2 className="size-3.5 text-slate-500" />
+                              <span>Editar Vale</span>
+                            </DropdownMenuItem>
+                          )}
+
+                          {sessionUser?.role?.includes('ADMINISTRADOR') && vale.VL_ESTADO === 'PENDIENTE' && (
+                            <DropdownMenuItem
+                              onClick={() => handleAnular(vale.VL_IDVALE_PK)}
+                              className="rounded-lg gap-2 font-medium text-amber-600 focus:text-amber-600 focus:bg-amber-50 dark:focus:bg-amber-950/30 cursor-pointer"
+                            >
+                              <AlertTriangle className="size-3.5" />
+                              <span>Anular Vale</span>
+                            </DropdownMenuItem>
+                          )}
+
+                          {sessionUser?.role?.includes('ADMINISTRADOR') && vale.VL_CUOTAS_PAGADAS === 0 && (
+                            <DropdownMenuItem
+                              onClick={() => handleEliminar(vale.VL_IDVALE_PK)}
+                              className="rounded-lg gap-2 font-medium text-rose-600 focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-950/30 cursor-pointer"
+                            >
+                              <Trash2 className="size-3.5" />
+                              <span>Eliminar Vale</span>
+                            </DropdownMenuItem>
+                          )}
+
+                          {sessionUser?.role?.includes('ADMINISTRADOR') && vale.VL_ESTADO === 'ANULADO' && (
+                            <DropdownMenuItem
+                              onClick={() => handleDeshacerAnulacion(vale.VL_IDVALE_PK)}
+                              className="rounded-lg gap-2 font-medium text-blue-600 focus:text-blue-600 focus:bg-blue-50 dark:focus:bg-blue-950/30 cursor-pointer"
+                            >
+                              <Undo className="size-3.5" />
+                              <span>Deshacer Anulación</span>
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
@@ -746,32 +871,23 @@ export function ValesClient({ initialVales, trabajadores, sucursales, sessionUse
             </div>
           )}
 
-          <DialogFooter className="flex justify-between items-center w-full sm:justify-between pt-4">
-            {sessionUser?.role?.includes('ADMINISTRADOR') && selectedVale?.VL_ESTADO === 'PENDIENTE' && (
-              <Button 
-                variant="destructive" 
-                onClick={() => {
-                   handleAnular(selectedVale.VL_IDVALE_PK);
-                   setIsDetailsOpen(false);
-                }}
-              >
-                <XCircle className="size-4 mr-2" />
-                {selectedVale.VL_CUOTAS_PAGADAS === 0 ? 'Eliminar Vale' : 'Anular Vale'}
-              </Button>
-            )}
-            <div className="flex gap-2 ml-auto">
-              {sessionUser?.role?.includes('ADMINISTRADOR') && selectedVale?.VL_CUOTAS_PAGADAS === 0 && selectedVale?.VL_ESTADO === 'PENDIENTE' && (
-                 <Button variant="outline" onClick={handleOpenEdit}>
-                   <Edit2 className="size-4 mr-2" /> Editar
-                 </Button>
-              )}
-              <Button variant="secondary" onClick={() => setIsDetailsOpen(false)}>
-                Cerrar Detalles
-              </Button>
-            </div>
+          <DialogFooter className="pt-4">
+            <Button variant="secondary" onClick={() => setIsDetailsOpen(false)} className="ml-auto">
+              Cerrar Detalles
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+        title={confirmState.title}
+        description={confirmState.description}
+        confirmText={confirmState.confirmText}
+        variant={confirmState.variant}
+        onConfirm={confirmState.onConfirm}
+      />
     </div>
     </LoadingGate>
   );
