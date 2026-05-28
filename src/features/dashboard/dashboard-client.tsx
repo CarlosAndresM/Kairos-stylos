@@ -760,7 +760,7 @@ export function DashboardClient() {
                                             }}
                                             title="Ver detalles"
                                         >
-                                            <div className="absolute top-4 right-4 text-slate-200 dark:text-slate-700 group-hover:text-[#00CED1]/50 transition-colors">
+                                            <div className="absolute top-4 right-4 text-[#00CED1] opacity-70 group-hover:opacity-100 transition-opacity">
                                                 <Package2 className="size-4" />
                                             </div>
                                             <CardContent className="p-6">
@@ -786,7 +786,7 @@ export function DashboardClient() {
                                             }}
                                             title="Ver detalles"
                                         >
-                                            <div className="absolute top-4 right-4 text-slate-200 dark:text-slate-700 group-hover:text-[#FF7E5F]/50 transition-colors">
+                                            <div className="absolute top-4 right-4 text-[#FF7E5F] opacity-70 group-hover:opacity-100 transition-opacity">
                                                 <Users className="size-4" />
                                             </div>
                                             <CardContent className="p-6">
@@ -811,7 +811,7 @@ export function DashboardClient() {
                                             }}
                                             title="Ver detalles"
                                         >
-                                            <div className="absolute top-4 right-4 text-slate-200 dark:text-slate-700 group-hover:text-[#FF7E5F]/50 transition-colors">
+                                            <div className="absolute top-4 right-4 text-[#FF7E5F] opacity-70 group-hover:opacity-100 transition-opacity">
                                                 <Users className="size-4" />
                                             </div>
                                             <CardContent className="p-6">
@@ -838,7 +838,7 @@ export function DashboardClient() {
                                             }}
                                             title="Ver detalles"
                                         >
-                                            <div className="absolute top-4 right-4 text-slate-200 dark:text-slate-700 group-hover:text-emerald-500/50 transition-colors">
+                                            <div className="absolute top-4 right-4 text-emerald-500 opacity-70 group-hover:opacity-100 transition-opacity">
                                                 <Wallet className="size-4" />
                                             </div>
                                             <CardContent className="p-6">
@@ -1331,7 +1331,7 @@ export function DashboardClient() {
                                                 </TableRow>
                                             ) : (
                                                 <TableRow className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-800 bg-slate-50/50">
-                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Concepto / ID</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Factura / Ref.</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Fecha</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">{detailType === 'VALES' ? 'Nombre' : 'Cliente'}</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Técnicos</TableHead>
@@ -1346,7 +1346,7 @@ export function DashboardClient() {
                                         <TableBody>
                                             {detailType === 'VENTAS' && (specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PAGADO').map((f: any) => (
                                                 <TableRow key={`ventas-${f.FC_IDFACTURA_PK}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
-                                                    <TableCell className="font-bold text-sm py-4">Factura {f.FC_NUMERO_FACTURA}</TableCell>
+                                                    <TableCell className="font-bold text-sm py-4">{f.FC_NUMERO_FACTURA}</TableCell>
                                                     <TableCell className="text-xs font-medium text-slate-500 tabular-nums">{format(new Date(f.FC_FECHA), 'dd/MM/yyyy')}</TableCell>
                                                     <TableCell className="text-xs font-bold uppercase text-slate-700">{f.cliente_display || 'GENERAL'}</TableCell>
                                                     <TableCell className="text-[11px] font-black text-emerald-600 uppercase italic max-w-[150px] truncate" title={f.tecnicos}>{f.tecnicos || 'SIN TÉCNICO'}</TableCell>
@@ -1371,7 +1371,7 @@ export function DashboardClient() {
                                                     <>
                                                         {matchingPagos.map((p: any, idx: number) => (
                                                             <TableRow key={`caja-p-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
-                                                                <TableCell className="font-bold text-sm py-4 uppercase">Pago: {p.FC_NUMERO_FACTURA || 'S/N'}</TableCell>
+                                                                <TableCell className="font-bold text-sm py-4 uppercase">{p.FC_NUMERO_FACTURA || 'S/N'}</TableCell>
                                                                 <TableCell className="text-xs font-medium text-slate-500 tabular-nums">
                                                                     {p.FC_FECHA ? format(new Date(p.FC_FECHA), 'dd/MM/yyyy') : '---'}
                                                                 </TableCell>
@@ -1390,7 +1390,7 @@ export function DashboardClient() {
                                                         ))}
                                                         {(specificData?.abonos || []).map((ab: any) => (
                                                             <TableRow key={`caja-ab-${ab.AB_IDABONO_PK}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
-                                                                <TableCell className="font-bold text-sm py-4 uppercase">Abono Deuda ({ab.FC_NUMERO_FACTURA})</TableCell>
+                                                                <TableCell className="font-bold text-sm py-4 uppercase">{ab.FC_NUMERO_FACTURA}</TableCell>
                                                                 <TableCell className="text-xs font-medium text-slate-500 tabular-nums">{format(new Date(ab.AB_FECHA), 'dd/MM/yyyy')}</TableCell>
                                                                 <TableCell className="text-xs font-bold uppercase text-slate-700">{ab.cliente_display}</TableCell>
                                                                 <TableCell className="text-[11px] font-black text-blue-600 uppercase italic max-w-[150px] truncate" title={ab.tecnicos}>{ab.tecnicos || '-'}</TableCell>
@@ -1447,9 +1447,9 @@ export function DashboardClient() {
 
                                             {detailType === 'ABONO A DEUDAS' && (specificData?.abonos || []).map((ab: any) => (
                                                 <TableRow key={`abono-${ab.AB_IDABONO_PK}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
-                                                    <TableCell className="font-bold text-sm py-4 uppercase">Abono {ab.AB_IDABONO_PK}</TableCell>
+                                                    <TableCell className="font-bold text-sm py-4 uppercase">{ab.FC_NUMERO_FACTURA}</TableCell>
                                                     <TableCell className="text-xs font-medium text-slate-500 tabular-nums">{format(new Date(ab.AB_FECHA), 'dd/MM/yyyy')}</TableCell>
-                                                    <TableCell className="text-xs font-bold uppercase text-slate-700">{ab.cliente_display} ({ab.FC_NUMERO_FACTURA})</TableCell>
+                                                    <TableCell className="text-xs font-bold uppercase text-slate-700">{ab.cliente_display}</TableCell>
                                                     <TableCell className="text-[11px] font-black text-indigo-600 uppercase italic max-w-[150px] truncate" title={ab.tecnicos}>{ab.tecnicos || '-'}</TableCell>
                                                     <TableCell className="text-xs font-medium text-slate-500 italic">Abono a crédito pendiente</TableCell>
                                                     <TableCell className="text-xs font-medium text-slate-400 italic"> - </TableCell>
@@ -1465,7 +1465,7 @@ export function DashboardClient() {
 
                                             {detailType === 'SERVICIOS EN CURSO' && (specificData?.facturas || []).filter((f: any) => f.FC_ESTADO === 'PENDIENTE').map((f: any) => (
                                                 <TableRow key={`pendiente-${f.FC_IDFACTURA_PK}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
-                                                    <TableCell className="font-bold text-sm py-4">Factura {f.FC_NUMERO_FACTURA}</TableCell>
+                                                    <TableCell className="font-bold text-sm py-4">{f.FC_NUMERO_FACTURA}</TableCell>
                                                     <TableCell className="text-xs font-medium text-slate-500 tabular-nums">{format(new Date(f.FC_FECHA), 'dd/MM/yyyy')}</TableCell>
                                                     <TableCell className="text-xs font-bold uppercase text-slate-700">{f.cliente_display || 'GENERAL'}</TableCell>
                                                     <TableCell className="text-[11px] font-black text-amber-600 uppercase italic max-w-[150px] truncate" title={f.tecnicos}>{f.tecnicos || 'SIN TÉCNICO'}</TableCell>
@@ -1532,7 +1532,7 @@ export function DashboardClient() {
                                                                 const factura = (specificData?.facturas || []).find((f: any) => f.FC_IDFACTURA_PK === pago.FC_IDFACTURA_FK)
                                                                 return (
                                                                     <TableRow key={`pago-m-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
-                                                                        <TableCell className="font-bold text-sm py-4">Factura {factura?.FC_NUMERO_FACTURA || pago.FC_IDFACTURA_FK}</TableCell>
+                                                                        <TableCell className="font-bold text-sm py-4">{factura?.FC_NUMERO_FACTURA || pago.FC_IDFACTURA_FK}</TableCell>
                                                                         <TableCell className="text-xs font-medium text-slate-500 tabular-nums">
                                                                             {factura ? format(new Date(factura.FC_FECHA), 'dd/MM/yyyy') : '---'}
                                                                         </TableCell>
@@ -1560,7 +1560,7 @@ export function DashboardClient() {
                                                 .filter((s: any) => detailType === 'GLOBAL_SERVICIOS' || s.tecnico_nombre === detailTitle.replace('Servicios de ', ''))
                                                 .map((s: any, idx: number) => (
                                                     <TableRow key={`tech-d-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
-                                                        <TableCell className="font-bold text-sm py-4 uppercase border border-slate-100">Factura {s.FC_NUMERO_FACTURA}</TableCell>
+                                                        <TableCell className="font-bold text-sm py-4 uppercase border border-slate-100">{s.FC_NUMERO_FACTURA}</TableCell>
                                                         <TableCell className="text-xs font-medium text-slate-500 tabular-nums border border-slate-100">{format(new Date(s.FC_FECHA), 'dd/MM/yyyy')}</TableCell>
                                                         <TableCell className="text-xs font-bold uppercase text-slate-700 border border-slate-100">{s.cliente_display || 'GENERAL'}</TableCell>
                                                         <TableCell className="text-xs font-black text-[#FF7E5F] uppercase border border-slate-100">{s.tecnico_nombre}</TableCell>
