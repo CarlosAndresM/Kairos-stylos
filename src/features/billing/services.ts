@@ -494,7 +494,7 @@ export async function getInvoicesByFilter(filters: { sucursalId?: number, date?:
     `;
     const params: any[] = [];
 
-    if (filters.sucursalId) {
+    if (filters.sucursalId != null) {
       query += ` AND f.sc_idsucursal_fk = ?`;
       params.push(filters.sucursalId);
     }

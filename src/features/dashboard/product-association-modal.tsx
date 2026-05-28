@@ -193,107 +193,85 @@ export function ProductAssociationModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-md border-none rounded-3xl shadow-2xl p-0 bg-white overflow-hidden">
-                <DialogHeader className="bg-gradient-to-r from-[#FF7E5F] to-[#FEB47B] p-8">
-                    <DialogTitle className="text-white font-black uppercase text-xl italic tracking-tight">
-                        {editData ? "EDITAR ASOCIACIÓN" : "AGREGAR PRODUCTO"}
+            <DialogContent className="sm:max-w-[520px] rounded-3xl border border-slate-200 p-0 bg-white overflow-hidden shadow-xl">
+                <DialogHeader className="px-6 pt-6 pb-3">
+                    <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight">
+                        {editData ? 'Editar producto' : 'Asociar producto'}
                     </DialogTitle>
-                    <DialogDescription className="text-white/90 text-xs uppercase font-bold tracking-wider">
-                        {editData ? "Modifique los detalles de este producto." : "Asocie un producto con un servicio realizado."}
+                    <DialogDescription className="text-sm text-slate-500 leading-relaxed">
+                        {editData ? 'Ajusta los datos del producto y su servicio asociado.' : 'Elige el producto, servicio y técnico para completar la factura.'}
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="p-6 space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">1. SELECCIONAR FACTURA:</label>
-                        <ComboboxSearch
-                            options={mode === 'manual' ? [
-                                { label: initialInvoiceId ? `#FACTURA: ${initialInvoiceId}` : 'FACTURA NUEVA (EN PROCESO)', value: selectedInvoiceId || 'NUEVA' }
-                            ] : pendingInvoices.map((f: any) => ({
-                                label: `#${f.FC_NUMERO_FACTURA} - ${f.cliente_display || 'Sin nombre'}`,
-                                value: f.FC_IDFACTURA_PK.toString()
-                            }))}
-                            value={selectedInvoiceId || 'NUEVA'}
-                            onValueChange={(val) => mode !== 'manual' && fetchInvoiceDetails(val.toString())}
-                            disabled={mode === 'manual'}
-                            placeholder="BUSQUE LA FACTURA..."
-                            className="w-full h-12 border border-slate-200 rounded-xl font-bold text-xs uppercase focus:border-[#FF7E5F] disabled:bg-slate-50 disabled:opacity-100"
-                        />
+                <div className="space-y-4 px-6 pb-6 pt-2">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Factura</label>
+                            <ComboboxSearch
+                                options={mode === 'manual' ? [
+                                    { label: initialInvoiceId ? `#${initialInvoiceId}` : 'Factura nueva', value: selectedInvoiceId || 'NUEVA' }
+                                ] : pendingInvoices.map((f: any) => ({
+                                    label: `#${f.FC_NUMERO_FACTURA} · ${f.cliente_display || 'Sin nombre'}`,
+                                    value: f.FC_IDFACTURA_PK.toString()
+                                }))}
+                                value={selectedInvoiceId || 'NUEVA'}
+                                onValueChange={(val) => mode !== 'manual' && fetchInvoiceDetails(val.toString())}
+                                disabled={mode === 'manual'}
+                                placeholder="Buscar factura"
+                                className="w-full h-10 rounded-xl border border-slate-200 bg-white text-sm focus:border-[#FF7E5F] disabled:bg-slate-50 disabled:opacity-100"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Producto</label>
+                            <ComboboxSearch
+                                options={catalogData.products.map((p: any) => ({
+                                    label: p.PR_NOMBRE,
+                                    value: p.PR_IDPRODUCTO_PK.toString()
+                                }))}
+                                value={selectedProductId}
+                                onValueChange={(val) => handleProductChange(val.toString())}
+                                placeholder="Buscar producto"
+                                className="w-full h-10 rounded-xl border border-slate-200 bg-white text-sm focus:border-[#FF7E5F]"
+                            />
+                        </div>
                     </div>
 
                     {(mode !== 'manual' && pendingInvoices.length === 0 && !selectedInvoiceId) && (
-                        <div className="mx-6 p-3 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold uppercase rounded-lg italic">
-                            No hay facturas PENDIENTES. Si desea agregar productos a una factura PAGADA, cámbiela primero a PENDIENTE.
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+                            No hay facturas pendientes. Si desea agregar productos a una factura pagada, cámbiela primero a pendiente.
                         </div>
                     )}
 
                     {isLoadingInvoice && (
-                        <div className="flex items-center justify-center py-4 gap-2 text-[10px] font-bold text-[#FF7E5F] italic animate-pulse">
-                            <Loader2 className="size-4 animate-spin" /> CARGANDO SERVICIOS...
+                        <div className="flex items-center justify-center gap-2 rounded-2xl border border-[#FF7E5F]/20 bg-[#FF7E5F]/5 p-3 text-sm text-[#FF7E5F]">
+                            <Loader2 className="size-4 animate-spin" /> Cargando servicios...
                         </div>
                     )}
 
                     {(invoiceDetails || mode === 'manual') && (
-                        <div className="grid grid-cols-1 gap-4 animate-in fade-in duration-300">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">2. PRODUCTO A CONSUMIR *:</label>
-                                <ComboboxSearch
-                                    options={catalogData.products.map((p: any) => ({
-                                        label: p.PR_NOMBRE,
-                                        value: p.PR_IDPRODUCTO_PK.toString()
-                                    }))}
-                                    value={selectedProductId}
-                                    onValueChange={(val) => handleProductChange(val.toString())}
-                                    placeholder="BUSCAR PRODUCTO..."
-                                    className="w-full h-12 border border-slate-200 rounded-xl font-bold text-xs uppercase focus:border-[#FF7E5F]"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">3. SERVICIO DONDE SE USÓ *:</label>
-                                <ComboboxSearch
-                                    options={mode === 'manual' ? manualServices.map((s: any) => ({
-                                        label: `${catalogData.services.find((cs: any) => cs.SV_IDSERVICIO_PK === s.SV_IDSERVICIO_FK)?.SV_NOMBRE || 'Servicio'} - $${(Number(s.FD_VALOR) || 0).toLocaleString('es-CO')}`,
-                                        value: s.FD_IDDETALLE_PK?.toString() || s.tempId
-                                    })) : (invoiceDetails?.services || []).map((s: any) => ({
-                                        label: `${catalogData.services.find((cs: any) => cs.SV_IDSERVICIO_PK === s.SV_IDSERVICIO_FK)?.SV_NOMBRE || 'Servicio'} - $${(Number(s.FD_VALOR) || 0).toLocaleString('es-CO')}`,
-                                        value: s.FD_IDDETALLE_PK.toString()
-                                    }))}
-                                    value={selectedServiceId}
-                                    onValueChange={(val) => setSelectedServiceId(val.toString())}
-                                    placeholder="SELECCIONAR SERVICIO..."
-                                    className="w-full h-12 border border-slate-200 rounded-xl font-bold text-xs uppercase bg-slate-50 focus:border-[#FF7E5F]"
-                                    emptyText={((mode === 'db' && (!invoiceDetails?.services || invoiceDetails.services.length === 0)) || (mode === 'manual' && manualServices.length === 0)) ? "SIN SERVICIOS EN FACTURA" : "NO SE ENCONTRÓ"}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">VALOR UNITARIO:</label>
-                                    <NumericFormat
-                                        value={value}
-                                        onValueChange={(vals) => setValue(vals.floatValue || 0)}
-                                        thousandSeparator="."
-                                        decimalSeparator=","
-                                        prefix="$ "
-                                        className="w-full h-12 border border-slate-200 rounded-xl px-4 font-black text-sm outline-none bg-slate-50 focus:bg-white focus:border-[#FF7E5F] transition-all"
+                                    <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Servicio</label>
+                                    <ComboboxSearch
+                                        options={mode === 'manual' ? manualServices.map((s: any) => ({
+                                            label: `${catalogData.services.find((cs: any) => cs.SV_IDSERVICIO_PK === s.SV_IDSERVICIO_FK)?.SV_NOMBRE || 'Servicio'} - $${(Number(s.FD_VALOR) || 0).toLocaleString('es-CO')}`,
+                                            value: s.FD_IDDETALLE_PK?.toString() || s.tempId
+                                        })) : (invoiceDetails?.services || []).map((s: any) => ({
+                                            label: `${catalogData.services.find((cs: any) => cs.SV_IDSERVICIO_PK === s.SV_IDSERVICIO_FK)?.SV_NOMBRE || 'Servicio'} - $${(Number(s.FD_VALOR) || 0).toLocaleString('es-CO')}`,
+                                            value: s.FD_IDDETALLE_PK.toString()
+                                        }))}
+                                        value={selectedServiceId}
+                                        onValueChange={(val) => setSelectedServiceId(val.toString())}
+                                        placeholder="Seleccionar servicio"
+                                        className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:border-[#FF7E5F]"
+                                        emptyText={((mode === 'db' && (!invoiceDetails?.services || invoiceDetails.services.length === 0)) || (mode === 'manual' && manualServices.length === 0)) ? 'Sin servicios en factura' : 'No se encontró'}
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">CANTIDAD:</label>
-                                    <Input
-                                        type="number"
-                                        min={1}
-                                        value={quantity}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuantity(parseInt(e.target.value) || 1)}
-                                        className="w-full h-12 border border-slate-200 rounded-xl px-4 font-black text-sm outline-none bg-slate-50 focus:bg-white focus:border-[#FF7E5F] transition-all"
-                                    />
-                                </div>
-                            </div>
 
-                            <div className="grid grid-cols-1 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">TÉCNICO *:</label>
+                                    <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Técnico</label>
                                     <ComboboxSearch
                                         options={catalogData.technicians.map((t: any) => ({
                                             label: t.TR_NOMBRE,
@@ -301,8 +279,32 @@ export function ProductAssociationModal({
                                         }))}
                                         value={technicianId}
                                         onValueChange={(val) => setTechnicianId(val.toString())}
-                                        placeholder="TÉCNICO..."
-                                        className="w-full h-12 border border-slate-200 rounded-xl font-bold text-xs uppercase focus:border-[#FF7E5F] hover:border-[#FF7E5F]/30 transition-all"
+                                        placeholder="Seleccionar técnico"
+                                        className="w-full h-10 rounded-xl border border-slate-200 bg-white text-sm focus:border-[#FF7E5F]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Valor unitario</label>
+                                    <NumericFormat
+                                        value={value}
+                                        onValueChange={(vals) => setValue(vals.floatValue || 0)}
+                                        thousandSeparator="."
+                                        decimalSeparator="," 
+                                        prefix="$ "
+                                        className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:border-[#FF7E5F]"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Cantidad</label>
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        value={quantity}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuantity(parseInt(e.target.value) || 1)}
+                                        className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:border-[#FF7E5F]"
                                     />
                                 </div>
                             </div>
@@ -310,14 +312,17 @@ export function ProductAssociationModal({
                     )}
                 </div>
 
-                <DialogFooter className="p-8 bg-slate-50 border-t border-slate-100">
+                <DialogFooter className="pt-4 px-6 pb-6 flex items-center justify-between gap-3">
+                    <Button type="button" variant="outline" onClick={onClose} className="h-10 rounded-xl px-4 font-semibold text-sm">
+                        Cancelar
+                    </Button>
                     <Button
-                        className="w-full h-14 rounded-2xl bg-[#FF7E5F] text-white font-black uppercase text-xs tracking-tight shadow-xl shadow-coral-500/20 active:scale-95 hover:bg-[#FF7E5F]/90 border-none transition-all"
+                        className="h-10 rounded-xl bg-[#FF7E5F] text-white font-semibold text-sm shadow-sm shadow-[#FF7E5F]/20 hover:bg-[#FF7E5F]/90 transition-all px-4"
                         onClick={handleSave}
                         disabled={isSubmitting || (mode === 'db' && !selectedInvoiceId) || !selectedProductId || !selectedServiceId || !technicianId}
                     >
                         {isSubmitting ? <Loader2 className="size-4 animate-spin mr-2" /> : <Package2 className="size-4 mr-2" />}
-                        {editData ? "ACTUALIZAR PRODUCTO" : "ASOCIAR PRODUCTO"}
+                        {editData ? 'Actualizar producto' : 'Asociar producto'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

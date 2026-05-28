@@ -131,8 +131,8 @@ export function BillingModal({
       VL_NUMERO_CUOTAS: 1,
       VL_FECHA_INICIO_COBRO: new Date(),
       FC_FECHA: new Date(),
-      SC_IDSUCURSAL_FK: sessionUser?.branchId || 1,
-      TR_IDCAJERO_FK: sessionUser?.id || 1,
+      SC_IDSUCURSAL_FK: sessionUser?.branchId ?? undefined,
+      TR_IDCAJERO_FK: sessionUser?.id ?? undefined,
       services: [{ tempId: uuidv4(), SV_IDSERVICIO_FK: undefined as any, TR_IDTECNICO_FK: undefined as any, FD_VALOR: 0, FD_CANTIDAD: 1, products: [] }],
       products: [],
       payments: [],
@@ -348,9 +348,10 @@ export function BillingModal({
   React.useEffect(() => {
     if (isOpen) {
       const loadClients = async () => {
+        const branchId = sessionUser?.role === 'ADMINISTRADOR_PUNTO' ? sessionUser?.branchId : undefined;
         const [clientsRes, invoicesRes] = await Promise.all([
           getClients(),
-          getRecentInvoices()
+          getRecentInvoices(branchId)
         ])
         if (clientsRes.success) setAllClients(clientsRes.data)
         if (invoicesRes.success) {
@@ -359,7 +360,7 @@ export function BillingModal({
       }
       loadClients()
     }
-  }, [isOpen])
+  }, [isOpen, sessionUser])
 
   // Cargar datos si estamos editando
   React.useEffect(() => {
@@ -375,8 +376,8 @@ export function BillingModal({
         VL_NUMERO_CUOTAS: 1,
         VL_FECHA_INICIO_COBRO: new Date(),
         FC_FECHA: new Date(),
-        SC_IDSUCURSAL_FK: sessionUser?.branchId || 1,
-        TR_IDCAJERO_FK: sessionUser?.id || 1,
+        SC_IDSUCURSAL_FK: sessionUser?.branchId ?? undefined,
+        TR_IDCAJERO_FK: sessionUser?.id ?? undefined,
         services: [{ tempId: uuidv4(), SV_IDSERVICIO_FK: undefined as any, TR_IDTECNICO_FK: undefined as any, FD_VALOR: 0, products: [] }],
         products: [],
         payments: [],

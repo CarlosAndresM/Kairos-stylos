@@ -87,7 +87,7 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
     GS_DESCRIPCION: '',
     GS_VALOR: 0,
     GS_FECHA: new Date(),
-    SC_IDSUCURSAL_FK: user?.branchId || null,
+    SC_IDSUCURSAL_FK: (user?.role === 'ADMINISTRADOR_PUNTO' && user?.branchId != null && user?.branchId > 0) ? user.branchId : null,
     GS_COMPROBANTES: []
   })
 
@@ -149,7 +149,7 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
         GS_DESCRIPCION: '',
         GS_VALOR: 0,
         GS_FECHA: new Date(),
-        SC_IDSUCURSAL_FK: user?.role === 'ADMINISTRADOR_PUNTO' ? user?.branchId : null
+        SC_IDSUCURSAL_FK: (user?.role === 'ADMINISTRADOR_PUNTO' && user?.branchId != null && user?.branchId > 0) ? user.branchId : null
       })
     }
     setIsModalOpen(true)
@@ -562,7 +562,7 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                 <Select
                   value={formData.SC_IDSUCURSAL_FK?.toString() || 'general'}
                   onValueChange={val => setFormData({ ...formData, SC_IDSUCURSAL_FK: val === 'general' ? null : Number(val) })}
-                  disabled={user?.role === 'ADMINISTRADOR_PUNTO' || isSubmitting}
+                  disabled={(user?.role === 'ADMINISTRADOR_PUNTO' && user?.branchId != null && user?.branchId > 0) || isSubmitting}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="General" />

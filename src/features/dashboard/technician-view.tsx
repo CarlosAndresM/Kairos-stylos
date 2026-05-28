@@ -107,7 +107,7 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {[
                     {
                         title: 'Total Servicios',
@@ -118,7 +118,7 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                         count: stats?.services_count || 0
                     },
                     {
-                        title: 'Productos Usados',
+                        title: 'Productos',
                         value: `$${(stats?.products_total || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                         sub: `${stats?.products_count || 0} unidades`,
                         icon: Package2,
@@ -126,11 +126,27 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                         count: stats?.products_count || 0
                     },
                     {
+                        title: 'Pagos técnicos',
+                        value: `$${(stats?.technician_payment || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
+                        sub: 'Comisiones totales',
+                        icon: DollarSign,
+                        color: 'from-violet-600 to-indigo-500',
+                        count: 0
+                    },
+                    {
+                        title: 'Ingresos al negocio',
+                        value: `$${(stats?.business_income || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
+                        sub: 'Total local',
+                        icon: TrendingUp,
+                        color: 'from-emerald-600 to-teal-500',
+                        count: 0
+                    },
+                    {
                         title: 'Diferencia (Neto)',
                         value: `$${((stats?.services_total || 0) - (stats?.products_total || 0)).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                         sub: 'Servicios - Productos',
                         icon: Zap,
-                        color: 'from-emerald-600 to-teal-500',
+                        color: 'from-slate-600 to-slate-400',
                         count: 0
                     },
                     {
@@ -223,8 +239,13 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                                         <TableHead className="text-[10px] font-black uppercase tracking-widest px-6 h-12">Fecha</TableHead>
                                         <TableHead className="text-[10px] font-black uppercase tracking-widest h-12">Factura</TableHead>
                                         <TableHead className="text-[10px] font-black uppercase tracking-widest h-12">Concepto</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest h-12">Servicio</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest h-12">Técnico</TableHead>
                                         <TableHead className="text-[10px] font-black uppercase tracking-widest h-12">Tipo</TableHead>
                                         <TableHead className="text-right text-[10px] font-black uppercase tracking-widest px-6 h-12">Valor</TableHead>
+                                        <TableHead className="text-right text-[10px] font-black uppercase tracking-widest px-6 h-12">Comisión</TableHead>
+                                        <TableHead className="text-right text-[10px] font-black uppercase tracking-widest px-6 h-12">Local</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest px-6 h-12">Sucursal</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -240,7 +261,13 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                                                     <span className="text-xs font-black text-slate-900">{item.FC_NUMERO_FACTURA}</span>
                                                 </TableCell>
                                                 <TableCell className="py-4">
-                                                    <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">{item.nombre}</span>
+                                                    <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">{item.item_nombre}</span>
+                                                </TableCell>
+                                                <TableCell className="py-4">
+                                                    <span className="text-xs text-slate-500">{item.servicio_relacionado || '-'}</span>
+                                                </TableCell>
+                                                <TableCell className="py-4">
+                                                    <span className="text-xs font-bold text-slate-600">{item.tecnico_nombre}</span>
                                                 </TableCell>
                                                 <TableCell className="py-4">
                                                     <span className={cn(
@@ -253,11 +280,20 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                                                 <TableCell className="px-6 py-4 text-right">
                                                     <span className="text-sm font-black text-slate-900">$ {(Number(item.valor) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</span>
                                                 </TableCell>
+                                                <TableCell className="px-6 py-4 text-right">
+                                                    <span className="text-sm font-black text-slate-900">$ {(Number(item.comision) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</span>
+                                                </TableCell>
+                                                <TableCell className="px-6 py-4 text-right">
+                                                    <span className="text-sm font-black text-slate-900">$ {(Number(item.local_share) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</span>
+                                                </TableCell>
+                                                <TableCell className="py-4">
+                                                    <span className="text-xs text-slate-500">{item.sucursal_nombre || '-'}</span>
+                                                </TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="h-32 text-center text-slate-400 italic text-xs uppercase tracking-widest">
+                                            <TableCell colSpan={10} className="h-32 text-center text-slate-400 italic text-xs uppercase tracking-widest">
                                                 Sin actividad registrada en este periodo
                                             </TableCell>
                                         </TableRow>
