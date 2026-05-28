@@ -24,7 +24,7 @@ export default async function VentasPage() {
     paymentMethodsRes,
     sucursalesRes
   ] = await Promise.all([
-    getRecentInvoices(sessionUser?.branchId || 1), // Sucursal del usuario
+    getRecentInvoices(sessionUser?.branchId), // Sucursal del usuario
     getWorkers(),
     getServices(),
     getProducts(),

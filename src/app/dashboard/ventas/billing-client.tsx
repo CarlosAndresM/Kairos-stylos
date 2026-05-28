@@ -97,14 +97,14 @@ export function BillingClient({
     setIsLoading(true)
     try {
       const dateStr = format(date, 'yyyy-MM-dd')
-      const res = await getInvoicesByFilter({ date: dateStr })
+      const branchId = sessionUser?.role === 'ADMINISTRADOR_PUNTO' ? sessionUser?.branchId : undefined;
+      const res = await getInvoicesByFilter({ date: dateStr, sucursalId: branchId })
       if (res.success) {
         setInvoices(res.data)
       } else {
         toast.error('Error al cargar ventas del día')
       }
 
-      const branchId = sessionUser?.role === 'ADMINISTRADOR_PUNTO' ? sessionUser?.branchId : undefined;
       const expRes = await getUnifiedExpenses(branchId, dateStr, dateStr);
       if (expRes.success && expRes.data) {
         setExpenses(expRes.data);
@@ -114,7 +114,7 @@ export function BillingClient({
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [sessionUser])
 
   // Refetch when date changes
   React.useEffect(() => {

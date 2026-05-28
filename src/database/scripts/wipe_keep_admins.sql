@@ -25,15 +25,15 @@ TRUNCATE TABLE ks_productos;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
-DELETE t
-FROM ks_trabajadores t
-INNER JOIN ks_roles r ON t.rl_idrol_fk = r.rl_idrol_pk
-WHERE r.rl_nombre NOT IN ('ADMINISTRADOR_TOTAL', 'ADMINISTRADOR_PUNTO');
+DELETE FROM ks_trabajadores
+WHERE rl_idrol_fk NOT IN (
+  SELECT rl_idrol_pk
+  FROM ks_roles
+  WHERE rl_nombre = 'ADMINISTRADOR_TOTAL'
+);
 
--- Sucursales sin administradores asignados
-DELETE s
-FROM ks_sucursales s
-LEFT JOIN ks_trabajadores t ON t.sc_idsucursal_fk = s.sc_idsucursal_pk
-WHERE t.tr_idtrabajador_pk IS NULL;
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE ks_sucursales;
+SET FOREIGN_KEY_CHECKS = 1;
 
--- Conserva: ks_migraciones, ks_roles, ks_metodos_pago, ks_sucursales de admins, administradores.
+-- Conserva: ks_migraciones, ks_roles, ks_metodos_pago y todos los ADMINISTRADOR_TOTAL.
