@@ -560,7 +560,7 @@ export function DashboardClient() {
                         {/* Main Content Area */}
                         {viewMode === 'GENERAL' ? (
                             <div className="space-y-8 font-black">
-                                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mt-4">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 mt-4">
                                     {[
                                         {
                                             title: 'VENTAS',
@@ -686,33 +686,32 @@ export function DashboardClient() {
                                             </CardHeader>
                                             <CardContent className="relative z-10">
                                                 <div className={cn(
-                                                    "font-black leading-none tracking-tight",
+                                                    "font-black leading-none tracking-tight whitespace-nowrap truncate",
                                                     (stat.title === 'SERVICIO TRABAJADOR' || stat.title === 'VALES') ? "text-slate-900" : "text-slate-900 dark:text-white",
-                                                    "text-3xl"
+                                                    "text-2xl xl:text-3xl"
                                                 )}>
                                                     {stat.value}
                                                 </div>
                                                 <div className={cn(
-                                                    "text-[10px] font-medium mt-2 uppercase italic leading-tight",
-                                                    (stat.title === 'SERVICIO TRABAJADOR' || stat.title === 'VALES') ? "text-slate-800/70" : "text-slate-400",
-                                                    stat.title === 'TOTAL EN CAJA' ? "text-slate-500 dark:text-slate-300 font-bold" : ""
+                                                    "text-[11px] font-semibold mt-2 uppercase leading-tight tracking-wide",
+                                                    (stat.title === 'SERVICIO TRABAJADOR' || stat.title === 'VALES') ? "text-slate-800/70" : "text-slate-500",
+                                                    stat.title === 'TOTAL EN CAJA' ? "text-slate-900 dark:text-white text-[12px]" : ""
                                                 )}>{stat.sub}</div>
                                             </CardContent>
                                         </Card>
                                     ))}
                                 </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 mt-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 mt-4">
                                     {/* Top Services Pie */}
-                                    <Card className={cn(
-                                        "border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden",
-                                        (chartsData?.topTechs || []).length === 0 && "lg:col-span-2"
-                                    )}>
-                                        <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center gap-2">
-                                            <Users className="size-4 text-emerald-500" />
-                                            <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider">Total Servicios</h3>
+                                    <Card className="lg:col-span-2 border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden flex flex-col h-[400px]">
+                                        <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between shrink-0">
+                                            <div className="flex items-center gap-2">
+                                                <Users className="size-4 text-emerald-500" />
+                                                <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider">Total Servicios</h3>
+                                            </div>
                                         </div>
-                                        <div className="p-6 h-[350px] w-full">
+                                        <div className="flex-1 p-4 min-h-0">
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <BarChart
                                                     data={chartsData?.topServices || []}
@@ -748,6 +747,112 @@ export function DashboardClient() {
                                             </ResponsiveContainer>
                                         </div>
                                     </Card>
+
+                                    {/* Nuevas métricas globales (Lado derecho de Total Servicios) */}
+                                    <div className="flex flex-col gap-4 h-full justify-between min-h-[400px]">
+                                        <Card 
+                                            className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden flex-1 cursor-pointer hover:border-[#00CED1]/50 transition-colors group flex flex-col justify-center relative"
+                                            onClick={() => {
+                                                setDetailType('GLOBAL_SERVICIOS')
+                                                setDetailTitle('Todos los Servicios y Productos')
+                                                setIsDetailModalOpen(true)
+                                                if (!specificData) fetchSpecificData()
+                                            }}
+                                            title="Ver detalles"
+                                        >
+                                            <div className="absolute top-4 right-4 text-slate-200 dark:text-slate-700 group-hover:text-[#00CED1]/50 transition-colors">
+                                                <Package2 className="size-4" />
+                                            </div>
+                                            <CardContent className="p-6">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-[#00CED1] transition-colors">Productos</p>
+                                                        <div className="flex items-baseline gap-2 mt-1 min-w-0">
+                                                            <h3 className="text-xl lg:text-2xl font-black text-slate-900 dark:text-white whitespace-nowrap truncate">$ {(chartsData?.globalMetrics?.productos_total || 0).toLocaleString('es-CO')}</h3>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <Card 
+                                            className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden flex-1 cursor-pointer hover:border-[#FF7E5F]/50 transition-colors group flex flex-col justify-center relative"
+                                            onClick={() => {
+                                                setDetailType('GLOBAL_SERVICIOS')
+                                                setDetailTitle('Todos los Servicios y Productos')
+                                                setIsDetailModalOpen(true)
+                                                if (!specificData) fetchSpecificData()
+                                            }}
+                                            title="Ver detalles"
+                                        >
+                                            <div className="absolute top-4 right-4 text-slate-200 dark:text-slate-700 group-hover:text-[#FF7E5F]/50 transition-colors">
+                                                <Users className="size-4" />
+                                            </div>
+                                            <CardContent className="p-6">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-[#FF7E5F] transition-colors">Comisión Producto Técnico</p>
+                                                        <div className="flex items-baseline gap-2 mt-1 min-w-0">
+                                                            <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white whitespace-nowrap truncate">$ {(chartsData?.globalMetrics?.pago_tecnicos_productos || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</h3>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card 
+                                            className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden flex-1 cursor-pointer hover:border-[#FF7E5F]/50 transition-colors group flex flex-col justify-center relative"
+                                            onClick={() => {
+                                                setDetailType('GLOBAL_SERVICIOS')
+                                                setDetailTitle('Todos los Servicios y Productos')
+                                                setIsDetailModalOpen(true)
+                                                if (!specificData) fetchSpecificData()
+                                            }}
+                                            title="Ver detalles"
+                                        >
+                                            <div className="absolute top-4 right-4 text-slate-200 dark:text-slate-700 group-hover:text-[#FF7E5F]/50 transition-colors">
+                                                <Users className="size-4" />
+                                            </div>
+                                            <CardContent className="p-6">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-[#FF7E5F] transition-colors">Comisión Servicio Técnico</p>
+                                                        <div className="flex items-baseline gap-2 mt-1 min-w-0">
+                                                            <h3 className="text-lg xl:text-xl font-black text-slate-900 dark:text-white whitespace-nowrap truncate">$ {(chartsData?.globalMetrics?.pago_tecnicos_servicios || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</h3>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+
+                                        </div>
+
+                                        <Card 
+                                            className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden flex-1 cursor-pointer hover:border-emerald-500/50 transition-colors group flex flex-col justify-center relative"
+                                            onClick={() => {
+                                                setDetailType('GLOBAL_SERVICIOS')
+                                                setDetailTitle('Todos los Servicios y Productos')
+                                                setIsDetailModalOpen(true)
+                                                if (!specificData) fetchSpecificData()
+                                            }}
+                                            title="Ver detalles"
+                                        >
+                                            <div className="absolute top-4 right-4 text-slate-200 dark:text-slate-700 group-hover:text-emerald-500/50 transition-colors">
+                                                <Wallet className="size-4" />
+                                            </div>
+                                            <CardContent className="p-6">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-emerald-500 transition-colors">Ingresos al Local</p>
+                                                        <div className="flex items-baseline gap-2 mt-1 min-w-0">
+                                                            <h3 className="text-xl lg:text-2xl font-black text-slate-900 dark:text-white whitespace-nowrap truncate">$ {(chartsData?.globalMetrics?.ingreso_local || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</h3>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
 
                                     {/* Top Products */}
                                     <Card className="lg:col-span-2 border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
@@ -1187,30 +1292,38 @@ export function DashboardClient() {
 
                         {/* Metric Detail Modal */}
                         <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
-                            <DialogContent className="max-w-[95vw] lg:max-w-[1400px] max-h-[95vh] overflow-hidden flex flex-col p-0 border-none bg-slate-50 dark:bg-slate-900 rounded-3xl shadow-2xl [&>button]:top-6 [&>button]:right-6 [&>button]:size-7 [&>button]:bg-white/50 [&>button]:backdrop-blur-sm [&>button]:rounded-full [&>button]:shadow-sm [&>button]:border [&>button]:border-slate-200 [&>button]:flex [&>button]:items-center [&>button]:justify-center [&>button]:hover:bg-white [&>button]:transition-all">
-                                <DialogHeader className="p-6 pr-12 pb-4 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-[#FF7E5F]/10 rounded-xl">
-                                            <BarChart3 className="size-5 text-[#FF7E5F]" />
+                            <DialogContent className="max-w-[95vw] lg:max-w-[1280px] max-h-[95vh] overflow-hidden flex flex-col p-0 border border-slate-200 bg-white rounded-3xl shadow-2xl">
+                                <DialogHeader className="p-6 pb-4 bg-slate-50 border-b border-slate-200 shrink-0">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-3 rounded-2xl bg-[#FF7E5F]/10">
+                                                <BarChart3 className="size-5 text-[#FF7E5F]" />
+                                            </div>
+                                            <div>
+                                                <DialogTitle className="text-xl font-semibold text-slate-900 tracking-tight">Detalle de {detailTitle}</DialogTitle>
+                                                <DialogDescription className="text-sm text-slate-500 leading-relaxed">Visualiza el desglose completo de servicios, productos y comisiones.</DialogDescription>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <DialogTitle className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Detalle de {detailTitle}</DialogTitle>
-                                            <DialogDescription className="text-xs font-medium text-slate-500 uppercase italic">Desglose detallado de la métrica seleccionada</DialogDescription>
-                                        </div>
+                                        <Button variant="ghost" size="icon" onClick={() => setIsDetailModalOpen(false)} className="bg-white rounded-full border border-slate-200 shadow-sm hover:bg-slate-50">
+                                            <span className="sr-only">Cerrar</span>
+                                            <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                                        </Button>
                                     </div>
                                 </DialogHeader>
 
                                 <div className="flex-1 overflow-auto p-6">
                                     <Table>
                                         <TableHeader>
-                                            {detailType === 'Técnico' ? (
+                                            {detailType === 'Técnico' || detailType === 'GLOBAL_SERVICIOS' ? (
                                                 <TableRow className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-800 bg-slate-50/50">
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Factura</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Fecha</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Cliente</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Técnico</TableHead>
-                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Ítem</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Concepto</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Servicio Asociado</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Tipo</TableHead>
+                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Sucursal</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right border border-slate-200">Total ($)</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right border border-slate-200">Comisión ($)</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right border border-slate-200">Local ($)</TableHead>
@@ -1443,16 +1556,17 @@ export function DashboardClient() {
                                                 )
                                             })()}
 
-                                            {detailType === 'Técnico' && (specificData?.serviciosDetalle || [])
-                                                .filter((s: any) => s.tecnico_nombre === detailTitle.replace('Servicios de ', ''))
+                                            {(detailType === 'Técnico' || detailType === 'GLOBAL_SERVICIOS') && (specificData?.serviciosDetalle || [])
+                                                .filter((s: any) => detailType === 'GLOBAL_SERVICIOS' || s.tecnico_nombre === detailTitle.replace('Servicios de ', ''))
                                                 .map((s: any, idx: number) => (
                                                     <TableRow key={`tech-d-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
-                                                        <TableCell className="font-bold text-sm py-4 uppercase">Factura {s.FC_NUMERO_FACTURA}</TableCell>
-                                                        <TableCell className="text-xs font-medium text-slate-500 tabular-nums">{format(new Date(s.FC_FECHA), 'dd/MM/yyyy')}</TableCell>
-                                                        <TableCell className="text-xs font-bold uppercase text-slate-700">{s.cliente_display || 'GENERAL'}</TableCell>
-                                                        <TableCell className="text-xs font-black text-[#FF7E5F] uppercase">{s.tecnico_nombre}</TableCell>
-                                                        <TableCell className="text-xs font-bold text-slate-800 max-w-[200px] truncate" title={s.item_nombre}>{s.item_nombre}</TableCell>
-                                                        <TableCell className="text-[10px] font-bold text-slate-500 tracking-wider">
+                                                        <TableCell className="font-bold text-sm py-4 uppercase border border-slate-100">Factura {s.FC_NUMERO_FACTURA}</TableCell>
+                                                        <TableCell className="text-xs font-medium text-slate-500 tabular-nums border border-slate-100">{format(new Date(s.FC_FECHA), 'dd/MM/yyyy')}</TableCell>
+                                                        <TableCell className="text-xs font-bold uppercase text-slate-700 border border-slate-100">{s.cliente_display || 'GENERAL'}</TableCell>
+                                                        <TableCell className="text-xs font-black text-[#FF7E5F] uppercase border border-slate-100">{s.tecnico_nombre}</TableCell>
+                                                        <TableCell className="text-xs font-bold text-slate-800 max-w-[200px] truncate border border-slate-100" title={s.item_nombre}>{s.item_nombre}</TableCell>
+                                                        <TableCell className="text-[10px] text-slate-500 border border-slate-100">{s.servicio_relacionado || '-'}</TableCell>
+                                                        <TableCell className="text-[10px] font-bold text-slate-500 tracking-wider border border-slate-100">
                                                             <span className={cn(
                                                                 "px-2 py-0.5 rounded-full border",
                                                                 s.tipo_item === 'SERVICIO' ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"
@@ -1460,10 +1574,11 @@ export function DashboardClient() {
                                                                 {s.tipo_item}
                                                             </span>
                                                         </TableCell>
-                                                        <TableCell className="text-right font-black text-sm text-slate-900 tabular-nums">$ {(Number(s.valor_total) || 0).toLocaleString('es-CO')}</TableCell>
-                                                        <TableCell className="text-right font-black text-sm text-[#FF7E5F] tabular-nums">$ {(Number(s.comision) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</TableCell>
-                                                        <TableCell className="text-right font-bold text-xs text-slate-400 tabular-nums">$ {(Number(s.local_share) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</TableCell>
-                                                        <TableCell className="text-right p-0">
+                                                        <TableCell className="text-xs font-medium text-slate-500 uppercase border border-slate-100">{s.sucursal_nombre || '-'}</TableCell>
+                                                        <TableCell className="text-right font-black text-sm text-slate-900 tabular-nums border border-slate-100">$ {(Number(s.valor_total) || 0).toLocaleString('es-CO')}</TableCell>
+                                                        <TableCell className="text-right font-black text-sm text-[#FF7E5F] tabular-nums border border-slate-100">$ {(Number(s.comision) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</TableCell>
+                                                        <TableCell className="text-right font-bold text-xs text-slate-400 tabular-nums border border-slate-100">$ {(Number(s.local_share) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</TableCell>
+                                                        <TableCell className="text-right p-0 border border-slate-100">
                                                             <Button variant="ghost" size="icon" onClick={() => handleOpenInvoice({ FC_IDFACTURA_PK: s.FC_IDFACTURA_PK }, true)} className="size-10 hover:bg-slate-100 rounded-lg">
                                                                 <Eye className="size-5 text-slate-400 hover:text-slate-900" />
                                                             </Button>
@@ -1484,8 +1599,8 @@ export function DashboardClient() {
                                     </Table>
                                 </div>
 
-                                <DialogFooter className="p-4 bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 shrink-0">
-                                    <Button onClick={() => setIsDetailModalOpen(false)} className="w-full bg-slate-900 text-white hover:bg-slate-800 rounded-2xl font-bold uppercase text-[10px] tracking-widest h-12 shadow-lg active:scale-95 transition-all">
+                                <DialogFooter className="p-4 bg-slate-50 border-t border-slate-200 shrink-0 flex justify-end">
+                                    <Button onClick={() => setIsDetailModalOpen(false)} className="h-11 rounded-2xl bg-slate-900 text-white hover:bg-slate-800 font-semibold uppercase text-[10px] tracking-widest px-6 shadow-sm transition-all">
                                         Cerrar Detalle
                                     </Button>
                                 </DialogFooter>

@@ -314,6 +314,23 @@ export async function getDashboardCharts(sucursalId: number, dateFrom: string, d
       params
     );
 
+    // 4. Global Metrics (Products, Tech Payouts, Local Income)
+    const [globalMetrics]: any = await db.execute(
+      `SELECT 
+        (SELECT COALESCE(SUM(fp.FP_VALOR), 0) FROM KS_FACTURA_PRODUCTOS fp JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO' AND NOT EXISTS (SELECT 1 FROM KS_PAGOS_FACTURA pf JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR') ${sucursalFilter}) as total_productos_ventas,
+        (SELECT COALESCE(SUM(fd.FD_VALOR), 0) FROM KS_FACTURA_DETALLES fd JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO' AND NOT EXISTS (SELECT 1 FROM KS_PAGOS_FACTURA pf JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR') ${sucursalFilter}) as total_servicios_ventas,
+        (SELECT COALESCE(SUM(fp.FP_COMISION_VALOR), 0) FROM KS_FACTURA_PRODUCTOS fp JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO' AND NOT EXISTS (SELECT 1 FROM KS_PAGOS_FACTURA pf JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR') ${sucursalFilter}) as comision_productos
+      `,
+      [...params, ...params, ...params]
+    );
+
+    const totalProductos = Number(globalMetrics[0]?.total_productos_ventas || 0);
+    const totalServicios = Number(globalMetrics[0]?.total_servicios_ventas || 0);
+    const comisionProductos = Number(globalMetrics[0]?.comision_productos || 0);
+    const comisionServicios = totalServicios * (svcPercent / 100);
+    const pagoTecnicos = comisionServicios + comisionProductos;
+    const ingresoLocal = (totalServicios + totalProductos) - pagoTecnicos;
+
     return {
       success: true,
       data: {
@@ -325,7 +342,15 @@ export async function getDashboardCharts(sucursalId: number, dateFrom: string, d
           count: Number(t.count || 0) 
         })),
         topServices: (topServices || []).map((s: any) => ({ ...s, count: Number(s.count || 0) })),
-        topProducts: (topProducts || []).map((p: any) => ({ ...p, count: Number(p.count || 0) }))
+        topProducts: (topProducts || []).map((p: any) => ({ ...p, count: Number(p.count || 0) })),
+        globalMetrics: {
+          productos_total: totalProductos,
+          pago_tecnicos: pagoTecnicos,
+          pago_tecnicos_productos: comisionProductos,
+          pago_tecnicos_servicios: comisionServicios,
+          ingreso_local: ingresoLocal,
+          servicios_total: totalServicios
+        }
       },
       error: null
     };
@@ -494,12 +519,15 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
               'SERVICIO' as tipo_item,
               fd.FD_VALOR as valor_total,
               (fd.FD_VALOR * (${svcPercent} / 100)) as comision,
-              (fd.FD_VALOR - (fd.FD_VALOR * (${svcPercent} / 100))) as local_share
+              (fd.FD_VALOR - (fd.FD_VALOR * (${svcPercent} / 100))) as local_share,
+              NULL as servicio_relacionado,
+              sc.SC_NOMBRE as sucursal_nombre
        FROM KS_FACTURA_DETALLES fd
        JOIN KS_SERVICIOS sv ON fd.SV_IDSERVICIO_FK = sv.SV_IDSERVICIO_PK
        JOIN KS_TRABAJADORES t ON fd.TR_IDTECNICO_FK = t.TR_IDTRABAJADOR_PK
        JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        LEFT JOIN KS_TRABAJADORES tc ON f.TR_IDCLIENTE_FK = tc.TR_IDTRABAJADOR_PK
+       LEFT JOIN KS_SUCURSALES sc ON f.SC_IDSUCURSAL_FK = sc.SC_IDSUCURSAL_PK
        WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? ${sucursalFilter}
        AND NOT EXISTS (
          SELECT 1 FROM KS_PAGOS_FACTURA pf
@@ -516,12 +544,17 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
               'PRODUCTO' as tipo_item,
               fp.FP_VALOR as valor_total,
               fp.FP_COMISION_VALOR as comision,
-              (fp.FP_VALOR - fp.FP_COMISION_VALOR) as local_share
+              (fp.FP_VALOR - fp.FP_COMISION_VALOR) as local_share,
+              sv.SV_NOMBRE as servicio_relacionado,
+              sc.SC_NOMBRE as sucursal_nombre
        FROM KS_FACTURA_PRODUCTOS fp
        JOIN KS_PRODUCTOS p ON fp.PR_IDPRODUCTO_FK = p.PR_IDPRODUCTO_PK
        JOIN KS_TRABAJADORES t ON fp.TR_IDTECNICO_FK = t.TR_IDTRABAJADOR_PK
        JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        LEFT JOIN KS_TRABAJADORES tc ON f.TR_IDCLIENTE_FK = tc.TR_IDTRABAJADOR_PK
+       LEFT JOIN KS_FACTURA_DETALLES fd ON fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK
+       LEFT JOIN KS_SERVICIOS sv ON fd.SV_IDSERVICIO_FK = sv.SV_IDSERVICIO_PK
+       LEFT JOIN KS_SUCURSALES sc ON f.SC_IDSUCURSAL_FK = sc.SC_IDSUCURSAL_PK
        WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? ${sucursalFilter}
        AND NOT EXISTS (
          SELECT 1 FROM KS_PAGOS_FACTURA pf
@@ -603,6 +636,12 @@ export async function getTechnicianStats(workerId: number, dateFrom: string, dat
   try {
     const params = [workerId, dateFrom, dateTo];
 
+    const [configRows]: any = await db.execute(
+      "SELECT NC_PORCENTAJE_SERVICIO FROM KS_NOMINA_CONFIG WHERE NC_FECHA_INICIO <= ? ORDER BY NC_FECHA_INICIO DESC LIMIT 1",
+      [dateFrom]
+    );
+    const svcPercent = Number(configRows[0]?.NC_PORCENTAJE_SERVICIO || 50);
+
     // 1. Total Services Value (Commissions potential)
     const [servicesResult]: any = await db.execute(
       `SELECT SUM(fd.FD_VALOR) as total, COUNT(*) as count
@@ -631,6 +670,24 @@ export async function getTechnicianStats(workerId: number, dateFrom: string, dat
       params
     );
 
+    const [productCommissionResult]: any = await db.execute(
+      `SELECT SUM(fp.FP_COMISION_VALOR) as total, COUNT(*) as count
+        FROM KS_FACTURA_PRODUCTOS fp
+        JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+        WHERE fp.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
+        AND NOT EXISTS (
+          SELECT 1 FROM KS_PAGOS_FACTURA pf
+          JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+          WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+        )`,
+      params
+    );
+
+    const serviceCommissionTotal = Number(servicesResult[0]?.total || 0) * (svcPercent / 100);
+    const productCommissionTotal = Number(productCommissionResult[0]?.total || 0);
+    const technicianPayment = serviceCommissionTotal + productCommissionTotal;
+    const businessIncome = Number(servicesResult[0]?.total || 0) + Number(productsResult[0]?.total || 0) - technicianPayment;
+
     // 3. Vales Pendientes (Servicios de Trabajador)
     const [valesResult]: any = await db.execute(
       `SELECT SUM(stc.STC_VALOR_CUOTA) as total_pendiente, COUNT(stc.STC_IDCUOTA_PK) as count
@@ -655,6 +712,10 @@ export async function getTechnicianStats(workerId: number, dateFrom: string, dat
         services_count: Number(servicesResult[0]?.count || 0),
         products_total: Number(productsResult[0]?.total || 0),
         products_count: Number(productsResult[0]?.count || 0),
+        product_commission_total: productCommissionTotal,
+        technician_payment: technicianPayment,
+        business_income: businessIncome,
+        services_commission_percent: svcPercent,
         vales_pendiente: Number(valesResult[0]?.total_pendiente || 0),
         adelantos_pendiente: Number(valesNominaResult[0]?.total_pendiente || 0),
       },
@@ -692,33 +753,51 @@ export async function getTechnicianCharts(workerId: number, dateFrom: string, da
 
 export async function getTechnicianServices(workerId: number, dateFrom: string, dateTo: string): Promise<ApiResponse> {
   try {
+    const [configRows]: any = await db.execute(
+      "SELECT NC_PORCENTAJE_SERVICIO FROM KS_NOMINA_CONFIG WHERE NC_FECHA_INICIO <= ? ORDER BY NC_FECHA_INICIO DESC LIMIT 1",
+      [dateFrom]
+    );
+    const svcPercent = Number(configRows[0]?.NC_PORCENTAJE_SERVICIO || 50);
+
     // Detailed list of services performed by the technician
     const [rows]: any = await db.execute(
-      `SELECT f.FC_NUMERO_FACTURA, f.FC_FECHA, s.SV_NOMBRE as nombre, fd.FD_VALOR as valor, 'SERVICIO' as tipo
+      `SELECT f.FC_NUMERO_FACTURA, f.FC_FECHA, s.SV_NOMBRE as item_nombre, 'SERVICIO' as tipo,
+              t.TR_NOMBRE as tecnico_nombre, sc.SC_NOMBRE as sucursal_nombre,
+              fd.FD_VALOR as valor, (fd.FD_VALOR * (${svcPercent} / 100)) as comision,
+              (fd.FD_VALOR - (fd.FD_VALOR * (${svcPercent} / 100))) as local_share,
+              NULL as servicio_relacionado
        FROM KS_FACTURA_DETALLES fd
        JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        JOIN KS_SERVICIOS s ON fd.SV_IDSERVICIO_FK = s.SV_IDSERVICIO_PK
+       JOIN KS_TRABAJADORES t ON fd.TR_IDTECNICO_FK = t.TR_IDTRABAJADOR_PK
+       LEFT JOIN KS_SUCURSALES sc ON f.SC_IDSUCURSAL_FK = sc.SC_IDSUCURSAL_PK
        WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
        AND NOT EXISTS (
          SELECT 1 FROM KS_PAGOS_FACTURA pf
          JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
          WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
        )
-       
+
        UNION ALL
-       
-       SELECT f.FC_NUMERO_FACTURA, f.FC_FECHA, p.PR_NOMBRE as nombre, fp.FP_VALOR as valor, 'PRODUCTO' as tipo
+
+       SELECT f.FC_NUMERO_FACTURA, f.FC_FECHA, p.PR_NOMBRE as item_nombre, 'PRODUCTO' as tipo,
+              t.TR_NOMBRE as tecnico_nombre, sc.SC_NOMBRE as sucursal_nombre,
+              fp.FP_VALOR as valor, fp.FP_COMISION_VALOR as comision,
+              (fp.FP_VALOR - fp.FP_COMISION_VALOR) as local_share,
+              sv.SV_NOMBRE as servicio_relacionado
        FROM KS_FACTURA_PRODUCTOS fp
        JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        JOIN KS_PRODUCTOS p ON fp.PR_IDPRODUCTO_FK = p.PR_IDPRODUCTO_PK
+       JOIN KS_TRABAJADORES t ON fp.TR_IDTECNICO_FK = t.TR_IDTRABAJADOR_PK
+       LEFT JOIN KS_FACTURA_DETALLES fd ON fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK
+       LEFT JOIN KS_SERVICIOS sv ON fd.SV_IDSERVICIO_FK = sv.SV_IDSERVICIO_PK
+       LEFT JOIN KS_SUCURSALES sc ON f.SC_IDSUCURSAL_FK = sc.SC_IDSUCURSAL_PK
        WHERE fp.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
        AND NOT EXISTS (
          SELECT 1 FROM KS_PAGOS_FACTURA pf
          JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
          WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
-       )
-       
-       ORDER BY FC_FECHA DESC`,
+       )`,
       [workerId, dateFrom, dateTo, workerId, dateFrom, dateTo]
     );
 
