@@ -82,12 +82,14 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
   const [activeFilters, setActiveFilters] = React.useState<{ [key: string]: string[] }>({})
 
   // Form State
+  const isBranchLocked = user?.role !== 'ADMINISTRADOR_TOTAL';
+
   const [formData, setFormData] = React.useState<GastoData>({
     GS_CONCEPTO: '',
     GS_DESCRIPCION: '',
     GS_VALOR: 0,
     GS_FECHA: new Date(),
-    SC_IDSUCURSAL_FK: (user?.role === 'ADMINISTRADOR_PUNTO' && user?.branchId != null && user?.branchId > 0) ? user.branchId : null,
+    SC_IDSUCURSAL_FK: user?.branchId ? Number(user.branchId) : null,
     GS_COMPROBANTES: []
   })
 
@@ -149,7 +151,7 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
         GS_DESCRIPCION: '',
         GS_VALOR: 0,
         GS_FECHA: new Date(),
-        SC_IDSUCURSAL_FK: (user?.role === 'ADMINISTRADOR_PUNTO' && user?.branchId != null && user?.branchId > 0) ? user.branchId : null
+        SC_IDSUCURSAL_FK: user?.branchId ? Number(user.branchId) : null
       })
     }
     setIsModalOpen(true)
@@ -184,6 +186,11 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
     e.preventDefault()
     if (!formData.GS_CONCEPTO || formData.GS_VALOR <= 0) {
       toast.error("Datos inválidos", "Por favor completa el concepto y valor.")
+      return
+    }
+
+    if (!formData.GS_FECHA || isNaN(new Date(formData.GS_FECHA).getTime())) {
+      toast.error("Fecha requerida", "Por favor ingresa una fecha válida para el gasto.")
       return
     }
 
@@ -523,7 +530,7 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
               <Input
                 id="concepto"
                 placeholder="Ej. Arriendo, Servicios, Insumos..."
-                value={formData.GS_CONCEPTO}
+                value={formData.GS_CONCEPTO || ''}
                 onChange={e => setFormData({ ...formData, GS_CONCEPTO: e.target.value })}
                 required
                 disabled={isSubmitting}
@@ -535,7 +542,7 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
               <Input
                 id="descripcion"
                 placeholder="Ej. Pago Luz Marzo, Compra de Tintes..."
-                value={formData.GS_DESCRIPCION}
+                value={formData.GS_DESCRIPCION || ''}
                 onChange={e => setFormData({ ...formData, GS_DESCRIPCION: e.target.value })}
                 disabled={isSubmitting}
               />
@@ -562,7 +569,7 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                 <Select
                   value={formData.SC_IDSUCURSAL_FK?.toString() || 'general'}
                   onValueChange={val => setFormData({ ...formData, SC_IDSUCURSAL_FK: val === 'general' ? null : Number(val) })}
-                  disabled={(user?.role === 'ADMINISTRADOR_PUNTO' && user?.branchId != null && user?.branchId > 0) || isSubmitting}
+                  disabled={isBranchLocked || isSubmitting}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="General" />
@@ -584,7 +591,10 @@ export function ExpenseClient({ initialData, user }: ExpenseClientProps) {
                   type="date"
                   value={formData.GS_FECHA && !isNaN(new Date(formData.GS_FECHA).getTime()) ? format(new Date(formData.GS_FECHA), "yyyy-MM-dd") : ''}
                   onChange={e => {
-                    if (!e.target.value) return;
+                    if (!e.target.value) {
+                      setFormData({ ...formData, GS_FECHA: null as any })
+                      return;
+                    }
                     setFormData({ ...formData, GS_FECHA: new Date(e.target.value + 'T12:00:00') })
                   }}
                   disabled={isSubmitting}
