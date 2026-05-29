@@ -341,9 +341,9 @@ export const VolantePDF = ({ data, logoUrl, auditData = [] }: { data: any, logoU
           </View>
         </View>
 
-        <View style={{ flexDirection: 'column', gap: 20 }}>
+        <View style={{ flexDirection: 'column', marginBottom: 10 }}>
           {/* Devengados */}
-          <View style={{ flex: 1 }}>
+          <View style={{ marginBottom: 20 }}>
             <View style={[styles.sectionHeader, { borderLeftWidth: 2, borderLeftColor: '#10B981', paddingLeft: 6 }]}>
               <Text style={styles.sectionTitle}>Devengado (Ingresos)</Text>
             </View>
@@ -366,7 +366,7 @@ export const VolantePDF = ({ data, logoUrl, auditData = [] }: { data: any, logoU
           </View>
 
           {/* Deducciones */}
-          <View style={{ flex: 1 }}>
+          <View style={{ marginBottom: 10 }}>
             <View style={[styles.sectionHeader, { borderLeftWidth: 2, borderLeftColor: '#EF4444', paddingLeft: 6 }]}>
               <Text style={styles.sectionTitle}>Deducciones (Egresos)</Text>
             </View>
