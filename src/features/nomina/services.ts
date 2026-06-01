@@ -289,10 +289,16 @@ export async function confirmarNomina(nominaId: number): Promise<ApiResponse> {
       for (const vale of valesRegistros) {
         const newPagadas = vale.VL_CUOTAS_PAGADAS + 1;
         const newEstado = newPagadas >= vale.VL_CUOTAS ? 'DESCONTADO' : 'PENDIENTE';
+        const cuotaMonto = Number(vale.VL_MONTO) / Number(vale.VL_CUOTAS);
 
         await (connection as any).execute(
           "UPDATE KS_VALES SET VL_CUOTAS_PAGADAS = ?, VL_ESTADO = ?, NM_IDNOMINA_FK = ? WHERE VL_IDVALE_PK = ?",
           [newPagadas, newEstado, nominaId, vale.VL_IDVALE_PK]
+        );
+
+        await (connection as any).execute(
+          "INSERT INTO KS_NOMINA_VALES (NM_IDNOMINA_FK, VL_IDVALE_PK, NV_MONTO_DESCONTADO) VALUES (?, ?, ?)",
+          [nominaId, vale.VL_IDVALE_PK, cuotaMonto]
         );
       }
     }
@@ -354,20 +360,27 @@ export async function desconfirmarNomina(nominaId: number): Promise<ApiResponse>
       );
     }
 
-    // 4. Revertir vales (Adelantos)
-    // Buscamos los vales que fueron marcados con este ID de nómina
-    const [valesRegistros]: any = await (connection as any).execute(
-      "SELECT VL_IDVALE_PK, VL_CUOTAS_PAGADAS FROM KS_VALES WHERE NM_IDNOMINA_FK = ?",
+    // 4. Revertir vales (Adelantos) usando la tabla de histórico de descuentos
+    const [descuentos]: any = await (connection as any).execute(
+      "SELECT VL_IDVALE_PK FROM KS_NOMINA_VALES WHERE NM_IDNOMINA_FK = ?",
       [nominaId]
     );
 
-    for (const vale of valesRegistros) {
-      const newPagadas = Math.max(0, vale.VL_CUOTAS_PAGADAS - 1);
-      // Siempre vuelve a PENDIENTE porque si estaba en DESCONTADO (pagado) y le restamos una, ahora falta al menos una
-      await (connection as any).execute(
-        "UPDATE KS_VALES SET VL_CUOTAS_PAGADAS = ?, VL_ESTADO = 'PENDIENTE', NM_IDNOMINA_FK = NULL WHERE VL_IDVALE_PK = ?",
-        [newPagadas, vale.VL_IDVALE_PK]
+    for (const desc of descuentos) {
+      const [valeRows]: any = await (connection as any).execute(
+        "SELECT VL_CUOTAS_PAGADAS FROM KS_VALES WHERE VL_IDVALE_PK = ?",
+        [desc.VL_IDVALE_PK]
       );
+      
+      if (valeRows.length > 0) {
+        const currentPagadas = valeRows[0].VL_CUOTAS_PAGADAS;
+        const newPagadas = Math.max(0, currentPagadas - 1);
+        
+        await (connection as any).execute(
+          "UPDATE KS_VALES SET VL_CUOTAS_PAGADAS = ?, VL_ESTADO = 'PENDIENTE', NM_IDNOMINA_FK = NULL WHERE VL_IDVALE_PK = ?",
+          [newPagadas, desc.VL_IDVALE_PK]
+        );
+      }
     }
 
     // 5. Cambiar estado de la nómina a PROCESANDO
@@ -666,4 +679,341 @@ export async function getNominaAudit(workerId: number, startDate: Date, endDate:
     return { success: false, error: "Error al obtener auditoría" };
   }
 }
+
+/**
+ * Realizar liquidación por retiro definitiva e inactivación de un trabajador
+ */
+export async function liquidarTrabajadorPorRetiro(
+  workerId: number,
+  fechaRetiro: Date,
+  motivo: string,
+  basePay: number = 0
+): Promise<ApiResponse> {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 1. Obtener datos del trabajador
+    const [workers]: any = await (connection as any).execute(
+      `SELECT t.TR_IDTRABAJADOR_PK, t.TR_NOMBRE, r.RL_NOMBRE 
+       FROM KS_TRABAJADORES t
+       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+       WHERE t.TR_IDTRABAJADOR_PK = ?`,
+      [workerId]
+    );
+
+    if (workers.length === 0) {
+      return { success: false, error: "Trabajador no encontrado" };
+    }
+    const worker = workers[0];
+
+    // 2. Determinar la fecha de inicio del periodo pendiente
+    const [lastNom]: any = await (connection as any).execute(
+      `SELECT MAX(n.NM_FECHA_FIN) as last_date
+       FROM KS_NOMINAS n
+       JOIN KS_NOMINA_DETALLES nd ON n.NM_IDNOMINA_PK = nd.NM_IDNOMINA_FK
+       WHERE nd.TR_IDTRABAJADOR_FK = ? AND n.NM_ESTADO = 'CONFIRMADA'`,
+      [workerId]
+    );
+    
+    // Si ya ha sido liquidado antes, empezamos desde el día siguiente de su última nómina confirmada
+    const lastDate = lastNom[0]?.last_date ? new Date(lastNom[0].last_date) : new Date("2020-01-01");
+    
+    // 3. Obtener configuración vigente para calcular comisiones
+    const configRes = await getConfigForDate(fechaRetiro);
+    const svcPercent = configRes.success && configRes.data ? Number(configRes.data.NC_PORCENTAJE_SERVICIO) : 50;
+
+    let comisionesServicios = 0;
+    let comisionesProductos = 0;
+
+    if (worker.RL_NOMBRE === 'TECNICO') {
+      // 3.1. Calcular comisiones de servicios en el periodo pendiente
+      const [services]: any = await (connection as any).execute(
+        `SELECT SUM(fd.FD_VALOR) as total 
+         FROM KS_FACTURA_DETALLES fd 
+         JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+         WHERE fd.TR_IDTECNICO_FK = ? 
+           AND f.FC_FECHA > ? AND DATE(f.FC_FECHA) <= DATE(?)
+           AND f.FC_ESTADO != 'CANCELADO'
+           AND NOT EXISTS (
+             SELECT 1 FROM KS_PAGOS_FACTURA pf
+             JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+             WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+           )`,
+        [workerId, lastDate, fechaRetiro]
+      );
+      const svcTotal = Number(services[0].total || 0);
+      comisionesServicios = svcTotal * (svcPercent / 100);
+
+      // 3.2. Calcular comisiones de productos
+      const [products]: any = await (connection as any).execute(
+        `SELECT SUM(fp.FP_COMISION_VALOR) as total 
+         FROM KS_FACTURA_PRODUCTOS fp
+         JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+         WHERE fp.TR_IDTECNICO_FK = ? 
+           AND f.FC_FECHA > ? AND DATE(f.FC_FECHA) <= DATE(?)
+           AND f.FC_ESTADO = 'PAGADO'
+           AND NOT EXISTS (
+             SELECT 1 FROM KS_PAGOS_FACTURA pf
+             JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+             WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+           )`,
+        [workerId, lastDate, fechaRetiro]
+      );
+      comisionesProductos = Number(products[0].total || 0);
+    }
+
+    const totalComisiones = comisionesServicios + comisionesProductos;
+
+    // 4. Calcular el 100% de la deuda consolidada
+    // 4.1. Saldo pendiente de vales
+    const [valesRegistros]: any = await (connection as any).execute(
+      `SELECT VL_MONTO, VL_CUOTAS, VL_CUOTAS_PAGADAS, VL_IDVALE_PK
+       FROM KS_VALES 
+       WHERE TR_IDTRABAJADOR_FK = ? AND VL_ESTADO = 'PENDIENTE'`,
+      [workerId]
+    );
+
+    let valesTotalDeduct = 0;
+    for (const vale of valesRegistros) {
+      const remainingCuotas = vale.VL_CUOTAS - vale.VL_CUOTAS_PAGADAS;
+      if (remainingCuotas > 0) {
+        const cuotaValor = vale.VL_MONTO / vale.VL_CUOTAS;
+        valesTotalDeduct += (cuotaValor * remainingCuotas);
+      }
+    }
+
+    // 4.2. Saldo pendiente de servicios de trabajador
+    const [serviciosCuotas]: any = await (connection as any).execute(
+      `SELECT SUM(stc.STC_VALOR_CUOTA) as total 
+       FROM KS_SERVICIO_TRABAJADOR_CUOTAS stc
+       JOIN KS_SERVICIOS_TRABAJADOR st ON stc.ST_IDSERVICIO_TRABAJADOR_FK = st.ST_IDSERVICIO_TRABAJADOR_PK
+       WHERE st.TR_IDTRABAJADOR_FK = ? AND stc.STC_ESTADO = 'PENDIENTE'`,
+      [workerId]
+    );
+    const serviciosTotalDeduct = Number(serviciosCuotas[0].total || 0);
+
+    // 5. Calcular balance neto definitivo
+    const netPay = basePay + totalComisiones - serviciosTotalDeduct - valesTotalDeduct;
+
+    // 6. Crear cabecera de Nómina Especial de Retiro
+    const [nominaResult]: any = await (connection as any).execute(
+      `INSERT INTO KS_NOMINAS (NM_FECHA_INICIO, NM_FECHA_FIN, NM_ESTADO, NM_TIPO, NM_TOTAL_PAGADO, NM_FECHA_CIERRE) 
+       VALUES (?, ?, 'CONFIRMADA', 'RETIRO', ?, CURRENT_TIMESTAMP)`,
+      [toLocalDateString(lastDate), toLocalDateString(fechaRetiro), netPay]
+    );
+    const nominaId = nominaResult.insertId;
+
+    // 7. Insertar detalle de Nómina
+    await (connection as any).execute(
+      `INSERT INTO KS_NOMINA_DETALLES 
+       (NM_IDNOMINA_FK, TR_IDTRABAJADOR_FK, ND_BASE, ND_COMISIONES, ND_BONOS, ND_DEDUCCIONES_SERVICIOS_TRABAJADOR, ND_DEDUCCIONES_VALES, ND_TOTAL_NETO)
+       VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
+      [nominaId, workerId, basePay, totalComisiones, serviciosTotalDeduct, valesTotalDeduct, netPay]
+    );
+
+    // 8. Cerrar todas las deudas pendientes
+    // 8.1. Liquidar vales
+    for (const vale of valesRegistros) {
+      const remainingCuotas = vale.VL_CUOTAS - vale.VL_CUOTAS_PAGADAS;
+      const cuotaMonto = Number(vale.VL_MONTO) / Number(vale.VL_CUOTAS);
+      const totalDescontado = cuotaMonto * remainingCuotas;
+
+      await (connection as any).execute(
+        `UPDATE KS_VALES 
+         SET VL_CUOTAS_PAGADAS = VL_CUOTAS, VL_ESTADO = 'DESCONTADO', NM_IDNOMINA_FK = ? 
+         WHERE VL_IDVALE_PK = ?`,
+        [nominaId, vale.VL_IDVALE_PK]
+      );
+
+      if (totalDescontado > 0) {
+        await (connection as any).execute(
+          "INSERT INTO KS_NOMINA_VALES (NM_IDNOMINA_FK, VL_IDVALE_PK, NV_MONTO_DESCONTADO) VALUES (?, ?, ?)",
+          [nominaId, vale.VL_IDVALE_PK, totalDescontado]
+        );
+      }
+    }
+
+    // 8.2. Liquidar cuotas de servicios de trabajador
+    await (connection as any).execute(
+      `UPDATE KS_SERVICIO_TRABAJADOR_CUOTAS stc
+       JOIN KS_SERVICIOS_TRABAJADOR st ON stc.ST_IDSERVICIO_TRABAJADOR_FK = st.ST_IDSERVICIO_TRABAJADOR_PK
+       SET stc.STC_ESTADO = 'PAGADO'
+       WHERE st.TR_IDTRABAJADOR_FK = ? AND stc.STC_ESTADO = 'PENDIENTE'`,
+      [workerId]
+    );
+
+    // 9. Actualizar trabajador (Inactivar y guardar fecha y motivo de retiro)
+    await (connection as any).execute(
+      `UPDATE KS_TRABAJADORES 
+       SET TR_ACTIVO = 0, TR_FECHA_RETIRO = ?, TR_MOTIVO_RETIRO = ? 
+       WHERE TR_IDTRABAJADOR_PK = ?`,
+      [toLocalDateString(fechaRetiro), motivo || null, workerId]
+    );
+
+    await connection.commit();
+    revalidatePath("/dashboard/nomina");
+    revalidatePath("/dashboard/trabajadores");
+    revalidatePath("/dashboard/usuarios-admin");
+
+    return {
+      success: true,
+      message: `El trabajador ${worker.TR_NOMBRE} ha sido liquidado e inactivado correctamente. Balance Final: $${netPay}`,
+      data: { nominaId, netPay }
+    };
+
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Error al liquidar trabajador por retiro:", error);
+    return { success: false, error: "Error al procesar la liquidación de retiro" };
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+/**
+ * Generar una previsualización de la liquidación por retiro sin alterar la base de datos
+ */
+export async function previewLiquidadionRetiro(
+  workerId: number,
+  fechaRetiro: Date,
+  basePay: number = 0
+): Promise<ApiResponse> {
+  try {
+    // 1. Obtener datos del trabajador
+    const [workers]: any = await db.execute(
+      `SELECT t.TR_IDTRABAJADOR_PK, t.TR_NOMBRE, r.RL_NOMBRE, s.SC_NOMBRE 
+       FROM KS_TRABAJADORES t
+       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+       LEFT JOIN KS_SUCURSALES s ON t.SC_IDSUCURSAL_FK = s.SC_IDSUCURSAL_PK
+       WHERE t.TR_IDTRABAJADOR_PK = ?`,
+      [workerId]
+    );
+
+    if (workers.length === 0) {
+      return { success: false, error: "Trabajador no encontrado" };
+    }
+    const worker = workers[0];
+
+    // 2. Determinar la fecha de inicio del periodo pendiente
+    const [lastNom]: any = await db.execute(
+      `SELECT MAX(n.NM_FECHA_FIN) as last_date
+       FROM KS_NOMINAS n
+       JOIN KS_NOMINA_DETALLES nd ON n.NM_IDNOMINA_PK = nd.NM_IDNOMINA_FK
+       WHERE nd.TR_IDTRABAJADOR_FK = ? AND n.NM_ESTADO = 'CONFIRMADA'`,
+      [workerId]
+    );
+    const lastDate = lastNom[0]?.last_date ? new Date(lastNom[0].last_date) : new Date("2020-01-01");
+    
+    // 3. Obtener configuración vigente para calcular comisiones
+    const configRes = await getConfigForDate(fechaRetiro);
+    const svcPercent = configRes.success && configRes.data ? Number(configRes.data.NC_PORCENTAJE_SERVICIO) : 50;
+
+    let comisionesServicios = 0;
+    let comisionesProductos = 0;
+    let auditData: any[] = [];
+
+    if (worker.RL_NOMBRE === 'TECNICO') {
+      // 3.1. Calcular comisiones de servicios en el periodo pendiente
+      const [services]: any = await db.execute(
+        `SELECT SUM(fd.FD_VALOR) as total 
+         FROM KS_FACTURA_DETALLES fd 
+         JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+         WHERE fd.TR_IDTECNICO_FK = ? 
+           AND f.FC_FECHA > ? AND DATE(f.FC_FECHA) <= DATE(?)
+           AND f.FC_ESTADO != 'CANCELADO'
+           AND NOT EXISTS (
+             SELECT 1 FROM KS_PAGOS_FACTURA pf
+             JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+             WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+           )`,
+        [workerId, lastDate, fechaRetiro]
+      );
+      const svcTotal = Number(services[0].total || 0);
+      comisionesServicios = svcTotal * (svcPercent / 100);
+
+      // 3.2. Calcular comisiones de productos
+      const [products]: any = await db.execute(
+        `SELECT SUM(fp.FP_COMISION_VALOR) as total 
+         FROM KS_FACTURA_PRODUCTOS fp
+         JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+         WHERE fp.TR_IDTECNICO_FK = ? 
+           AND f.FC_FECHA > ? AND DATE(f.FC_FECHA) <= DATE(?)
+           AND f.FC_ESTADO = 'PAGADO'
+           AND NOT EXISTS (
+             SELECT 1 FROM KS_PAGOS_FACTURA pf
+             JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+             WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+           )`,
+        [workerId, lastDate, fechaRetiro]
+      );
+      comisionesProductos = Number(products[0].total || 0);
+
+      // Obtener auditoria
+      const auditRes = await getNominaAudit(workerId, lastDate, fechaRetiro);
+      if (auditRes.success && auditRes.data) {
+        auditData = auditRes.data;
+      }
+    }
+
+    const totalComisiones = comisionesServicios + comisionesProductos;
+
+    // 4. Calcular el 100% de la deuda consolidada
+    // 4.1. Saldo pendiente de vales
+    const [valesRegistros]: any = await db.execute(
+      `SELECT VL_MONTO, VL_CUOTAS, VL_CUOTAS_PAGADAS, VL_IDVALE_PK
+       FROM KS_VALES 
+       WHERE TR_IDTRABAJADOR_FK = ? AND VL_ESTADO = 'PENDIENTE'`,
+      [workerId]
+    );
+
+    let valesTotalDeduct = 0;
+    for (const vale of valesRegistros) {
+      const remainingCuotas = vale.VL_CUOTAS - vale.VL_CUOTAS_PAGADAS;
+      if (remainingCuotas > 0) {
+        const cuotaValor = vale.VL_MONTO / vale.VL_CUOTAS;
+        valesTotalDeduct += (cuotaValor * remainingCuotas);
+      }
+    }
+
+    // 4.2. Saldo pendiente de servicios de trabajador
+    const [serviciosCuotas]: any = await db.execute(
+      `SELECT SUM(stc.STC_VALOR_CUOTA) as total 
+       FROM KS_SERVICIO_TRABAJADOR_CUOTAS stc
+       JOIN KS_SERVICIOS_TRABAJADOR st ON stc.ST_IDSERVICIO_TRABAJADOR_FK = st.ST_IDSERVICIO_TRABAJADOR_PK
+       WHERE st.TR_IDTRABAJADOR_FK = ? AND stc.STC_ESTADO = 'PENDIENTE'`,
+      [workerId]
+    );
+    const serviciosTotalDeduct = Number(serviciosCuotas[0].total || 0);
+
+    // 5. Calcular balance neto definitivo
+    const netPay = basePay + totalComisiones - serviciosTotalDeduct - valesTotalDeduct;
+
+    // Retornar objeto idéntico a showVolante en nómina
+    return {
+      success: true,
+      data: {
+        volante: {
+          TR_NOMBRE: worker.TR_NOMBRE,
+          TR_IDTRABAJADOR_FK: worker.TR_IDTRABAJADOR_PK,
+          RL_NOMBRE: worker.RL_NOMBRE,
+          SC_NOMBRE: worker.SC_NOMBRE || 'Global',
+          ND_BASE: basePay,
+          ND_COMISIONES: totalComisiones,
+          ND_BONOS: 0,
+          ND_DEDUCCIONES_SERVICIOS_TRABAJADOR: serviciosTotalDeduct,
+          ND_DEDUCCIONES_VALES: valesTotalDeduct,
+          ND_TOTAL_NETO: netPay,
+          periodoRange: `Retiro: ${lastDate.toLocaleDateString('es-CO')} al ${new Date(fechaRetiro).toLocaleDateString('es-CO')}`
+        },
+        auditData
+      }
+    };
+
+  } catch (error) {
+    console.error("Error previewing retirement liquidation:", error);
+    return { success: false, error: "Error al generar la previsualización" };
+  }
+}
+
 

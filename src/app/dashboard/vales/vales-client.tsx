@@ -681,7 +681,13 @@ export function ValesClient({ initialVales, trabajadores, sucursales, sessionUse
                     type="date"
                     className="pl-9"
                     value={fechaDesembolso}
-                    onChange={(e) => setFechaDesembolso(e.target.value)}
+                    onChange={(e) => {
+                      const newDate = e.target.value;
+                      setFechaDesembolso(newDate);
+                      if (!fechaInicioCobro) {
+                        setFechaInicioCobro(newDate);
+                      }
+                    }}
                     required
                   />
                 </div>

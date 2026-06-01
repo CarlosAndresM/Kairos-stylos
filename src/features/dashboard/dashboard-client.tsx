@@ -1311,8 +1311,9 @@ export function DashboardClient() {
                                     </div>
                                 </DialogHeader>
 
-                                <div className="flex-1 overflow-auto p-6">
-                                    <Table>
+                                <div className="flex-1 p-6 overflow-hidden flex flex-col">
+                                    <div className="flex-1 overflow-auto border border-slate-200 dark:border-slate-800 rounded-2xl max-h-[60vh] shadow-sm">
+                                        <Table className="relative">
                                         <TableHeader>
                                             {detailType === 'Técnico' || detailType === 'GLOBAL_SERVICIOS' ? (
                                                 <TableRow className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-800 bg-slate-50/50">
@@ -1596,7 +1597,8 @@ export function DashboardClient() {
                                                     </TableRow>
                                                 )}
                                         </TableBody>
-                                    </Table>
+                                        </Table>
+                                    </div>
                                 </div>
 
                                 <DialogFooter className="p-4 bg-slate-50 border-t border-slate-200 shrink-0 flex justify-end">

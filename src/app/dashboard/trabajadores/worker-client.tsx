@@ -19,6 +19,7 @@ import { WorkerWithStats, WorkerFormData } from '@/features/trabajadores/schema'
 import { saveTrabajador, toggleWorkerStatus, deleteWorker } from '@/features/trabajadores/services'
 import { WorkerModal } from '@/app/dashboard/trabajadores/worker-modal'
 import { DeleteConfirmModal } from '@/app/dashboard/trabajadores/delete-confirm-modal'
+import { RetirementModal } from '@/app/dashboard/trabajadores/retirement-modal'
 import { toast } from '@/lib/toast-helper'
 import { LoadingGate } from '@/components/ui/loading-gate'
 import { NumericFormat } from 'react-number-format'
@@ -47,6 +48,8 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
   const [editingWorker, setEditingWorker] = React.useState<WorkerWithStats | null>(null)
   const [workerToDelete, setWorkerToDelete] = React.useState<WorkerWithStats | null>(null)
+  const [isRetireModalOpen, setIsRetireModalOpen] = React.useState(false)
+  const [workerToRetire, setWorkerToRetire] = React.useState<WorkerWithStats | null>(null)
 
   const [activeFilters, setActiveFilters] = React.useState<{ [key: string]: string[] }>({})
 
@@ -325,6 +328,20 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                             {worker.TR_ACTIVO ? 'Desactivar Acceso' : 'Activar Acceso'}
                           </DropdownMenuItem>
 
+                          {worker.TR_ACTIVO && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setWorkerToRetire(worker)
+                                setIsRetireModalOpen(true)
+                              }}
+                              disabled={!canManageWorkers}
+                              className="gap-2 rounded-lg font-medium text-xs text-orange-600 dark:text-orange-400 cursor-pointer"
+                            >
+                              <Wallet className="size-3.5" />
+                              Liquidar por Retiro
+                            </DropdownMenuItem>
+                          )}
+
                           <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800 my-1" />
 
                           <DropdownMenuItem
@@ -370,6 +387,22 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
           onConfirm={handleDelete}
           workerName={workerToDelete?.TR_NOMBRE || ''}
         />
+
+        {workerToRetire && (
+          <RetirementModal
+            isOpen={isRetireModalOpen}
+            onClose={() => {
+              setIsRetireModalOpen(false)
+              setWorkerToRetire(null)
+            }}
+            onSuccess={() => {
+              window.location.reload()
+            }}
+            workerId={workerToRetire.TR_IDTRABAJADOR_PK}
+            workerName={workerToRetire.TR_NOMBRE}
+            workerRole={workerToRetire.RL_NOMBRE}
+          />
+        )}
       </div>
     </LoadingGate>
   )

@@ -32,6 +32,11 @@ export async function createValeService(input: unknown) {
       validated.VL_FECHA = validated.VL_FECHA_DESEMBOLSO;
     }
 
+    // Asegurar que la fecha de inicio de cobro no sea NULL para evitar bloquear los descuentos
+    if (!validated.VL_FECHA_INICIO_COBRO && validated.VL_FECHA_DESEMBOLSO) {
+      validated.VL_FECHA_INICIO_COBRO = validated.VL_FECHA_DESEMBOLSO;
+    }
+
     const id = await createValeMutation(validated);
     return { success: true, data: { id } };
   } catch (error: any) {
@@ -50,6 +55,11 @@ export async function updateValeService(input: unknown) {
     
     if (!validated.VL_FECHA && validated.VL_FECHA_DESEMBOLSO) {
       validated.VL_FECHA = validated.VL_FECHA_DESEMBOLSO;
+    }
+
+    // Asegurar que la fecha de inicio de cobro no sea NULL para evitar bloquear los descuentos
+    if (!validated.VL_FECHA_INICIO_COBRO && validated.VL_FECHA_DESEMBOLSO) {
+      validated.VL_FECHA_INICIO_COBRO = validated.VL_FECHA_DESEMBOLSO;
     }
 
     const { updateValeMutation } = await import('@/features/vales/mutations');

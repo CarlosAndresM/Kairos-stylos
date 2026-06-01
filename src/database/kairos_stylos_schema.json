@@ -1,6 +1,6 @@
 {
   "database": "kairos_stylos",
-  "schema_version": "030",
+  "schema_version": "035",
   "tables": [
     {
       "name": "KS_MIGRACIONES",
@@ -38,7 +38,9 @@
         { "name": "TR_PASSWORD", "type": "VARCHAR(255)", "nullable": true },
         { "name": "TR_ACTIVO", "type": "BOOLEAN", "default": true },
         { "name": "RL_IDROL_FK", "type": "INT", "nullable": false, "references": "KS_ROLES.RL_IDROL_PK" },
-        { "name": "SC_IDSUCURSAL_FK", "type": "INT", "nullable": true, "references": "KS_SUCURSALES.SC_IDSUCURSAL_PK" }
+        { "name": "SC_IDSUCURSAL_FK", "type": "INT", "nullable": true, "references": "KS_SUCURSALES.SC_IDSUCURSAL_PK" },
+        { "name": "TR_FECHA_RETIRO", "type": "DATE", "nullable": true },
+        { "name": "TR_MOTIVO_RETIRO", "type": "VARCHAR(255)", "nullable": true }
       ],
       "indexes": []
     },
@@ -273,6 +275,18 @@
         { "name": "IDX_ADELANTO_TRABAJADOR", "columns": ["TR_IDTRABAJADOR_FK"] },
         { "name": "IDX_ADELANTO_ESTADO", "columns": ["VL_ESTADO"] }
       ]
+    },
+    {
+      "name": "KS_NOMINA_VALES",
+      "description": "Tabla pivot de auditoría de descuentos de vales individuales en nóminas",
+      "columns": [
+        { "name": "NV_IDNOMINA_VALE_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
+        { "name": "NM_IDNOMINA_FK", "type": "INT", "nullable": false, "references": "KS_NOMINAS.NM_IDNOMINA_PK", "onDelete": "CASCADE" },
+        { "name": "VL_IDVALE_PK", "type": "INT", "nullable": false, "references": "KS_VALES.VL_IDVALE_PK", "onDelete": "CASCADE" },
+        { "name": "NV_MONTO_DESCONTADO", "type": "DECIMAL(15,2)", "nullable": false },
+        { "name": "NV_FECHA_DESCUENTO", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP" }
+      ],
+      "indexes": []
     }
   ]
 }
