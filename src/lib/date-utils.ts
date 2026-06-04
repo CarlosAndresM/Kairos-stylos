@@ -55,6 +55,15 @@ export const formatPeriodRange = (range: PeriodRange): string => {
  */
 export const toLocalDateString = (date: Date | string | null | undefined): string | null => {
   if (!date) return null;
+  
+  if (typeof date === 'string') {
+    // Si ya viene en formato YYYY-MM-DD, devolvemos tal cual para evitar desfases horarios
+    const trimmed = date.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return trimmed;
+    }
+  }
+
   const targetDate = typeof date === 'string' ? new Date(date) : date;
   
   // Usamos sv-SE porque el formato es YYYY-MM-DD

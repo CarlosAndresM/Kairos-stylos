@@ -409,11 +409,21 @@ export function BillingModal({
     return technicians.find(t => t.TR_IDTRABAJADOR_PK === Number(selectedWorkerId))?.RL_NOMBRE || 'TECNICO';
   }, [clientType, selectedWorkerId, technicians]);
 
-  // El total se calcula dinÃƒÂ¡micamente para la UI, ya no se sincroniza al estado del form para evitar bucles de renderizado
-  const total = React.useMemo(() => {
-    const sTotal = (watchedServices || []).reduce((sum, s) => sum + ((Number(s.FD_VALOR) || 0) * (Number(s.FD_CANTIDAD) || 1)), 0)
-    return sTotal
+  // El total se calcula dinámicamente para la UI, aplicando el descuento de los productos
+  const sTotal = React.useMemo(() => {
+    return (watchedServices || []).reduce((sum, s) => sum + ((Number(s.FD_VALOR) || 0) * (Number(s.FD_CANTIDAD) || 1)), 0)
   }, [watchedServices])
+
+  const totalInsumos = React.useMemo(() => {
+    return (watchedServices || []).reduce((sum, s) => {
+      const pSum = (s.products || []).reduce((psum: number, p: any) => psum + ((Number(p.FP_VALOR) || 0) * (Number(p.FP_CANTIDAD) || 1)), 0)
+      return sum + pSum
+    }, 0)
+  }, [watchedServices])
+
+  const total = React.useMemo(() => {
+    return Math.max(0, sTotal - totalInsumos)
+  }, [sTotal, totalInsumos])
 
   const totalPaid = React.useMemo(() => {
     return (watchedPayments || []).reduce((sum, p) => sum + (Number(p.PF_VALOR) || 0), 0)
@@ -421,7 +431,7 @@ export function BillingModal({
 
   const balance = total - totalPaid
 
-  // Auto-balancear si hay un solo mÃƒÂ©todo de pago y es de tipo deuda (o si el usuario lo solicita)
+  // Auto-balancear si hay un solo método de pago y es de tipo deuda (o si el usuario lo solicita)
   const handleBalance = React.useCallback(() => {
     if (watchedPayments.length > 0) {
       const idx = watchedPayments.length - 1
@@ -565,11 +575,9 @@ export function BillingModal({
   }, [form.watch("esServicioTrabajador"), form])
 
   const onInvalid = (errors: any) => {
-    console.error("Form Validation Errors (RAW):", JSON.stringify(errors, null, 2));
-    console.log("Current Form Values:", form.getValues());
     toast.error('Datos incompletos', 'Por favor revise los campos marcados en rojo.');
 
-    // FunciÃ³n para encontrar el primer mensaje de error recursivamente en objetos anidados
+    // Función para encontrar el primer mensaje de error recursivamente en objetos anidados
     const findFirstErrorMessage = (obj: any): string | null => {
       if (!obj || typeof obj !== 'object') return null;
       if (obj.message && typeof obj.message === 'string') return obj.message;
@@ -1033,10 +1041,10 @@ export function BillingModal({
                         ))}
                       </tbody>
                       <tfoot className="border-t-2 border-slate-200 bg-slate-50 sticky bottom-0 z-10">
-                        <tr>
-                          <td colSpan={2} className="px-4 py-3 text-right text-sm font-semibold text-slate-500 uppercase tracking-wider">Total</td>
+                        <tr className="bg-slate-100 border-t border-slate-200">
+                          <td colSpan={3} className="px-4 py-3 text-right text-sm font-black text-slate-700 uppercase tracking-wider">Total</td>
                           <td className="px-4 py-3 text-right">
-                            <span className="text-lg font-black text-slate-900">$ {(total || 0).toLocaleString('es-CO')}</span>
+                            <span className="text-xl font-black text-slate-900">$ {(sTotal || 0).toLocaleString('es-CO')}</span>
                           </td>
                           <td></td>
                         </tr>
@@ -1234,14 +1242,28 @@ export function BillingModal({
                       Math.abs(totalPaid - total) < 0.01 && total > 0 ? "bg-green-50 border-green-200" :
                         totalPaid > total ? "bg-amber-50 border-amber-200" :
                           "bg-slate-50 border-slate-200")}>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="font-semibold text-slate-500">Total venta</span>
-                        <span className="font-black text-slate-900">$ {(total || 0).toLocaleString('es-CO')}</span>
+                      <div className="flex justify-between items-center text-slate-500 mb-2">
+                        <span className="text-sm font-bold uppercase">Subtotal</span>
+                        <span className="text-sm font-bold">$ {(sTotal || 0).toLocaleString('es-CO')}</span>
                       </div>
-                      <div className="flex justify-between items-center text-xs mt-1">
-                        <span className="font-semibold text-slate-500">Pagado</span>
-                        <span className="font-bold text-slate-700">$ {(totalPaid || 0).toLocaleString('es-CO')}</span>
+                      
+                      {totalInsumos > 0 && (
+                        <div className="flex justify-between items-center text-red-400 mb-2 border-b border-dashed border-slate-200 pb-2">
+                          <span className="text-[10px] font-bold uppercase">- Deducción de productos</span>
+                          <span className="text-[10px] font-bold">-$ {(totalInsumos || 0).toLocaleString('es-CO')}</span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-center text-slate-800 mb-2 mt-2">
+                        <span className="text-sm font-bold uppercase">Total Venta</span>
+                        <span className="text-sm font-black">$ {(total || 0).toLocaleString('es-CO')}</span>
                       </div>
+
+                      <div className="flex justify-between items-center text-slate-500 mb-2 mt-2 pt-2 border-t border-slate-200">
+                        <span className="text-sm font-bold uppercase">Pagado</span>
+                        <span className="text-sm font-bold">$ {(totalPaid || 0).toLocaleString('es-CO')}</span>
+                      </div>
+
                       {Math.abs(totalPaid - total) > 0.01 && (
                         <div className="flex justify-between items-center text-xs mt-1 pt-1 border-t border-slate-200">
                           <span className="font-bold text-amber-600">{totalPaid > total ? 'Exceso' : 'Pendiente'}</span>

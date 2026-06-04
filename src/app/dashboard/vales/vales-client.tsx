@@ -174,6 +174,9 @@ export function ValesClient({ initialVales, trabajadores, sucursales, sessionUse
         // Manejar formato YYYY-MM-DD puro sin T (común en base de datos y inputs)
         if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
           d = new Date(str + 'T00:00:00');
+        } else if (str.endsWith('T00:00:00.000Z') || str.endsWith('T00:00:00Z')) {
+          // Es una fecha sin hora en UTC, la tratamos como local para evitar desfases
+          d = new Date(str.substring(0, 10) + 'T00:00:00');
         } else if (str.includes(' ') && !str.includes('T')) {
           // Manejar "YYYY-MM-DD HH:mm:ss" convirtiéndolo a ISO
           d = new Date(str.replace(' ', 'T'));
@@ -431,7 +434,8 @@ export function ValesClient({ initialVales, trabajadores, sucursales, sessionUse
           <Table>
             <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50">
               <TableRow>
-                <TableHead>Fecha</TableHead>
+                <TableHead>Fecha Creación</TableHead>
+                <TableHead>Fecha Desembolso</TableHead>
                 <TableHead className="py-0 px-2">
                   <TableFilter
                     label="Trabajador"
@@ -478,6 +482,9 @@ export function ValesClient({ initialVales, trabajadores, sucursales, sessionUse
                   <TableRow key={vale.VL_IDVALE_PK}>
                     <TableCell className="font-medium text-xs text-slate-500">
                       {safeFormat(vale.VL_FECHA_CREACION, "dd/MM/yy")}
+                    </TableCell>
+                    <TableCell className="font-medium text-xs text-slate-500">
+                      {safeFormat(vale.VL_FECHA_DESEMBOLSO, "dd/MM/yy")}
                     </TableCell>
                     <TableCell>
                       <div className="font-medium text-slate-900 dark:text-slate-100">

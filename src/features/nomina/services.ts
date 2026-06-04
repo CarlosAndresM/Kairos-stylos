@@ -147,9 +147,13 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
     let granTotal = 0;
 
     for (const worker of workers) {
-      // 4.1. Calcular comisiones de servicios
+      // 4.1. Calcular comisiones de servicios (Descontando insumos asociados)
       const [services]: any = await (connection as any).execute(
-        `SELECT SUM(fd.FD_VALOR) as total 
+        `SELECT SUM((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((
+           SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) 
+           FROM KS_FACTURA_PRODUCTOS fp 
+           WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK
+         ), 0)) as total 
          FROM KS_FACTURA_DETALLES fd 
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
          WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?)
@@ -639,6 +643,31 @@ export async function getNominaAudit(workerId: number, startDate: Date, endDate:
 
       UNION ALL
 
+      -- INSUMOS DEDUCIDOS (Productos asociados al servicio)
+      SELECT 
+        f.FC_IDFACTURA_PK, 
+        f.FC_FECHA, 
+        'DEDUCCION_INSUMO' as PF_TIPO_ITEM, 
+        CONCAT('Descuento Insumo: ', p.PR_NOMBRE) as PF_DESCRIPCION, 
+        fp.FP_CANTIDAD as PF_CANTIDAD,
+        -(fp.FP_VALOR) as PF_VALOR_UNITARIO,
+        -(fp.FP_VALOR * fp.FP_CANTIDAD) as PF_TOTAL_ITEM, 
+        -((fp.FP_VALOR * fp.FP_CANTIDAD) * (? / 100)) as PF_COMISION_VALOR
+      FROM KS_FACTURA_PRODUCTOS fp
+      JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+      JOIN KS_PRODUCTOS p ON fp.PR_IDPRODUCTO_FK = p.PR_IDPRODUCTO_PK
+      WHERE fp.TR_IDTECNICO_FK = ? 
+      AND fp.FD_IDDETALLE_FK IS NOT NULL
+      AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?)
+      AND f.FC_ESTADO != 'CANCELADO'
+      AND NOT EXISTS (
+        SELECT 1 FROM KS_PAGOS_FACTURA pf
+        JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+        WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+      )
+
+      UNION ALL
+
       -- PRODUCTOS
       SELECT 
         f.FC_IDFACTURA_PK, 
@@ -662,7 +691,7 @@ export async function getNominaAudit(workerId: number, startDate: Date, endDate:
       )
 
       ORDER BY FC_FECHA DESC`,
-      [svcPercent, workerId, startDate, endDate, workerId, startDate, endDate]
+      [svcPercent, workerId, startDate, endDate, svcPercent, workerId, startDate, endDate, workerId, startDate, endDate]
     );
 
     const mapped = (rows || []).map((r: any) => ({
@@ -727,9 +756,13 @@ export async function liquidarTrabajadorPorRetiro(
     let comisionesProductos = 0;
 
     if (worker.RL_NOMBRE === 'TECNICO') {
-      // 3.1. Calcular comisiones de servicios en el periodo pendiente
+      // 3.1. Calcular comisiones de servicios en el periodo pendiente (Descontando insumos)
       const [services]: any = await (connection as any).execute(
-        `SELECT SUM(fd.FD_VALOR) as total 
+        `SELECT SUM((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((
+           SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) 
+           FROM KS_FACTURA_PRODUCTOS fp 
+           WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK
+         ), 0)) as total 
          FROM KS_FACTURA_DETALLES fd 
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
          WHERE fd.TR_IDTECNICO_FK = ? 

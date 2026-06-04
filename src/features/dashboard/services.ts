@@ -257,7 +257,7 @@ export async function getDashboardCharts(sucursalId: number, dateFrom: string, d
               (COALESCE(srv.total_servicios, 0) * (${svcPercent}/100) + COALESCE(prd.total_comision, 0)) as total_pagar
        FROM KS_TRABAJADORES t
        LEFT JOIN (
-           SELECT fd.TR_IDTECNICO_FK, COUNT(fd.FD_IDDETALLE_PK) as count, SUM(fd.FD_VALOR) as total_servicios
+           SELECT fd.TR_IDTECNICO_FK, COUNT(fd.FD_IDDETALLE_PK) as count, SUM((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) as total_servicios
            FROM KS_FACTURA_DETALLES fd
            JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
            WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
@@ -318,7 +318,7 @@ export async function getDashboardCharts(sucursalId: number, dateFrom: string, d
     const [globalMetrics]: any = await db.execute(
       `SELECT 
         (SELECT COALESCE(SUM(fp.FP_VALOR), 0) FROM KS_FACTURA_PRODUCTOS fp JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO' AND NOT EXISTS (SELECT 1 FROM KS_PAGOS_FACTURA pf JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR') ${sucursalFilter}) as total_productos_ventas,
-        (SELECT COALESCE(SUM(fd.FD_VALOR), 0) FROM KS_FACTURA_DETALLES fd JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO' AND NOT EXISTS (SELECT 1 FROM KS_PAGOS_FACTURA pf JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR') ${sucursalFilter}) as total_servicios_ventas,
+        (SELECT COALESCE(SUM((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)), 0) FROM KS_FACTURA_DETALLES fd JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO' AND NOT EXISTS (SELECT 1 FROM KS_PAGOS_FACTURA pf JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR') ${sucursalFilter}) as total_servicios_ventas,
         (SELECT COALESCE(SUM(fp.FP_COMISION_VALOR), 0) FROM KS_FACTURA_PRODUCTOS fp JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO' AND NOT EXISTS (SELECT 1 FROM KS_PAGOS_FACTURA pf JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR') ${sucursalFilter}) as comision_productos
       `,
       [...params, ...params, ...params]
@@ -517,10 +517,11 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
               t.TR_NOMBRE as tecnico_nombre,
               sv.SV_NOMBRE as item_nombre,
               'SERVICIO' as tipo_item,
-              fd.FD_VALOR as valor_total,
-              (fd.FD_VALOR * (${svcPercent} / 100)) as comision,
-              (fd.FD_VALOR - (fd.FD_VALOR * (${svcPercent} / 100))) as local_share,
-              NULL as servicio_relacionado,
+              fd.FD_CANTIDAD as cantidad,
+              ((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) as valor_total,
+              (((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) * (${svcPercent} / 100)) as comision,
+              (((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) - (((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) * (${svcPercent} / 100))) as local_share,
+              (SELECT GROUP_CONCAT(p.PR_NOMBRE SEPARATOR ', ') FROM KS_FACTURA_PRODUCTOS fp JOIN KS_PRODUCTOS p ON fp.PR_IDPRODUCTO_FK = p.PR_IDPRODUCTO_PK WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK) as servicio_relacionado,
               sc.SC_NOMBRE as sucursal_nombre
        FROM KS_FACTURA_DETALLES fd
        JOIN KS_SERVICIOS sv ON fd.SV_IDSERVICIO_FK = sv.SV_IDSERVICIO_PK
@@ -542,7 +543,8 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
               t.TR_NOMBRE as tecnico_nombre,
               p.PR_NOMBRE as item_nombre,
               'PRODUCTO' as tipo_item,
-              fp.FP_VALOR as valor_total,
+              fp.FP_CANTIDAD as cantidad,
+              (fp.FP_VALOR * fp.FP_CANTIDAD) as valor_total,
               fp.FP_COMISION_VALOR as comision,
               (fp.FP_VALOR - fp.FP_COMISION_VALOR) as local_share,
               sv.SV_NOMBRE as servicio_relacionado,
@@ -612,6 +614,7 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
         pagos: (pagos || []).map((p: any) => ({ ...p, PF_VALOR: Number(p.PF_VALOR || 0) })),
         serviciosDetalle: (serviciosDetalle || []).map((s: any) => ({ 
           ...s, 
+          cantidad: Number(s.cantidad || 1),
           valor_total: Number(s.valor_total || 0),
           comision: Number(s.comision || 0),
           local_share: Number(s.local_share || 0)
@@ -644,7 +647,7 @@ export async function getTechnicianStats(workerId: number, dateFrom: string, dat
 
     // 1. Total Services Value (Commissions potential)
     const [servicesResult]: any = await db.execute(
-      `SELECT SUM(fd.FD_VALOR) as total, COUNT(*) as count
+      `SELECT SUM((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) as total, COUNT(*) as count
         FROM KS_FACTURA_DETALLES fd
         JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
         WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
@@ -730,7 +733,7 @@ export async function getTechnicianStats(workerId: number, dateFrom: string, dat
 export async function getTechnicianCharts(workerId: number, dateFrom: string, dateTo: string): Promise<ApiResponse> {
   try {
     const [rows]: any = await db.execute(
-      `SELECT DATE(f.FC_FECHA) as date, SUM(fd.FD_VALOR) as total
+      `SELECT DATE(f.FC_FECHA) as date, SUM((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) as total
        FROM KS_FACTURA_DETALLES fd
        JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
        WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
@@ -763,8 +766,8 @@ export async function getTechnicianServices(workerId: number, dateFrom: string, 
     const [rows]: any = await db.execute(
       `SELECT f.FC_NUMERO_FACTURA, f.FC_FECHA, s.SV_NOMBRE as item_nombre, 'SERVICIO' as tipo,
               t.TR_NOMBRE as tecnico_nombre, sc.SC_NOMBRE as sucursal_nombre,
-              fd.FD_VALOR as valor, (fd.FD_VALOR * (${svcPercent} / 100)) as comision,
-              (fd.FD_VALOR - (fd.FD_VALOR * (${svcPercent} / 100))) as local_share,
+              ((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) as valor, (((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) * (${svcPercent} / 100)) as comision,
+              (((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) - (((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) * (${svcPercent} / 100))) as local_share,
               NULL as servicio_relacionado
        FROM KS_FACTURA_DETALLES fd
        JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK

@@ -753,8 +753,8 @@ export function DashboardClient() {
                                         <Card 
                                             className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden flex-1 cursor-pointer hover:border-[#00CED1]/50 transition-colors group flex flex-col justify-center relative"
                                             onClick={() => {
-                                                setDetailType('GLOBAL_SERVICIOS')
-                                                setDetailTitle('Todos los Servicios y Productos')
+                                                setDetailType('PRODUCTOS_VENDIDOS')
+                                                setDetailTitle('Productos y Consumos')
                                                 setIsDetailModalOpen(true)
                                                 if (!specificData) fetchSpecificData()
                                             }}
@@ -779,8 +779,8 @@ export function DashboardClient() {
                                             <Card 
                                             className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden flex-1 cursor-pointer hover:border-[#FF7E5F]/50 transition-colors group flex flex-col justify-center relative"
                                             onClick={() => {
-                                                setDetailType('GLOBAL_SERVICIOS')
-                                                setDetailTitle('Todos los Servicios y Productos')
+                                                setDetailType('COMISION_PRODUCTO')
+                                                setDetailTitle('Comisión por Productos')
                                                 setIsDetailModalOpen(true)
                                                 if (!specificData) fetchSpecificData()
                                             }}
@@ -804,8 +804,8 @@ export function DashboardClient() {
                                         <Card 
                                             className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden flex-1 cursor-pointer hover:border-[#FF7E5F]/50 transition-colors group flex flex-col justify-center relative"
                                             onClick={() => {
-                                                setDetailType('GLOBAL_SERVICIOS')
-                                                setDetailTitle('Todos los Servicios y Productos')
+                                                setDetailType('COMISION_SERVICIO')
+                                                setDetailTitle('Comisión por Servicios')
                                                 setIsDetailModalOpen(true)
                                                 if (!specificData) fetchSpecificData()
                                             }}
@@ -831,8 +831,8 @@ export function DashboardClient() {
                                         <Card 
                                             className="border border-slate-200 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden flex-1 cursor-pointer hover:border-emerald-500/50 transition-colors group flex flex-col justify-center relative"
                                             onClick={() => {
-                                                setDetailType('GLOBAL_SERVICIOS')
-                                                setDetailTitle('Todos los Servicios y Productos')
+                                                setDetailType('INGRESOS_LOCAL')
+                                                setDetailTitle('Ingresos Netos al Local')
                                                 setIsDetailModalOpen(true)
                                                 if (!specificData) fetchSpecificData()
                                             }}
@@ -1315,15 +1315,16 @@ export function DashboardClient() {
                                     <div className="flex-1 overflow-auto border border-slate-200 dark:border-slate-800 rounded-2xl max-h-[60vh] shadow-sm">
                                         <Table className="relative">
                                         <TableHeader>
-                                            {detailType === 'Técnico' || detailType === 'GLOBAL_SERVICIOS' ? (
+                                            {['Técnico', 'GLOBAL_SERVICIOS', 'PRODUCTOS_VENDIDOS', 'COMISION_PRODUCTO', 'COMISION_SERVICIO', 'INGRESOS_LOCAL'].includes(detailType) ? (
                                                 <TableRow className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-800 bg-slate-50/50">
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Factura</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Fecha</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Cliente</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Técnico</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Concepto</TableHead>
-                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Servicio Asociado</TableHead>
-                                                    <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Tipo</TableHead>
+                                                    {detailType === 'GLOBAL_SERVICIOS' || detailType === 'INGRESOS_LOCAL' ? (
+                                                        <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Tipo</TableHead>
+                                                    ) : null}
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 border border-slate-200">Sucursal</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right border border-slate-200">Total ($)</TableHead>
                                                     <TableHead className="font-bold text-xs uppercase text-slate-500 py-4 text-right border border-slate-200">Comisión ($)</TableHead>
@@ -1557,8 +1558,14 @@ export function DashboardClient() {
                                                 )
                                             })()}
 
-                                            {(detailType === 'Técnico' || detailType === 'GLOBAL_SERVICIOS') && (specificData?.serviciosDetalle || [])
-                                                .filter((s: any) => detailType === 'GLOBAL_SERVICIOS' || s.tecnico_nombre === detailTitle.replace('Servicios de ', ''))
+                                            {['Técnico', 'GLOBAL_SERVICIOS', 'PRODUCTOS_VENDIDOS', 'COMISION_PRODUCTO', 'COMISION_SERVICIO', 'INGRESOS_LOCAL'].includes(detailType) && (specificData?.serviciosDetalle || [])
+                                                .filter((s: any) => {
+                                                    if (detailType === 'GLOBAL_SERVICIOS' || detailType === 'INGRESOS_LOCAL') return true;
+                                                    if (detailType === 'Técnico') return s.tecnico_nombre === detailTitle.replace('Servicios de ', '');
+                                                    if (detailType === 'PRODUCTOS_VENDIDOS' || detailType === 'COMISION_PRODUCTO') return s.tipo_item === 'PRODUCTO';
+                                                    if (detailType === 'COMISION_SERVICIO') return s.tipo_item === 'SERVICIO';
+                                                    return false;
+                                                })
                                                 .map((s: any, idx: number) => (
                                                     <TableRow key={`tech-d-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
                                                         <TableCell className="font-bold text-sm py-4 uppercase border border-slate-100">{s.FC_NUMERO_FACTURA}</TableCell>
@@ -1566,15 +1573,16 @@ export function DashboardClient() {
                                                         <TableCell className="text-xs font-bold uppercase text-slate-700 border border-slate-100">{s.cliente_display || 'GENERAL'}</TableCell>
                                                         <TableCell className="text-xs font-black text-[#FF7E5F] uppercase border border-slate-100">{s.tecnico_nombre}</TableCell>
                                                         <TableCell className="text-xs font-bold text-slate-800 max-w-[200px] truncate border border-slate-100" title={s.item_nombre}>{s.item_nombre}</TableCell>
-                                                        <TableCell className="text-[10px] text-slate-500 border border-slate-100">{s.servicio_relacionado || '-'}</TableCell>
-                                                        <TableCell className="text-[10px] font-bold text-slate-500 tracking-wider border border-slate-100">
-                                                            <span className={cn(
-                                                                "px-2 py-0.5 rounded-full border",
-                                                                s.tipo_item === 'SERVICIO' ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"
-                                                            )}>
-                                                                {s.tipo_item}
-                                                            </span>
-                                                        </TableCell>
+                                                        {detailType === 'GLOBAL_SERVICIOS' || detailType === 'INGRESOS_LOCAL' ? (
+                                                            <TableCell className="text-[10px] font-bold text-slate-500 tracking-wider border border-slate-100">
+                                                                <span className={cn(
+                                                                    "px-2 py-0.5 rounded-full border",
+                                                                    s.tipo_item === 'SERVICIO' ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                                                )}>
+                                                                    {s.tipo_item}
+                                                                </span>
+                                                            </TableCell>
+                                                        ) : null}
                                                         <TableCell className="text-xs font-medium text-slate-500 uppercase border border-slate-100">{s.sucursal_nombre || '-'}</TableCell>
                                                         <TableCell className="text-right font-black text-sm text-slate-900 tabular-nums border border-slate-100">$ {(Number(s.valor_total) || 0).toLocaleString('es-CO')}</TableCell>
                                                         <TableCell className="text-right font-black text-sm text-[#FF7E5F] tabular-nums border border-slate-100">$ {(Number(s.comision) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}</TableCell>
