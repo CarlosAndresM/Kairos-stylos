@@ -200,7 +200,8 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
         total_caja: totalCaja,
         total_caja_count: totalCajaCount,
         total_gastos: totalGastosPeriodo,
-        total_caja_neto: totalCaja - totalGastosPeriodo,
+        total_efectivo_en_caja: ((metodos['EFECTIVO'] || 0) + totalAbonosRecibidos) - totalGastosPeriodo - totalValesCard,
+        ventas_neto: (((metodos['EFECTIVO'] || 0) + totalAbonosRecibidos) - totalGastosPeriodo - totalValesCard) + (metodos['TRANSFERENCIA'] || 0),
         metodos_pago: {
           ...metodos,
           'SERVICIO DE TRABAJADOR': totalServicioTrabajadorCard

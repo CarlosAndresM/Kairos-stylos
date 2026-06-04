@@ -560,146 +560,139 @@ export function DashboardClient() {
                         {/* Main Content Area */}
                         {viewMode === 'GENERAL' ? (
                             <div className="space-y-8 font-black">
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 mt-4">
-                                    {[
-                                        {
-                                            title: 'VENTAS',
-                                            value: `$ ${(stats?.ventas_total || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
-                                            sub: 'FACTURAS PAGADAS HOY',
-                                            icon: TrendingUp,
-                                            color: 'from-[#FF7E5F] to-[#FEB47B]',
-                                            count: stats?.ventas_count || 0
-                                        },
-                                        {
-                                            title: 'GASTOS',
-                                            value: `$ ${(stats?.total_gastos || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
-                                            sub: 'SALIDAS Y EGRESOS DEL PERIODO',
-                                            icon: TrendingDown,
-                                            color: 'from-rose-500 to-rose-400',
-                                            count: 0
-                                        },
-                                        {
-                                            title: 'SERVICIOS EN CURSO',
-                                            value: `$ ${(stats?.por_cobrar_total || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
-                                            sub: 'SERVICIOS PENDIENTES POR PAGAR',
-                                            icon: History,
-                                            color: 'from-amber-600 to-orange-400',
-                                            count: stats?.por_cobrar_count || 0
-                                        },
-                                        {
-                                            title: 'TOTAL EN CAJA',
-                                            value: `$ ${(stats?.total_caja_neto || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
-                                            sub: `BRUTO: $ ${(stats?.total_caja || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
-                                            icon: Wallet,
-                                            color: 'from-emerald-600 to-teal-500',
-                                            count: stats?.total_caja_count || 0
-                                        },
-                                        {
-                                            title: 'EFECTIVO',
-                                            value: `$ ${(stats?.metodos_pago?.['EFECTIVO'] || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
-                                            sub: 'SUMA DE VENTAS PAGADAS',
-                                            icon: DollarSign,
-                                            color: 'from-green-600 to-emerald-500',
-                                            count: stats?.metodos_count?.['EFECTIVO'] || 0
-                                        },
-                                        {
-                                            title: 'TRANSFERENCIA',
-                                            value: `$ ${(stats?.metodos_pago?.['TRANSFERENCIA'] || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
-                                            sub: 'NEQUI / DAVIPLATA / BANCOS',
-                                            icon: Landmark,
-                                            color: 'from-blue-600 to-cyan-500',
-                                            count: stats?.metodos_count?.['TRANSFERENCIA'] || 0
-                                        },
-                                        {
-                                            title: 'CREDITO',
-                                            value: `$ ${(stats?.metodos_pago?.['CREDITO'] || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
-                                            sub: 'DEUDA GENERADA HOY',
-                                            icon: History,
-                                            color: 'from-amber-600 to-orange-400',
-                                            count: stats?.metodos_count?.['CREDITO'] || 0
-                                        },
-                                        {
-                                            title: 'SERVICIO TRABAJADOR',
-                                            value: `$ ${(stats?.servicios_trabajador_total || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
-                                            sub: 'SERVICIOS ENTRE TÉCNICOS / VOUCHERS',
-                                            icon: Ticket,
-                                            color: 'from-slate-600 to-slate-450',
-                                            count: stats?.servicios_trabajador_count || 0
-                                        },
-                                        {
-                                            title: 'ABONO A DEUDAS',
-                                            value: `$ ${(stats?.total_abonos || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
-                                            sub: 'PAGOS A DEUDAS DE CLIENTES',
-                                            icon: History,
-                                            color: 'from-purple-600 to-indigo-500',
-                                            count: stats?.abonos_count || 0
-                                        },
-                                        {
-                                            title: 'VALES',
-                                            value: `$ ${(stats?.vales_total || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
-                                            sub: 'VALES DE TRABAJADOR HOY',
-                                            icon: Wallet,
-                                            color: 'from-orange-600 to-amber-500',
-                                            count: stats?.vales_count || 0
-                                        },
-                                        {
-                                            title: 'DATAFONO',
-                                            value: `$ ${(stats?.metodos_pago?.['DATAFONO'] || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
-                                            sub: 'TARJETAS DÉBITO / CRÉDITO',
-                                            icon: CreditCard,
-                                            color: 'from-indigo-600 to-violet-500',
-                                            count: stats?.metodos_count?.['DATAFONO'] || 0
-                                        },
-                                    ].filter(stat => stat.title !== 'DATAFONO').map((stat, i) => (
-                                        <Card
-                                            key={i}
-                                            className={cn(
-                                                "border border-slate-200 rounded-2xl shadow-sm overflow-hidden relative group transition-all hover:shadow-md cursor-pointer hover:ring-2 hover:ring-[#FF7E5F]/50",
-                                                "bg-white dark:bg-slate-900"
-                                            )}
-                                            onClick={() => {
-                                                setDetailType(stat.title)
-                                                setDetailTitle(stat.title)
-                                                setIsDetailModalOpen(true)
-                                            }}
-                                        >
-                                            <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${stat.color} opacity-[0.03] group-hover:opacity-[0.08] rounded-full -mr-12 -mt-12 transition-all duration-500 blur-xl group-hover:scale-150`} />
-                                            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 relative z-10">
-                                                <CardTitle className={cn(
-                                                    "font-bold uppercase tracking-widest",
-                                                    (stat.title === 'SERVICIO TRABAJADOR' || stat.title === 'VALES') ? "text-slate-900" : "text-slate-800 dark:text-slate-100",
-                                                    stat.title === 'VENTAS' ? "text-[13px]" : "text-[11px]"
-                                                )}>{stat.title}</CardTitle>
-                                                <div className="relative">
-                                                    <div className={cn(
-                                                        "p-2.5 rounded-xl shadow-lg bg-gradient-to-br",
-                                                        (stat.title === 'SERVICIO TRABAJADOR' || stat.title === 'VALES') ? "from-slate-900 to-slate-800 shadow-black/20" : stat.color + " shadow-coral-500/10"
-                                                    )}>
-                                                        <stat.icon className="text-white size-5" />
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 mt-4">
+                                    {/* Panel 1: Resumen Operativo */}
+                                    <Card className="border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col bg-white dark:bg-slate-900 hover:shadow-md transition-all">
+                                        <div className="p-4 bg-slate-50/50 border-b border-slate-100 shrink-0">
+                                            <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider">Resumen Operativo</h3>
+                                        </div>
+                                        <div className="flex-1 p-3 flex flex-col gap-2">
+                                            <div 
+                                                className="group cursor-pointer rounded-lg p-3 border border-slate-200 dark:border-slate-800 hover:border-[#FF7E5F]/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex flex-col gap-1"
+                                                onClick={() => { setDetailType('VENTAS'); setDetailTitle('VENTAS'); setIsDetailModalOpen(true); }}
+                                            >
+                                                <div className="flex justify-between items-center">
+                                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Facturas Pagadas</div>
+                                                    <div className="text-[10px] font-bold text-slate-400">{stats?.ventas_count || 0} Registros</div>
+                                                </div>
+                                                <div className="flex justify-between items-end gap-2 mt-1">
+                                                    <div className="text-xs font-black uppercase text-slate-900 dark:text-slate-100">Ventas</div>
+                                                    <div className="text-sm md:text-base font-black text-slate-900 dark:text-white truncate">$ {(stats?.ventas_total || 0).toLocaleString('es-CO')}</div>
+                                                </div>
+                                            </div>
+
+                                            <div 
+                                                className="group rounded-lg p-3 border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex flex-col gap-1"
+                                            >
+                                                <div className="flex justify-between items-center">
+                                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ingreso Real</div>
+                                                </div>
+                                                <div className="flex justify-between items-end gap-2 mt-1">
+                                                    <div className="text-xs font-black uppercase text-emerald-600 dark:text-emerald-500">Ventas Neto</div>
+                                                    <div className="text-sm md:text-base font-black text-emerald-600 dark:text-emerald-500 truncate">$ {(stats?.ventas_neto || 0).toLocaleString('es-CO')}</div>
+                                                </div>
+                                            </div>
+
+                                            <div 
+                                                className="group cursor-pointer rounded-lg p-3 border border-slate-200 dark:border-slate-800 hover:border-amber-500/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex flex-col gap-1 mt-auto"
+                                                onClick={() => { setDetailType('SERVICIOS EN CURSO'); setDetailTitle('SERVICIOS EN CURSO'); setIsDetailModalOpen(true); }}
+                                            >
+                                                <div className="flex justify-between items-center">
+                                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pendientes por Pagar</div>
+                                                    <div className="text-[10px] font-bold text-slate-400">{stats?.por_cobrar_count || 0} Registros</div>
+                                                </div>
+                                                <div className="flex justify-between items-end gap-2 mt-1">
+                                                    <div className="text-xs font-black uppercase text-slate-900 dark:text-slate-100">Servicios en Curso</div>
+                                                    <div className="text-sm md:text-base font-black text-slate-900 dark:text-white truncate">$ {(stats?.por_cobrar_total || 0).toLocaleString('es-CO')}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Card>
+
+                                    {/* Panel 2: Pagos Recibidos */}
+                                    <Card className="border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col bg-white dark:bg-slate-900 hover:shadow-md transition-all">
+                                        <div className="p-4 bg-slate-50/50 border-b border-slate-100 shrink-0">
+                                            <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider">Pagos Recibidos</h3>
+                                        </div>
+                                        <div className="flex-1 p-3 flex flex-col gap-2">
+                                            {[
+                                                { title: 'EFECTIVO', value: stats?.metodos_pago?.['EFECTIVO'] || 0, count: stats?.metodos_count?.['EFECTIVO'] || 0 },
+                                                { title: 'TRANSFERENCIA', value: stats?.metodos_pago?.['TRANSFERENCIA'] || 0, count: stats?.metodos_count?.['TRANSFERENCIA'] || 0 },
+                                                { title: 'CREDITO', value: stats?.metodos_pago?.['CREDITO'] || 0, count: stats?.metodos_count?.['CREDITO'] || 0 },
+                                                { title: 'SERVICIO TRABAJADOR', value: stats?.servicios_trabajador_total || 0, count: stats?.servicios_trabajador_count || 0 }
+                                            ].map((item, idx) => (
+                                                <div key={idx} 
+                                                    className="group cursor-pointer rounded-lg p-2.5 border border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex items-center justify-between"
+                                                    onClick={() => { setDetailType(item.title); setDetailTitle(item.title); setIsDetailModalOpen(true); }}
+                                                >
+                                                    <div className="flex flex-col">
+                                                        <div className="text-[11px] font-black uppercase text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{item.title}</div>
+                                                        <div className="text-[9px] font-bold text-slate-400">{item.count} Registros</div>
                                                     </div>
-                                                    {stat.count > 0 && (
-                                                        <div className="absolute -top-2.5 -right-2.5 bg-slate-900 text-white text-[11px] font-black size-6 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm animate-in zoom-in-50 duration-300">
-                                                            {stat.count}
-                                                        </div>
-                                                    )}
+                                                    <div className="text-[13px] font-black text-slate-900 dark:text-white">$ {item.value.toLocaleString('es-CO')}</div>
                                                 </div>
-                                            </CardHeader>
-                                            <CardContent className="relative z-10">
-                                                <div className={cn(
-                                                    "font-black leading-none tracking-tight whitespace-nowrap truncate",
-                                                    (stat.title === 'SERVICIO TRABAJADOR' || stat.title === 'VALES') ? "text-slate-900" : "text-slate-900 dark:text-white",
-                                                    "text-2xl xl:text-3xl"
-                                                )}>
-                                                    {stat.value}
+                                            ))}
+                                        </div>
+                                    </Card>
+
+                                    {/* Panel 3: Salidas y Egresos */}
+                                    <Card className="border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col bg-white dark:bg-slate-900 hover:shadow-md transition-all">
+                                        <div className="p-4 bg-slate-50/50 border-b border-slate-100 shrink-0">
+                                            <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider">Salidas y Egresos</h3>
+                                        </div>
+                                        <div className="flex-1 p-3 flex flex-col gap-2">
+                                            {[
+                                                { title: 'VALES', value: stats?.vales_total || 0, count: stats?.vales_count || 0 },
+                                                { title: 'ABONO A DEUDAS', value: stats?.total_abonos || 0, count: stats?.abonos_count || 0 },
+                                                { title: 'GASTOS', value: stats?.total_gastos || 0, count: 0 },
+                                            ].map((item, idx) => (
+                                                <div key={idx} 
+                                                    className="group cursor-pointer rounded-lg p-2.5 border border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex items-center justify-between"
+                                                    onClick={() => { setDetailType(item.title); setDetailTitle(item.title); setIsDetailModalOpen(true); }}
+                                                >
+                                                    <div className="flex flex-col">
+                                                        <div className="text-[11px] font-black uppercase text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{item.title}</div>
+                                                        {item.title !== 'GASTOS' && <div className="text-[9px] font-bold text-slate-400">{item.count} Registros</div>}
+                                                    </div>
+                                                    <div className="text-[13px] font-black text-slate-900 dark:text-white">$ {item.value.toLocaleString('es-CO')}</div>
                                                 </div>
-                                                <div className={cn(
-                                                    "text-[11px] font-semibold mt-2 uppercase leading-tight tracking-wide",
-                                                    (stat.title === 'SERVICIO TRABAJADOR' || stat.title === 'VALES') ? "text-slate-800/70" : "text-slate-500",
-                                                    stat.title === 'TOTAL EN CAJA' ? "text-slate-900 dark:text-white text-[12px]" : ""
-                                                )}>{stat.sub}</div>
-                                            </CardContent>
-                                        </Card>
-                                    ))}
+                                            ))}
+                                        </div>
+                                    </Card>
+
+                                    {/* Panel 4: Flujo de Caja */}
+                                    <Card className="border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col bg-white dark:bg-slate-900 hover:shadow-md transition-all">
+                                        <div className="p-4 bg-slate-50/50 border-b border-slate-100 shrink-0">
+                                            <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider">Flujo de Caja</h3>
+                                        </div>
+                                        <div className="flex-1 p-3 flex flex-col justify-between">
+                                            <div className="flex flex-col gap-1.5">
+                                                {[
+                                                    { label: 'Venta Total', value: stats?.ventas_total || 0, sign: '' },
+                                                    { label: 'Transferencia', value: stats?.metodos_pago?.['TRANSFERENCIA'] || 0, sign: '' },
+                                                    { label: 'Efectivo', value: (stats?.metodos_pago?.['EFECTIVO'] || 0) + (stats?.total_abonos || 0), sign: '+' },
+                                                    { label: 'Crédito', value: stats?.metodos_pago?.['CREDITO'] || 0, sign: '' },
+                                                    { label: 'Propina', value: 0, sign: '+' },
+                                                    { label: 'Gastos', value: stats?.total_gastos || 0, sign: '-' },
+                                                    { label: 'Vales', value: stats?.vales_total || 0, sign: '-' }
+                                                ].map((item, idx) => (
+                                                    <div key={idx} className="flex items-center justify-between">
+                                                        <span className="text-[11px] font-bold text-slate-500">{item.label}</span>
+                                                        <span className={`text-[12px] font-black ${item.sign === '-' ? 'text-rose-500' : item.sign === '+' ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                            {item.sign && `${item.sign} `}$ {item.value.toLocaleString('es-CO')}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            
+                                            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                                <div className="text-[10px] font-bold text-slate-400 mb-0.5">Total Efectivo en Caja</div>
+                                                <div className="text-2xl font-black text-emerald-600 tracking-tighter">
+                                                    $ {(stats?.total_efectivo_en_caja || 0).toLocaleString('es-CO')}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Card>
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 mt-4">
