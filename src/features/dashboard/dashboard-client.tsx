@@ -31,7 +31,9 @@ import {
     Ticket,
     UserPlus,
     DollarSign,
-    Trophy
+    Trophy,
+    Receipt,
+    FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -567,45 +569,32 @@ export function DashboardClient() {
                                             <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider">Resumen Operativo</h3>
                                         </div>
                                         <div className="flex-1 p-3 flex flex-col gap-2">
-                                            <div 
-                                                className="group cursor-pointer rounded-lg p-3 border border-slate-200 dark:border-slate-800 hover:border-[#FF7E5F]/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex flex-col gap-1"
-                                                onClick={() => { setDetailType('VENTAS'); setDetailTitle('VENTAS'); setIsDetailModalOpen(true); }}
-                                            >
-                                                <div className="flex justify-between items-center">
-                                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Facturas Pagadas</div>
-                                                    <div className="text-[10px] font-bold text-slate-400">{stats?.ventas_count || 0} Registros</div>
+                                            {[
+                                                { title: 'VENTAS', value: stats?.ventas_total || 0, count: stats?.ventas_count || 0, color: 'text-slate-900 dark:text-white', isNeto: false },
+                                                { title: 'VENTAS NETO', value: stats?.ventas_neto || 0, count: 0, color: 'text-emerald-600 dark:text-emerald-500', isNeto: true },
+                                                { title: 'SERVICIOS EN CURSO', value: stats?.por_cobrar_total || 0, count: stats?.por_cobrar_count || 0, color: 'text-slate-900 dark:text-white', isNeto: false },
+                                            ].map((item, idx) => (
+                                                <div key={idx} 
+                                                    className="group cursor-pointer rounded-lg p-2.5 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex items-center justify-between"
+                                                    onClick={() => { 
+                                                        setDetailType(item.title); 
+                                                        setDetailTitle(item.title); 
+                                                        setIsDetailModalOpen(true); 
+                                                    }}
+                                                >
+                                                    <div className="flex flex-col">
+                                                        <div className={`text-[11px] font-black uppercase ${item.isNeto ? item.color : 'text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white'} transition-colors`}>
+                                                            {item.title}
+                                                        </div>
+                                                        {!item.isNeto && (
+                                                            <div className="flex items-center justify-center w-fit min-w-[18px] h-[18px] px-1.5 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded font-black text-[10px] mt-0.5">
+                                                                {item.count}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className={`text-[13px] font-black ${item.color}`}>$ {item.value.toLocaleString('es-CO')}</div>
                                                 </div>
-                                                <div className="flex justify-between items-end gap-2 mt-1">
-                                                    <div className="text-xs font-black uppercase text-slate-900 dark:text-slate-100">Ventas</div>
-                                                    <div className="text-sm md:text-base font-black text-slate-900 dark:text-white truncate">$ {(stats?.ventas_total || 0).toLocaleString('es-CO')}</div>
-                                                </div>
-                                            </div>
-
-                                            <div 
-                                                className="group rounded-lg p-3 border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex flex-col gap-1"
-                                            >
-                                                <div className="flex justify-between items-center">
-                                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ingreso Real</div>
-                                                </div>
-                                                <div className="flex justify-between items-end gap-2 mt-1">
-                                                    <div className="text-xs font-black uppercase text-emerald-600 dark:text-emerald-500">Ventas Neto</div>
-                                                    <div className="text-sm md:text-base font-black text-emerald-600 dark:text-emerald-500 truncate">$ {(stats?.ventas_neto || 0).toLocaleString('es-CO')}</div>
-                                                </div>
-                                            </div>
-
-                                            <div 
-                                                className="group cursor-pointer rounded-lg p-3 border border-slate-200 dark:border-slate-800 hover:border-amber-500/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex flex-col gap-1 mt-auto"
-                                                onClick={() => { setDetailType('SERVICIOS EN CURSO'); setDetailTitle('SERVICIOS EN CURSO'); setIsDetailModalOpen(true); }}
-                                            >
-                                                <div className="flex justify-between items-center">
-                                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pendientes por Pagar</div>
-                                                    <div className="text-[10px] font-bold text-slate-400">{stats?.por_cobrar_count || 0} Registros</div>
-                                                </div>
-                                                <div className="flex justify-between items-end gap-2 mt-1">
-                                                    <div className="text-xs font-black uppercase text-slate-900 dark:text-slate-100">Servicios en Curso</div>
-                                                    <div className="text-sm md:text-base font-black text-slate-900 dark:text-white truncate">$ {(stats?.por_cobrar_total || 0).toLocaleString('es-CO')}</div>
-                                                </div>
-                                            </div>
+                                            ))}
                                         </div>
                                     </Card>
 
@@ -622,12 +611,14 @@ export function DashboardClient() {
                                                 { title: 'SERVICIO TRABAJADOR', value: stats?.servicios_trabajador_total || 0, count: stats?.servicios_trabajador_count || 0 }
                                             ].map((item, idx) => (
                                                 <div key={idx} 
-                                                    className="group cursor-pointer rounded-lg p-2.5 border border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex items-center justify-between"
+                                                    className="group cursor-pointer rounded-lg p-2.5 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex items-center justify-between"
                                                     onClick={() => { setDetailType(item.title); setDetailTitle(item.title); setIsDetailModalOpen(true); }}
                                                 >
                                                     <div className="flex flex-col">
                                                         <div className="text-[11px] font-black uppercase text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{item.title}</div>
-                                                        <div className="text-[9px] font-bold text-slate-400">{item.count} Registros</div>
+                                                        <div className="flex items-center justify-center w-fit min-w-[18px] h-[18px] px-1.5 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded font-black text-[10px] mt-0.5">
+                                                            {item.count}
+                                                        </div>
                                                     </div>
                                                     <div className="text-[13px] font-black text-slate-900 dark:text-white">$ {item.value.toLocaleString('es-CO')}</div>
                                                 </div>
@@ -644,15 +635,18 @@ export function DashboardClient() {
                                             {[
                                                 { title: 'VALES', value: stats?.vales_total || 0, count: stats?.vales_count || 0 },
                                                 { title: 'ABONO A DEUDAS', value: stats?.total_abonos || 0, count: stats?.abonos_count || 0 },
-                                                { title: 'GASTOS', value: stats?.total_gastos || 0, count: 0 },
+                                                { title: 'GARANTÍAS', value: stats?.garantias_total || 0, count: stats?.garantias_count || 0 },
+                                                { title: 'GASTOS', value: stats?.total_gastos || 0, count: stats?.gastos_count || 0 },
                                             ].map((item, idx) => (
                                                 <div key={idx} 
-                                                    className="group cursor-pointer rounded-lg p-2.5 border border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex items-center justify-between"
+                                                    className="group cursor-pointer rounded-lg p-2.5 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex items-center justify-between"
                                                     onClick={() => { setDetailType(item.title); setDetailTitle(item.title); setIsDetailModalOpen(true); }}
                                                 >
                                                     <div className="flex flex-col">
                                                         <div className="text-[11px] font-black uppercase text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{item.title}</div>
-                                                        {item.title !== 'GASTOS' && <div className="text-[9px] font-bold text-slate-400">{item.count} Registros</div>}
+                                                        <div className="flex items-center justify-center w-fit min-w-[18px] h-[18px] px-1.5 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded font-black text-[10px] mt-0.5">
+                                                            {item.count}
+                                                        </div>
                                                     </div>
                                                     <div className="text-[13px] font-black text-slate-900 dark:text-white">$ {item.value.toLocaleString('es-CO')}</div>
                                                 </div>
@@ -1305,8 +1299,42 @@ export function DashboardClient() {
                                 </DialogHeader>
 
                                 <div className="flex-1 p-6 overflow-hidden flex flex-col">
-                                    <div className="flex-1 overflow-auto border border-slate-200 dark:border-slate-800 rounded-2xl max-h-[60vh] shadow-sm">
-                                        <Table className="relative">
+                                    {detailType === 'VENTAS NETO' ? (
+                                        <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-800/30 rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
+                                            <div className="max-w-2xl mx-auto space-y-6">
+                                                <div className="text-center">
+                                                    <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Cálculo de Ventas Neto</h3>
+                                                    <p className="text-slate-500 text-sm mt-1">Este valor representa el dinero real generado por el local. Es el resultado de sumar todo el dinero que entró (físico o por bancos) y restarle las salidas de caja (gastos y vales).</p>
+                                                </div>
+                                                <div className="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col gap-3">
+                                                    <div className="flex justify-between items-center text-sm font-medium">
+                                                        <span className="text-slate-600 dark:text-slate-400">Efectivo Recibido (+ Abonos y Datáfono)</span>
+                                                        <span className="text-emerald-600 dark:text-emerald-500">+ $ {((stats?.metodos_pago?.['EFECTIVO'] || 0) + (stats?.total_abonos || 0) + (stats?.metodos_pago?.['DATAFONO'] || 0)).toLocaleString('es-CO')}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-sm font-medium">
+                                                        <span className="text-slate-600 dark:text-slate-400">Transferencias Bancarias</span>
+                                                        <span className="text-emerald-600 dark:text-emerald-500">+ $ {(stats?.metodos_pago?.['TRANSFERENCIA'] || 0).toLocaleString('es-CO')}</span>
+                                                    </div>
+                                                    <div className="h-px w-full bg-slate-100 dark:bg-slate-800 my-1"></div>
+                                                    <div className="flex justify-between items-center text-sm font-medium">
+                                                        <span className="text-slate-600 dark:text-slate-400">Gastos del Local</span>
+                                                        <span className="text-rose-500 dark:text-rose-400">- $ {(stats?.total_gastos || 0).toLocaleString('es-CO')}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-sm font-medium">
+                                                        <span className="text-slate-600 dark:text-slate-400">Vales (Adelantos)</span>
+                                                        <span className="text-rose-500 dark:text-rose-400">- $ {(stats?.vales_total || 0).toLocaleString('es-CO')}</span>
+                                                    </div>
+                                                    <div className="h-px w-full bg-slate-200 dark:bg-slate-700 my-2"></div>
+                                                    <div className="flex justify-between items-center text-base font-black">
+                                                        <span className="text-slate-800 dark:text-slate-100 uppercase tracking-widest">Total Ventas Neto</span>
+                                                        <span className="text-emerald-600 dark:text-emerald-500 text-lg">$ {(stats?.ventas_neto || 0).toLocaleString('es-CO')}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex-1 overflow-auto border border-slate-200 dark:border-slate-800 rounded-2xl max-h-[60vh] shadow-sm">
+                                            <Table className="relative">
                                         <TableHeader>
                                             {['Técnico', 'GLOBAL_SERVICIOS', 'PRODUCTOS_VENDIDOS', 'COMISION_PRODUCTO', 'COMISION_SERVICIO', 'INGRESOS_LOCAL'].includes(detailType) ? (
                                                 <TableRow className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-800 bg-slate-50/50">
@@ -1600,6 +1628,7 @@ export function DashboardClient() {
                                         </TableBody>
                                         </Table>
                                     </div>
+                                    )}
                                 </div>
 
                                 <DialogFooter className="p-4 bg-slate-50 border-t border-slate-200 shrink-0 flex justify-end">

@@ -210,17 +210,26 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
         }
       }
 
-      // 4.5. Calcular totales
+      // 4.5. Calcular deducciones por Garantías (Servicios malos que se cobraron en este periodo)
+      const [garantiasRegistros]: any = await (connection as any).execute(
+        `SELECT SUM(GA_VALOR) as total
+         FROM KS_GARANTIAS
+         WHERE TR_IDTECNICO_ORIGINAL_FK = ? AND DATE(GA_FECHA) BETWEEN DATE(?) AND DATE(?)`,
+         [worker.TR_IDTRABAJADOR_PK, data.startDate, data.endDate]
+      );
+      const garantiasDeduct = Number(garantiasRegistros[0].total || 0);
+
+      // 4.6. Calcular totales
       const totalEarnings = svcComm + prdComm;
       const basePay = 0; // Se elimina el sueldo base para técnicos
-      const netPay = basePay + totalEarnings - valesDeduct - valesTotalDeduct;
+      const netPay = basePay + totalEarnings - valesDeduct - valesTotalDeduct - garantiasDeduct;
 
-      // 4.6. Insertar detalle
+      // 4.7. Insertar detalle
       await (connection as any).execute(
         `INSERT INTO KS_NOMINA_DETALLES 
-         (NM_IDNOMINA_FK, TR_IDTRABAJADOR_FK, ND_BASE, ND_COMISIONES, ND_BONOS, ND_DEDUCCIONES_SERVICIOS_TRABAJADOR, ND_DEDUCCIONES_VALES, ND_TOTAL_NETO)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [nominaId, worker.TR_IDTRABAJADOR_PK, basePay, totalEarnings, 0, valesDeduct, valesTotalDeduct, netPay]
+         (NM_IDNOMINA_FK, TR_IDTRABAJADOR_FK, ND_BASE, ND_COMISIONES, ND_BONOS, ND_DEDUCCIONES_SERVICIOS_TRABAJADOR, ND_DEDUCCIONES_VALES, ND_DEDUCCIONES_GARANTIAS, ND_TOTAL_NETO)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [nominaId, worker.TR_IDTRABAJADOR_PK, basePay, totalEarnings, 0, valesDeduct, valesTotalDeduct, garantiasDeduct, netPay]
       );
 
       granTotal += netPay;

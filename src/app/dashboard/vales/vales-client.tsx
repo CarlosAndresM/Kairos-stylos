@@ -253,16 +253,19 @@ export function ValesClient({ initialVales, trabajadores, sucursales, sessionUse
     setIsCreateModalOpen(true);
   };
 
-  const handleOpenEdit = () => {
-    if (!selectedVale) return;
-    setMonto(selectedVale.VL_MONTO.toString());
-    setCuotas(selectedVale.VL_CUOTAS.toString());
-    setTrabajadorId(selectedVale.TR_IDTRABAJADOR_FK.toString());
-    setObservaciones(selectedVale.VL_OBSERVACIONES || '');
-    setSucursalId(selectedVale.SC_IDSUCURSAL_FK?.toString() || '');
-    setSelectedRole(selectedVale.RL_NOMBRE);
-    if (selectedVale.VL_FECHA_DESEMBOLSO) setFechaDesembolso(safeFormat(selectedVale.VL_FECHA_DESEMBOLSO, 'yyyy-MM-dd'));
-    if (selectedVale.VL_FECHA_INICIO_COBRO) setFechaInicioCobro(safeFormat(selectedVale.VL_FECHA_INICIO_COBRO, 'yyyy-MM-dd'));
+  const handleOpenEdit = (valeToEdit?: Vale) => {
+    const targetVale = valeToEdit || selectedVale;
+    if (!targetVale) return;
+    
+    setSelectedVale(targetVale);
+    setMonto(targetVale.VL_MONTO.toString());
+    setCuotas(targetVale.VL_CUOTAS.toString());
+    setTrabajadorId(targetVale.TR_IDTRABAJADOR_FK.toString());
+    setObservaciones(targetVale.VL_OBSERVACIONES || '');
+    setSucursalId(targetVale.SC_IDSUCURSAL_FK?.toString() || '');
+    setSelectedRole(targetVale.RL_NOMBRE);
+    if (targetVale.VL_FECHA_DESEMBOLSO) setFechaDesembolso(safeFormat(targetVale.VL_FECHA_DESEMBOLSO, 'yyyy-MM-dd'));
+    if (targetVale.VL_FECHA_INICIO_COBRO) setFechaInicioCobro(safeFormat(targetVale.VL_FECHA_INICIO_COBRO, 'yyyy-MM-dd'));
     setIsDetailsOpen(false);
     setIsCreateModalOpen(true);
   };
@@ -544,7 +547,7 @@ export function ValesClient({ initialVales, trabajadores, sucursales, sessionUse
 
                           {sessionUser?.role?.includes('ADMINISTRADOR') && vale.VL_CUOTAS_PAGADAS === 0 && vale.VL_ESTADO === 'PENDIENTE' && (
                             <DropdownMenuItem
-                              onClick={() => { setSelectedVale(vale); setIsDetailsOpen(false); handleOpenEdit(); }}
+                              onClick={() => handleOpenEdit(vale)}
                               className="rounded-lg gap-2 font-medium cursor-pointer"
                             >
                               <Edit2 className="size-3.5 text-slate-500" />

@@ -383,6 +383,7 @@ export default function NominaClient() {
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right border border-slate-200">Comisiones (Neto)</TableHead>
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right border border-slate-200">Servicio Trabajador</TableHead>
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right border border-slate-200">Vales</TableHead>
+                <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right border border-slate-200">Garantías</TableHead>
                 <TableHead className="font-bold text-slate-500 uppercase tracking-wider text-[10px] text-right px-6 border border-slate-200">Total a Pagar</TableHead>
                 <TableHead className="w-[80px] border border-slate-200"></TableHead>
               </TableRow>
@@ -400,6 +401,9 @@ export default function NominaClient() {
                     </TableCell>
                     <TableCell className="text-right font-medium text-xs text-orange-600 tracking-tighter border border-slate-200">
                       - $ {(item.ND_DEDUCCIONES_VALES || 0).toLocaleString('es-CO')}
+                    </TableCell>
+                    <TableCell className="text-right font-medium text-xs text-purple-600 tracking-tighter border border-slate-200">
+                      - $ {(item.ND_DEDUCCIONES_GARANTIAS || 0).toLocaleString('es-CO')}
                     </TableCell>
                     <TableCell className="text-right font-black text-sm text-slate-900 px-6 border border-slate-200">
                       $ {Math.max(0, Number(item.ND_TOTAL_NETO || 0)).toLocaleString('es-CO')}
@@ -427,7 +431,7 @@ export default function NominaClient() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center py-10 italic text-slate-400">
+                  <TableCell colSpan={7} className="h-64 text-center py-10 italic text-slate-400">
                     <div className="flex flex-col items-center justify-center text-slate-500">
                       <AlertCircle className="h-8 w-8 opacity-20 mb-2" />
                       {nominaBatch ? (

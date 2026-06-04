@@ -38,6 +38,10 @@ export const paymentDetailSchema = z.object({
   MP_IDMETODO_FK: z.number({ required_error: 'Seleccione un método de pago' }),
   PF_VALOR: z.coerce.number().min(0, 'El monto no puede ser negativo'),
   PF_EVIDENCIA_URL: z.string().optional().nullable(),
+  meta: z.object({
+    detalleOriginalId: z.number().optional().nullable(),
+    tecnicoOriginalId: z.number().optional().nullable(),
+  }).optional().nullable(),
 });
 
 // Esquema principal de la factura

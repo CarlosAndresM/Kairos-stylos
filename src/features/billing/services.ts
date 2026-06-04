@@ -27,6 +27,49 @@ export async function getWorkers(): Promise<ApiResponse> {
 }
 
 /**
+ * Buscar factura anterior para Garantía
+ */
+export async function searchOldInvoiceForWarranty(invoiceNumber: string): Promise<ApiResponse> {
+  try {
+    const [invoices]: any = await (db as any).execute(
+      `SELECT f.fc_idfactura_pk, f.fc_numero_factura, f.fc_fecha, COALESCE(f.fc_cliente_nombre, t.tr_nombre) as cliente_display 
+       FROM ks_facturas f
+       LEFT JOIN ks_trabajadores t ON f.tr_idcliente_fk = t.tr_idtrabajador_pk
+       WHERE f.fc_numero_factura LIKE ? OR COALESCE(f.fc_cliente_nombre, t.tr_nombre) LIKE ?
+       ORDER BY f.fc_fecha DESC
+       LIMIT 15`,
+       [`%${invoiceNumber}%`, `%${invoiceNumber}%`]
+    );
+    if (!invoices || invoices.length === 0) return { success: false, error: 'Factura no encontrada' };
+    
+    const invoiceIds = invoices.map((i: any) => i.fc_idfactura_pk);
+    let allServices: any[] = [];
+    if (invoiceIds.length > 0) {
+      const placeholders = invoiceIds.map(() => '?').join(',');
+      const [servicesResult]: any = await (db as any).execute(
+        `SELECT fd.fd_iddetalle_pk, s.sv_nombre, t.tr_nombre as tecnico_nombre, t.tr_idtrabajador_pk as tecnico_id, fd.fc_idfactura_fk
+         FROM ks_factura_detalles fd
+         JOIN ks_servicios s ON fd.sv_idservicio_fk = s.sv_idservicio_pk
+         JOIN ks_trabajadores t ON fd.tr_idtecnico_fk = t.tr_idtrabajador_pk
+         WHERE fd.fc_idfactura_fk IN (${placeholders})`,
+         invoiceIds
+      );
+      allServices = servicesResult;
+    }
+
+    const invoicesWithServices = invoices.map((inv: any) => ({
+      invoice: inv,
+      services: allServices.filter((s: any) => s.fc_idfactura_fk === inv.fc_idfactura_pk)
+    }));
+    
+    return { success: true, data: invoicesWithServices };
+  } catch (error) {
+    console.error("Error searching old invoice:", error);
+    return { success: false, error: 'Error al buscar factura' };
+  }
+}
+
+/**
  * Obtener una factura completa por su ID (incluyendo detalles y pagos)
  */
 export async function getInvoiceById(id: number): Promise<ApiResponse> {
@@ -65,13 +108,19 @@ export async function getInvoiceById(id: number): Promise<ApiResponse> {
     );
 
     const [payments]: any = await (db as any).execute(
-      "SELECT pf_valor, pf_evidencia_url, mp_idmetodo_fk FROM ks_pagos_factura WHERE fc_idfactura_fk = ?",
+      "SELECT pf.pf_valor, pf.pf_evidencia_url, pf.mp_idmetodo_fk, mp.mp_nombre FROM ks_pagos_factura pf JOIN ks_metodos_pago mp ON pf.mp_idmetodo_fk = mp.mp_idmetodo_pk WHERE pf.fc_idfactura_fk = ?",
       [id]
     );
 
     // Check if it's a worker service (voucher)
     const [serviciosRegistrados]: any = await (db as any).execute(
       "SELECT st_numero_cuotas as VL_NUMERO_CUOTAS, st_fecha_inicio_cobro as VL_FECHA_INICIO_COBRO FROM ks_servicios_trabajador WHERE fc_idfactura_fk = ?",
+      [id]
+    );
+
+    // Check if there is a Garantia associated with this invoice
+    const [garantias]: any = await (db as any).execute(
+      "SELECT fd_iddetalle_original_fk, tr_idtecnico_original_fk FROM ks_garantias WHERE fc_idfactura_nueva_fk = ?",
       [id]
     );
 
@@ -86,7 +135,23 @@ export async function getInvoiceById(id: number): Promise<ApiResponse> {
         FC_TOTAL: Number(invoice.fc_total || 0),
         services: (services || []).map((s: any) => ({ ...s, FD_VALOR: Number(s.fd_valor || 0) })),
         products: (products || []).map((p: any) => ({ ...p, FP_VALOR: Number(p.fp_valor || 0) })),
-        payments: (payments || []).map((p: any) => ({ ...p, PF_VALOR: Number(p.pf_valor || 0) })),
+        payments: (payments || []).map((p: any) => {
+          let meta = undefined;
+          const mpNombre = p.mp_nombre || p.MP_NOMBRE;
+          if (mpNombre && (mpNombre.toUpperCase() === 'GARANTIA' || mpNombre.toUpperCase() === 'GARANTÍA') && garantias && garantias.length > 0) {
+            meta = {
+              detalleOriginalId: garantias[0].fd_iddetalle_original_fk || garantias[0].FD_IDDETALLE_ORIGINAL_FK,
+              tecnicoOriginalId: garantias[0].tr_idtecnico_original_fk || garantias[0].TR_IDTECNICO_ORIGINAL_FK
+            };
+          }
+          return {
+            ...p,
+            PF_VALOR: Number(p.pf_valor || p.PF_VALOR || 0),
+            PF_EVIDENCIA_URL: p.pf_evidencia_url || p.PF_EVIDENCIA_URL,
+            MP_IDMETODO_FK: p.mp_idmetodo_fk || p.MP_IDMETODO_FK,
+            meta
+          };
+        }),
         esServicioTrabajador
       },
       error: null
@@ -219,6 +284,9 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
         await (connection as any).execute("DELETE FROM ks_creditos WHERE fc_idfactura_fk = ?", [invoiceId]);
       }
 
+      // Limpiar Garantías antiguas de esta factura
+      await (connection as any).execute("DELETE FROM ks_garantias WHERE fc_idfactura_nueva_fk = ?", [invoiceId]);
+
     } else {
       // INSERTAR NUEVA FACTURA
       const [invoiceResult]: any = await (connection as any).execute(
@@ -316,6 +384,16 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
             `INSERT INTO ks_pagos_factura (pf_valor, pf_evidencia_url, fc_idfactura_fk, mp_idmetodo_fk) 
              VALUES (?, ?, ?, ?)`,
             [payment.PF_VALOR, finalUrl || null, invoiceId, payment.MP_IDMETODO_FK]
+          );
+        }
+
+        // Si es Garantía, guardar la relación
+        const metodoGarantiaId = allMethods.find(m => m.mp_nombre.toUpperCase() === 'GARANTIA')?.mp_idmetodo_pk;
+        if (payment.MP_IDMETODO_FK === metodoGarantiaId && payment.meta?.detalleOriginalId && payment.meta?.tecnicoOriginalId) {
+          await (connection as any).execute(
+            `INSERT INTO ks_garantias (fc_idfactura_nueva_fk, fd_iddetalle_original_fk, tr_idtecnico_original_fk, ga_valor)
+             VALUES (?, ?, ?, ?)`,
+            [invoiceId, payment.meta.detalleOriginalId, payment.meta.tecnicoOriginalId, payment.PF_VALOR]
           );
         }
       }
@@ -437,6 +515,7 @@ export async function deleteInvoice(invoiceId: number): Promise<ApiResponse> {
 
   try {
     await connection.execute(`DELETE FROM ks_pagos_factura WHERE fc_idfactura_fk = ?`, [invoiceId]);
+    await connection.execute(`DELETE FROM ks_garantias WHERE fc_idfactura_nueva_fk = ?`, [invoiceId]);
     await connection.execute(`DELETE FROM ks_servicios_trabajador WHERE fc_idfactura_fk = ?`, [invoiceId]);
 
     const [oldCredits]: any = await (connection as any).execute("SELECT cr_idcredito_pk FROM ks_creditos WHERE fc_idfactura_fk = ?", [invoiceId]);

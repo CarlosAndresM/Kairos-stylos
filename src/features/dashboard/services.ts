@@ -159,8 +159,22 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
 
     const [prestamosLibreInversionResult]: any = await db.execute(prestamosQuery, prestamosParams);
 
+    // 7.5. Garantías (Periodo)
+    let garantiasQuery = `
+      SELECT SUM(g.GA_VALOR) as total, COUNT(*) as count
+      FROM KS_GARANTIAS g
+      JOIN KS_FACTURAS f ON g.FC_IDFACTURA_NUEVA_FK = f.FC_IDFACTURA_PK
+      WHERE DATE(g.GA_FECHA) BETWEEN ? AND ?
+    `;
+    const garantiasParams: any[] = [dateFrom, dateTo];
+    if (sucursalId !== -1) {
+        garantiasQuery += ` AND f.SC_IDSUCURSAL_FK = ?`;
+        garantiasParams.push(sucursalId);
+    }
+    const [garantiasResult]: any = await db.execute(garantiasQuery, garantiasParams);
+
     // 8. Gastos (Para afectar el Neto en Caja)
-    let gastosQuery = `SELECT COALESCE(SUM(GS_VALOR), 0) as total FROM KS_GASTOS WHERE DATE(GS_FECHA) BETWEEN ? AND ?`;
+    let gastosQuery = `SELECT COALESCE(SUM(GS_VALOR), 0) as total, COUNT(*) as count FROM KS_GASTOS WHERE DATE(GS_FECHA) BETWEEN ? AND ?`;
     const gastosParams: any[] = [dateFrom, dateTo];
     if (sucursalId !== -1) {
         gastosQuery += ` AND SC_IDSUCURSAL_FK = ?`;
@@ -168,6 +182,7 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
     }
     const [gastosResult]: any = await db.execute(gastosQuery, gastosParams);
     const totalGastosPeriodo = Number(gastosResult[0]?.total || 0);
+    const totalGastosCount = Number(gastosResult[0]?.count || 0);
 
     const totalVentasPagadas = Number(salesResult[0]?.total || 0);
     const totalAbonosRecibidos = Number(abonosResult[0]?.total || 0);
@@ -200,6 +215,7 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
         total_caja: totalCaja,
         total_caja_count: totalCajaCount,
         total_gastos: totalGastosPeriodo,
+        gastos_count: totalGastosCount,
         total_efectivo_en_caja: ((metodos['EFECTIVO'] || 0) + totalAbonosRecibidos) - totalGastosPeriodo - totalValesCard,
         ventas_neto: (((metodos['EFECTIVO'] || 0) + totalAbonosRecibidos) - totalGastosPeriodo - totalValesCard) + (metodos['TRANSFERENCIA'] || 0),
         metodos_pago: {
@@ -219,6 +235,8 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
         servicios_trabajador_count: totalServicioTrabajadorCount,
         vales_total: totalValesCard,
         vales_count: totalValesCount,
+        garantias_total: Number(garantiasResult[0]?.total || 0),
+        garantias_count: Number(garantiasResult[0]?.count || 0),
       },
       error: null
     };

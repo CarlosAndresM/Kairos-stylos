@@ -276,6 +276,7 @@ export const VolantePDF = ({ data, logoUrl, auditData = [] }: { data: any, logoU
   const deducciones = [
     { desc: 'Servicio Trabajador (Cuota)', val: Number(data.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) },
     { desc: 'Vales (Cuota)', val: Number(data.ND_DEDUCCIONES_VALES || 0) },
+    { desc: 'Garantías de Servicios', val: Number(data.ND_DEDUCCIONES_GARANTIAS || 0) },
   ].filter(i => i.val > 0);
 
   const totalDevengado = devengos.reduce((acc, curr) => acc + curr.val, 0);

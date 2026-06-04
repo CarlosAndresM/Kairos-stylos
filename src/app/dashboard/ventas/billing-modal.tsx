@@ -22,6 +22,7 @@ import { es } from 'date-fns/locale'
 import { v4 as uuidv4 } from 'uuid'
 import { getPeriodRange, formatPeriodRange } from '@/lib/date-utils'
 import { ProductAssociationModal } from '@/features/dashboard/product-association-modal'
+import { GarantiaModal } from '@/features/dashboard/garantia-modal'
 import {
   Dialog,
   DialogContent,
@@ -115,6 +116,9 @@ export function BillingModal({
   const [isProductModalOpen, setIsProductModalOpen] = React.useState(false)
   const [pendingInvoices, setPendingInvoices] = React.useState<any[]>([])
   const [manualEditData, setManualEditData] = React.useState<any>(null)
+  
+  const [isGarantiaModalOpen, setIsGarantiaModalOpen] = React.useState(false)
+  const [pendingGarantiaMethod, setPendingGarantiaMethod] = React.useState<any>(null)
 
 
   const isEditing = !!invoice
@@ -474,9 +478,15 @@ export function BillingModal({
   const handlePaymentToggle = (method: any, checked: boolean) => {
     const currentPayments = form.getValues("payments") || []
     const isValeMethod = method.MP_NOMBRE?.toUpperCase() === 'VALE' || method.MP_NOMBRE?.toUpperCase() === 'SERVICIO DE TRABAJADOR'
+    const isGarantiaMethod = method.MP_NOMBRE?.toUpperCase() === 'GARANTIA' || method.MP_NOMBRE?.toUpperCase() === 'GARANTÍA'
 
     if (checked) {
-      const currentPayments = form.getValues("payments") || []
+      if (isGarantiaMethod) {
+        setPendingGarantiaMethod(method)
+        setIsGarantiaModalOpen(true)
+        return
+      }
+
       const newPayments = [...currentPayments, { MP_IDMETODO_FK: method.MP_IDMETODO_PK, PF_VALOR: 0, PF_EVIDENCIA_URL: '' }]
 
       if (newPayments.length === 1) {
@@ -513,6 +523,28 @@ export function BillingModal({
     }
   }, [total, watchedPayments.length, form])
   */
+
+  const handleGarantiaSuccess = (data: { detalleOriginalId: number, tecnicoOriginalId: number }) => {
+    if (!pendingGarantiaMethod) return
+
+    const currentPayments = form.getValues("payments") || []
+    const newPayments = [...currentPayments, { 
+      MP_IDMETODO_FK: pendingGarantiaMethod.MP_IDMETODO_PK, 
+      PF_VALOR: 0, 
+      PF_EVIDENCIA_URL: '',
+      meta: {
+        detalleOriginalId: data.detalleOriginalId,
+        tecnicoOriginalId: data.tecnicoOriginalId
+      }
+    }]
+
+    if (newPayments.length === 1 && newPayments[0].PF_VALOR === 0) {
+      newPayments[0].PF_VALOR = total
+    }
+
+    form.setValue("payments", newPayments)
+    setPendingGarantiaMethod(null)
+  }
 
   // Limpiar VALE si cambia a CLIENTE
   React.useEffect(() => {
@@ -1308,6 +1340,15 @@ export function BillingModal({
         manualServices={form.watch('services')}
         initialInvoiceId={invoice?.FC_NUMERO_FACTURA?.toString()}
         editData={manualEditData}
+      />
+
+      <GarantiaModal 
+        isOpen={isGarantiaModalOpen}
+        onClose={() => {
+          setIsGarantiaModalOpen(false)
+          setPendingGarantiaMethod(null)
+        }}
+        onSuccess={handleGarantiaSuccess}
       />
     </Dialog>
   )
