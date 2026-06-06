@@ -425,9 +425,13 @@ export function BillingModal({
     }, 0)
   }, [watchedServices])
 
+  const pTotal = React.useMemo(() => {
+    return (watchedProducts || []).reduce((sum, p) => sum + ((Number(p.FP_VALOR) || 0) * (Number(p.FP_CANTIDAD) || 1)), 0)
+  }, [watchedProducts])
+
   const total = React.useMemo(() => {
-    return Math.max(0, sTotal - totalInsumos)
-  }, [sTotal, totalInsumos])
+    return Math.max(0, sTotal - totalInsumos) + pTotal
+  }, [sTotal, totalInsumos, pTotal])
 
   const totalPaid = React.useMemo(() => {
     return (watchedPayments || []).reduce((sum, p) => sum + (Number(p.PF_VALOR) || 0), 0)
