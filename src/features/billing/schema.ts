@@ -8,6 +8,7 @@ export const invoiceServiceSchema = z.object({
   TR_IDTECNICO_FK: z.number({ required_error: 'Seleccione un técnico' }),
   FD_VALOR: z.coerce.number().min(0, 'El valor no puede ser negativo'),
   FD_CANTIDAD: z.coerce.number().min(1).default(1),
+  FD_PROPINA: z.coerce.number().min(0, 'La propina no puede ser negativa').default(0),
   products: z.array(z.object({
     FP_IDFACTURA_PRODUCTO_PK: z.number().optional().nullable(),
     PR_IDPRODUCTO_FK: z.number({ required_error: 'Seleccione un producto' }),

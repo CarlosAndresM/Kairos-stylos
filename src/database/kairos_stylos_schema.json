@@ -1,6 +1,6 @@
 {
   "database": "kairos_stylos",
-  "schema_version": "035",
+  "schema_version": "037",
   "tables": [
     {
       "name": "KS_MIGRACIONES",
@@ -88,6 +88,7 @@
         { "name": "FD_IDDETALLE_PK", "type": "INT", "primaryKey": true, "autoIncrement": true },
         { "name": "FD_VALOR", "type": "DECIMAL(15,2)", "nullable": false },
         { "name": "FD_CANTIDAD", "type": "INT", "default": 1 },
+        { "name": "FD_PROPINA", "type": "DECIMAL(15,2)", "default": 0 },
         { "name": "FC_IDFACTURA_FK", "type": "INT", "nullable": false, "references": "KS_FACTURAS.FC_IDFACTURA_PK" },
         { "name": "SV_IDSERVICIO_FK", "type": "INT", "nullable": false, "references": "KS_SERVICIOS.SV_IDSERVICIO_PK" },
         { "name": "TR_IDTECNICO_FK", "type": "INT", "nullable": false, "references": "KS_TRABAJADORES.TR_IDTRABAJADOR_PK" }

@@ -92,7 +92,7 @@ export async function getInvoiceById(id: number): Promise<ApiResponse> {
 
     // Fetch details
     const [services]: any = await (db as any).execute(
-      `SELECT fd.fd_iddetalle_pk, fd.fd_valor, fd.fd_cantidad, fd.sv_idservicio_fk, fd.tr_idtecnico_fk, t.tr_nombre as tr_tecnico_nombre
+      `SELECT fd.fd_iddetalle_pk, fd.fd_valor, fd.fd_cantidad, fd.fd_propina, fd.sv_idservicio_fk, fd.tr_idtecnico_fk, t.tr_nombre as tr_tecnico_nombre
        FROM ks_factura_detalles fd
        LEFT JOIN ks_trabajadores t ON fd.tr_idtecnico_fk = t.tr_idtrabajador_pk
        WHERE fd.fc_idfactura_fk = ?`,
@@ -133,7 +133,7 @@ export async function getInvoiceById(id: number): Promise<ApiResponse> {
         ...invoice,
         ...infoServicio,
         FC_TOTAL: Number(invoice.fc_total || 0),
-        services: (services || []).map((s: any) => ({ ...s, FD_VALOR: Number(s.fd_valor || 0) })),
+        services: (services || []).map((s: any) => ({ ...s, FD_VALOR: Number(s.fd_valor || 0), FD_PROPINA: Number(s.fd_propina || 0) })),
         products: (products || []).map((p: any) => ({ ...p, FP_VALOR: Number(p.fp_valor || 0) })),
         payments: (payments || []).map((p: any) => {
           let meta = undefined;
@@ -316,9 +316,9 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
 
     for (const service of (data.services || [])) {
       const [serviceResult]: any = await (connection as any).execute(
-        `INSERT INTO ks_factura_detalles (fd_valor, fd_cantidad, fc_idfactura_fk, sv_idservicio_fk, tr_idtecnico_fk) 
-         VALUES (?, ?, ?, ?, ?)`,
-        [service.FD_VALOR, service.FD_CANTIDAD || 1, invoiceId, service.SV_IDSERVICIO_FK, service.TR_IDTECNICO_FK]
+        `INSERT INTO ks_factura_detalles (fd_valor, fd_cantidad, fd_propina, fc_idfactura_fk, sv_idservicio_fk, tr_idtecnico_fk) 
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [service.FD_VALOR, service.FD_CANTIDAD || 1, service.FD_PROPINA || 0, invoiceId, service.SV_IDSERVICIO_FK, service.TR_IDTECNICO_FK]
       );
       const serviceDetailId = serviceResult.insertId;
 

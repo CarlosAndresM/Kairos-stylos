@@ -137,7 +137,7 @@ export function BillingModal({
       FC_FECHA: new Date(),
       SC_IDSUCURSAL_FK: sessionUser?.branchId ?? undefined,
       TR_IDCAJERO_FK: sessionUser?.id ?? undefined,
-      services: [{ tempId: uuidv4(), SV_IDSERVICIO_FK: undefined as any, TR_IDTECNICO_FK: undefined as any, FD_VALOR: 0, FD_CANTIDAD: 1, products: [] }],
+      services: [{ tempId: uuidv4(), SV_IDSERVICIO_FK: undefined as any, TR_IDTECNICO_FK: undefined as any, FD_VALOR: 0, FD_CANTIDAD: 1, FD_PROPINA: 0, products: [] }],
       products: [],
       payments: [],
       FC_ESTADO: 'PENDIENTE',
@@ -248,6 +248,7 @@ export function BillingModal({
         ...s,
         tempId: s.tempId || uuidv4(),
         FD_CANTIDAD: s.FD_CANTIDAD || 1,
+        FD_PROPINA: s.FD_PROPINA || 0,
         products: serviceProds
       }
     })
@@ -429,9 +430,13 @@ export function BillingModal({
     return (watchedProducts || []).reduce((sum, p) => sum + ((Number(p.FP_VALOR) || 0) * (Number(p.FP_CANTIDAD) || 1)), 0)
   }, [watchedProducts])
 
+  const tTotal = React.useMemo(() => {
+    return (watchedServices || []).reduce((sum, s) => sum + (Number(s.FD_PROPINA) || 0), 0)
+  }, [watchedServices])
+
   const total = React.useMemo(() => {
-    return Math.max(0, sTotal - totalInsumos) + pTotal
-  }, [sTotal, totalInsumos, pTotal])
+    return Math.max(0, sTotal - totalInsumos) + pTotal + tTotal
+  }, [sTotal, totalInsumos, pTotal, tTotal])
 
   const totalPaid = React.useMemo(() => {
     return (watchedPayments || []).reduce((sum, p) => sum + (Number(p.PF_VALOR) || 0), 0)
@@ -988,6 +993,7 @@ export function BillingModal({
                           <th className="text-left text-[11px] font-bold uppercase text-slate-500 tracking-wider px-4 py-3 w-[25%]">Tecnico</th>
                           <th className="text-left text-[11px] font-bold uppercase text-slate-500 tracking-wider px-4 py-3">Productos</th>
                           <th className="text-right text-[11px] font-bold uppercase text-slate-500 tracking-wider px-4 py-3 w-[130px]">V. Unit</th>
+                          <th className="text-right text-[11px] font-bold uppercase text-slate-500 tracking-wider px-4 py-3 w-[130px]">Propina</th>
                           <th className="w-10 px-2 py-3"></th>
                         </tr>
                       </thead>
@@ -1066,6 +1072,18 @@ export function BillingModal({
                                 </FormItem>
                               )} />
                             </td>
+                            <td className="px-4 py-3 text-right">
+                              <FormField control={form.control} name={`services.${index}.FD_PROPINA`} render={({ field }) => (
+                                <FormItem className="space-y-0">
+                                  <FormControl>
+                                    <NumericFormat value={field.value} disabled={isPaid} onValueChange={(values) => { const v = values.floatValue ?? 0; if (v !== field.value) field.onChange(v) }}
+                                      thousandSeparator="." decimalSeparator="," prefix="$ " allowNegative={false} placeholder="$ 0"
+                                      className="w-24 h-9 bg-emerald-50/50 border border-emerald-200 rounded-md text-right text-sm text-emerald-900 px-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 disabled:bg-slate-50 disabled:text-slate-400 transition-colors" />
+                                  </FormControl>
+                                  <FormMessage className="text-[10px]" />
+                                </FormItem>
+                              )} />
+                            </td>
                             <td className="px-2 py-3">
                               {!isPaid && (
                                 <button type="button" onClick={() => removeService(index)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-400 hover:text-red-600 rounded">
@@ -1078,7 +1096,7 @@ export function BillingModal({
                       </tbody>
                       <tfoot className="border-t-2 border-slate-200 bg-slate-50 sticky bottom-0 z-10">
                         <tr className="bg-slate-100 border-t border-slate-200">
-                          <td colSpan={3} className="px-4 py-3 text-right text-sm font-black text-slate-700 uppercase tracking-wider">Total</td>
+                          <td colSpan={4} className="px-4 py-3 text-right text-sm font-black text-slate-700 uppercase tracking-wider">Total</td>
                           <td className="px-4 py-3 text-right">
                             <span className="text-xl font-black text-slate-900">$ {(sTotal || 0).toLocaleString('es-CO')}</span>
                           </td>

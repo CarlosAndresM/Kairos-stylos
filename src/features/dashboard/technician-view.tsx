@@ -134,11 +134,19 @@ export function TechnicianView({ user, dateFrom, dateTo }: TechnicianViewProps) 
                         count: 0
                     },
                     {
+                        title: 'Propinas Recibidas',
+                        value: `$${(stats?.propinas_total || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
+                        sub: `${stats?.propinas_count || 0} propinas`,
+                        icon: DollarSign,
+                        color: 'from-emerald-600 to-teal-500',
+                        count: stats?.propinas_count || 0
+                    },
+                    {
                         title: 'Ingresos al negocio',
                         value: `$${(stats?.business_income || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`,
                         sub: 'Total local',
                         icon: TrendingUp,
-                        color: 'from-emerald-600 to-teal-500',
+                        color: 'from-cyan-600 to-blue-500',
                         count: 0
                     },
                     {

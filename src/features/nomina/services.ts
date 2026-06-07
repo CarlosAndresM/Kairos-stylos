@@ -166,6 +166,7 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
         [worker.TR_IDTRABAJADOR_PK, data.startDate, data.endDate]
       );
       const svcTotal = Number(services[0].total || 0);
+      const svcPropinas = Number(services[0].propinas || 0);
       const svcComm = svcTotal * (config.NC_PORCENTAJE_SERVICIO / 100);
 
       // 4.2. Calcular comisiones de productos (Persistidas en la factura)
@@ -222,16 +223,16 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
       const garantiasDeduct = Number(garantiasRegistros[0].total || 0);
 
       // 4.6. Calcular totales
-      const totalEarnings = svcComm + prdComm;
+      const totalComisiones = svcComm + prdComm + svcPropinas;
       const basePay = 0; // Se elimina el sueldo base para técnicos
-      const netPay = basePay + totalEarnings - valesDeduct - valesTotalDeduct - garantiasDeduct;
+      const netPay = basePay + totalComisiones - valesDeduct - valesTotalDeduct - garantiasDeduct;
 
       // 4.7. Insertar detalle
       await (connection as any).execute(
         `INSERT INTO KS_NOMINA_DETALLES 
          (NM_IDNOMINA_FK, TR_IDTRABAJADOR_FK, ND_BASE, ND_COMISIONES, ND_BONOS, ND_DEDUCCIONES_SERVICIOS_TRABAJADOR, ND_DEDUCCIONES_VALES, ND_DEDUCCIONES_GARANTIAS, ND_TOTAL_NETO)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [nominaId, worker.TR_IDTRABAJADOR_PK, basePay, totalEarnings, 0, valesDeduct, valesTotalDeduct, garantiasDeduct, netPay]
+        [nominaId, worker.TR_IDTRABAJADOR_PK, basePay, totalComisiones, 0, valesDeduct, valesTotalDeduct, garantiasDeduct, netPay]
       );
 
       granTotal += netPay;
@@ -638,6 +639,7 @@ export async function getNominaAudit(workerId: number, startDate: Date, endDate:
         s.SV_NOMBRE as PF_DESCRIPCION, 
         fd.FD_CANTIDAD as PF_CANTIDAD,
         fd.FD_VALOR as PF_VALOR_UNITARIO,
+        fd.FD_PROPINA as PF_PROPINA,
         (fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0) as PF_TOTAL_ITEM, 
         ((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) * (? / 100) as PF_COMISION_VALOR
       FROM KS_FACTURA_DETALLES fd
@@ -661,6 +663,7 @@ export async function getNominaAudit(workerId: number, startDate: Date, endDate:
         p.PR_NOMBRE as PF_DESCRIPCION, 
         fp.FP_CANTIDAD as PF_CANTIDAD,
         fp.FP_VALOR as PF_VALOR_UNITARIO,
+        0 as PF_PROPINA,
         (fp.FP_VALOR * fp.FP_CANTIDAD) as PF_TOTAL_ITEM, 
         fp.FP_COMISION_VALOR as PF_COMISION_VALOR
       FROM KS_FACTURA_PRODUCTOS fp
@@ -748,7 +751,8 @@ export async function liquidarTrabajadorPorRetiro(
            SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) 
            FROM KS_FACTURA_PRODUCTOS fp 
            WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK
-         ), 0)) as total 
+         ), 0)) as total,
+         SUM(fd.FD_PROPINA) as propinas
          FROM KS_FACTURA_DETALLES fd 
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
          WHERE fd.TR_IDTECNICO_FK = ? 
@@ -762,7 +766,8 @@ export async function liquidarTrabajadorPorRetiro(
         [workerId, lastDate, fechaRetiro]
       );
       const svcTotal = Number(services[0].total || 0);
-      comisionesServicios = svcTotal * (svcPercent / 100);
+      const svcPropinas = Number(services[0].propinas || 0);
+      comisionesServicios = svcTotal * (svcPercent / 100) + svcPropinas;
 
       // 3.2. Calcular comisiones de productos
       const [products]: any = await (connection as any).execute(
@@ -783,7 +788,7 @@ export async function liquidarTrabajadorPorRetiro(
       comisionesProductos = Number(products[0].total || 0);
     }
 
-    const totalComisiones = comisionesServicios + comisionesProductos;
+    const totalComisiones = comisionesServicios + comisionesProductos + svcPropinas;
 
     // 4. Calcular el 100% de la deuda consolidada
     // 4.1. Saldo pendiente de vales
@@ -936,7 +941,8 @@ export async function previewLiquidadionRetiro(
     if (worker.RL_NOMBRE === 'TECNICO') {
       // 3.1. Calcular comisiones de servicios en el periodo pendiente
       const [services]: any = await db.execute(
-        `SELECT SUM((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) as total 
+        `SELECT SUM((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) as total,
+         SUM(fd.FD_PROPINA) as propinas
          FROM KS_FACTURA_DETALLES fd 
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
          WHERE fd.TR_IDTECNICO_FK = ? 
@@ -950,7 +956,8 @@ export async function previewLiquidadionRetiro(
         [workerId, lastDate, fechaRetiro]
       );
       const svcTotal = Number(services[0].total || 0);
-      comisionesServicios = svcTotal * (svcPercent / 100);
+      const svcPropinas = Number(services[0].propinas || 0);
+      comisionesServicios = svcTotal * (svcPercent / 100) + svcPropinas;
 
       // 3.2. Calcular comisiones de productos
       const [products]: any = await db.execute(

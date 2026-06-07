@@ -637,6 +637,7 @@ export function DashboardClient() {
                                                 { title: 'ABONO A DEUDAS', value: stats?.total_abonos || 0, count: stats?.abonos_count || 0 },
                                                 { title: 'GARANTÍAS', value: stats?.garantias_total || 0, count: stats?.garantias_count || 0 },
                                                 { title: 'GASTOS', value: stats?.total_gastos || 0, count: stats?.gastos_count || 0 },
+                                                { title: 'PROPINAS', value: stats?.propinas_total || 0, count: stats?.propinas_count || 0 },
                                             ].map((item, idx) => (
                                                 <div key={idx} 
                                                     className="group cursor-pointer rounded-lg p-2.5 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex items-center justify-between"
@@ -666,7 +667,7 @@ export function DashboardClient() {
                                                     { label: 'Transferencia', value: stats?.metodos_pago?.['TRANSFERENCIA'] || 0, sign: '' },
                                                     { label: 'Efectivo', value: (stats?.metodos_pago?.['EFECTIVO'] || 0) + (stats?.total_abonos || 0), sign: '+' },
                                                     { label: 'Crédito', value: stats?.metodos_pago?.['CREDITO'] || 0, sign: '' },
-                                                    { label: 'Propina', value: 0, sign: '+' },
+                                                    { label: 'Propina', value: stats?.propinas_total || 0, sign: '+' },
                                                     { label: 'Gastos', value: stats?.total_gastos || 0, sign: '-' },
                                                     { label: 'Vales', value: stats?.vales_total || 0, sign: '-' }
                                                 ].map((item, idx) => (
@@ -1451,6 +1452,24 @@ export function DashboardClient() {
                                                     ))}
                                                 </>
                                             )}
+
+                                            {detailType === 'PROPINAS' && (specificData?.propinas || []).map((p: any, idx: number) => (
+                                                <TableRow key={`propina-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">
+                                                    <TableCell className="font-bold text-sm py-4 uppercase text-emerald-600">{p.FC_NUMERO_FACTURA || 'S/N'}</TableCell>
+                                                    <TableCell className="text-xs font-medium text-slate-500 tabular-nums">{format(new Date(p.FC_FECHA), 'dd/MM/yyyy')}</TableCell>
+                                                    <TableCell className="text-xs font-bold uppercase text-slate-700">{p.cliente_display}</TableCell>
+                                                    <TableCell className="text-[11px] font-black text-emerald-600 uppercase italic max-w-[150px] truncate">{p.tecnico_nombre}</TableCell>
+                                                    <TableCell className="text-xs font-medium text-slate-500">Propina por: {p.servicio_nombre}</TableCell>
+                                                    <TableCell className="text-xs font-medium text-slate-400 italic"> - </TableCell>
+                                                    <TableCell className="text-xs font-medium text-slate-400 italic"> - </TableCell>
+                                                    <TableCell className="text-right font-black text-sm text-emerald-600">$ {(Number(p.FD_PROPINA) || 0).toLocaleString('es-CO')}</TableCell>
+                                                    <TableCell className="text-right p-0">
+                                                        <Button variant="ghost" size="icon" onClick={() => handleOpenInvoice({ FC_IDFACTURA_PK: p.FC_IDFACTURA_PK }, true)} className="size-10 hover:bg-slate-100 rounded-lg">
+                                                            <Eye className="size-5 text-slate-400 hover:text-slate-900" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
 
                                             {detailType === 'GASTOS' && (specificData?.gastos || []).map((g: any, idx: number) => (
                                                 <TableRow key={`gasto-${idx}`} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-950/50 transition-colors">

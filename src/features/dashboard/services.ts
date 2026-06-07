@@ -184,7 +184,23 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
     const totalGastosPeriodo = Number(gastosResult[0]?.total || 0);
     const totalGastosCount = Number(gastosResult[0]?.count || 0);
 
-    const totalVentasPagadas = Number(salesResult[0]?.total || 0);
+    // 9. Propinas (Restar del total del negocio)
+    let propinasQuery = `
+      SELECT COALESCE(SUM(fd.FD_PROPINA), 0) as total, COUNT(CASE WHEN fd.FD_PROPINA > 0 THEN 1 ELSE NULL END) as count
+      FROM KS_FACTURA_DETALLES fd
+      JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+      WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO'
+    `;
+    const propinasParams: any[] = [dateFrom, dateTo];
+    if (sucursalId !== -1) {
+        propinasQuery += ` AND f.SC_IDSUCURSAL_FK = ?`;
+        propinasParams.push(sucursalId);
+    }
+    const [propinasResult]: any = await db.execute(propinasQuery, propinasParams);
+    const totalPropinas = Number(propinasResult[0]?.total || 0);
+    const totalPropinasCount = Number(propinasResult[0]?.count || 0);
+
+    const totalVentasPagadas = Number(salesResult[0]?.total || 0) - totalPropinas;
     const totalAbonosRecibidos = Number(abonosResult[0]?.total || 0);
     const totalAbonosCount = Number(abonosResult[0]?.count || 0);
 
@@ -217,7 +233,7 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
         total_gastos: totalGastosPeriodo,
         gastos_count: totalGastosCount,
         total_efectivo_en_caja: ((metodos['EFECTIVO'] || 0) + totalAbonosRecibidos) - totalGastosPeriodo - totalValesCard,
-        ventas_neto: (((metodos['EFECTIVO'] || 0) + totalAbonosRecibidos) - totalGastosPeriodo - totalValesCard) + (metodos['TRANSFERENCIA'] || 0),
+        ventas_neto: (((metodos['EFECTIVO'] || 0) + totalAbonosRecibidos) - totalGastosPeriodo - totalValesCard) + (metodos['TRANSFERENCIA'] || 0) - totalPropinas,
         metodos_pago: {
           ...metodos,
           'SERVICIO DE TRABAJADOR': totalServicioTrabajadorCard
@@ -235,8 +251,12 @@ export async function getDashboardStats(sucursalId: number, dateFrom: string, da
         servicios_trabajador_count: totalServicioTrabajadorCount,
         vales_total: totalValesCard,
         vales_count: totalValesCount,
+        total_propinas: totalPropinas,
+        propinas_count: totalPropinasCount,
         garantias_total: Number(garantiasResult[0]?.total || 0),
         garantias_count: Number(garantiasResult[0]?.count || 0),
+        propinas_total: totalPropinas,
+        propinas_count: totalPropinasCount,
       },
       error: null
     };
@@ -622,6 +642,26 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
     gastosQuery += " ORDER BY g.GS_FECHA DESC";
     const [gastos]: any = await db.execute(gastosQuery, gastosParams);
 
+    // 11. Propinas detalladas
+    let propinasQuery = `
+      SELECT fd.FD_IDDETALLE_PK, fd.FD_PROPINA, f.FC_NUMERO_FACTURA, f.FC_FECHA, f.FC_IDFACTURA_PK,
+      COALESCE(f.FC_CLIENTE_NOMBRE, tc.TR_NOMBRE) as cliente_display,
+      t.TR_NOMBRE as tecnico_nombre, sv.SV_NOMBRE as servicio_nombre
+      FROM KS_FACTURA_DETALLES fd
+      JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+      JOIN KS_TRABAJADORES t ON fd.TR_IDTECNICO_FK = t.TR_IDTRABAJADOR_PK
+      JOIN KS_SERVICIOS sv ON fd.SV_IDSERVICIO_FK = sv.SV_IDSERVICIO_PK
+      LEFT JOIN KS_TRABAJADORES tc ON f.TR_IDCLIENTE_FK = tc.TR_IDTRABAJADOR_PK
+      WHERE DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO' AND fd.FD_PROPINA > 0
+    `;
+    const propinasParams: any[] = [dateFrom, dateTo];
+    if (sucursalId !== -1) {
+      propinasQuery += " AND f.SC_IDSUCURSAL_FK = ?";
+      propinasParams.push(sucursalId);
+    }
+    propinasQuery += " ORDER BY f.FC_FECHA DESC";
+    const [propinasDetalle]: any = await db.execute(propinasQuery, propinasParams);
+
     return {
       success: true,
       data: {
@@ -644,7 +684,8 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
           FC_IDFACTURA_FK: s.FC_IDFACTURA_FK || s.fc_idfactura_fk // Unify casing for frontend filter
         })),
         gastos: (gastos || []).map((g: any) => ({ ...g, GS_VALOR: Number(g.GS_VALOR || 0) })),
-        adelantos: (valesRegistros || []).map((v: any) => ({ ...v, VL_MONTO: Number(v.VL_MONTO || 0) }))
+        adelantos: (valesRegistros || []).map((v: any) => ({ ...v, VL_MONTO: Number(v.VL_MONTO || 0) })),
+        propinas: (propinasDetalle || []).map((p: any) => ({ ...p, FD_PROPINA: Number(p.FD_PROPINA || 0) }))
       },
       error: null
     };
@@ -707,8 +748,24 @@ export async function getTechnicianStats(workerId: number, dateFrom: string, dat
 
     const serviceCommissionTotal = Number(servicesResult[0]?.total || 0) * (svcPercent / 100);
     const productCommissionTotal = Number(productCommissionResult[0]?.total || 0);
-    const technicianPayment = serviceCommissionTotal + productCommissionTotal;
-    const businessIncome = Number(servicesResult[0]?.total || 0) + Number(productsResult[0]?.total || 0) - technicianPayment;
+    
+    // Propinas Totales
+    const [propinasResult]: any = await db.execute(
+      `SELECT SUM(fd.FD_PROPINA) as total, COUNT(NULLIF(fd.FD_PROPINA, 0)) as count
+        FROM KS_FACTURA_DETALLES fd
+        JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+        WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN ? AND ? AND f.FC_ESTADO = 'PAGADO' AND fd.FD_PROPINA > 0
+        AND NOT EXISTS (
+          SELECT 1 FROM KS_PAGOS_FACTURA pf
+          JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+          WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+        )`,
+      params
+    );
+
+    const propinasTotal = Number(propinasResult[0]?.total || 0);
+    const technicianPayment = serviceCommissionTotal + productCommissionTotal + propinasTotal;
+    const businessIncome = Number(servicesResult[0]?.total || 0) + Number(productsResult[0]?.total || 0) - (serviceCommissionTotal + productCommissionTotal);
 
     // 3. Vales Pendientes (Servicios de Trabajador)
     const [valesResult]: any = await db.execute(
@@ -734,6 +791,8 @@ export async function getTechnicianStats(workerId: number, dateFrom: string, dat
         services_count: Number(servicesResult[0]?.count || 0),
         products_total: Number(productsResult[0]?.total || 0),
         products_count: Number(productsResult[0]?.count || 0),
+        propinas_total: propinasTotal,
+        propinas_count: Number(propinasResult[0]?.count || 0),
         product_commission_total: productCommissionTotal,
         technician_payment: technicianPayment,
         business_income: businessIncome,

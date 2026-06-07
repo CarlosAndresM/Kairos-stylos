@@ -30,7 +30,8 @@ export function VolantePago({ data, auditData = [] }: { data: any, auditData?: a
 
   const statsSvc = {
     count: finalSvc.reduce((acc, curr) => acc + Number(curr.PF_CANTIDAD || 0), 0),
-    total: finalSvc.reduce((acc, curr) => acc + Number(curr.PF_COMISION_VALOR || 0), 0)
+    total: finalSvc.reduce((acc, curr) => acc + Number(curr.PF_COMISION_VALOR || 0), 0),
+    propinas: finalSvc.reduce((acc, curr) => acc + Number(curr.PF_PROPINA || 0), 0)
   };
 
   const statsPrd = {
@@ -42,8 +43,9 @@ export function VolantePago({ data, auditData = [] }: { data: any, auditData?: a
     { desc: 'Sueldo Base', val: Number(data.ND_BASE || 0) },
     { desc: 'Comisiones Servicios', val: statsSvc.total, count: statsSvc.count },
     { desc: 'Comisiones Productos', val: statsPrd.total, count: statsPrd.count },
+    { desc: 'Propinas Recibidas', val: statsSvc.propinas },
     { desc: 'Bonificaciones / Otros', val: Number(data.ND_BONOS || 0) },
-  ].filter(i => i.val > 0 || i.count > 0);
+  ].filter(i => i.val > 0 || (i.count !== undefined && i.count > 0));
 
   const deducciones = [
     { desc: 'Servicio Trabajador (Cuota)', val: Number(data.ND_DEDUCCIONES_SERVICIOS_TRABAJADOR || 0) },
