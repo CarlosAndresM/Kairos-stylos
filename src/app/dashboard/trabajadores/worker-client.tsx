@@ -20,6 +20,7 @@ import { saveTrabajador, toggleWorkerStatus, deleteWorker } from '@/features/tra
 import { WorkerModal } from '@/app/dashboard/trabajadores/worker-modal'
 import { DeleteConfirmModal } from '@/app/dashboard/trabajadores/delete-confirm-modal'
 import { RetirementModal } from '@/app/dashboard/trabajadores/retirement-modal'
+import { IndividualSettlementModal } from '@/app/dashboard/trabajadores/individual-settlement-modal'
 import { toast } from '@/lib/toast-helper'
 import { LoadingGate } from '@/components/ui/loading-gate'
 import { NumericFormat } from 'react-number-format'
@@ -50,6 +51,8 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
   const [workerToDelete, setWorkerToDelete] = React.useState<WorkerWithStats | null>(null)
   const [isRetireModalOpen, setIsRetireModalOpen] = React.useState(false)
   const [workerToRetire, setWorkerToRetire] = React.useState<WorkerWithStats | null>(null)
+  const [isIndividualModalOpen, setIsIndividualModalOpen] = React.useState(false)
+  const [workerToSettleIndividual, setWorkerToSettleIndividual] = React.useState<WorkerWithStats | null>(null)
 
   const [activeFilters, setActiveFilters] = React.useState<{ [key: string]: string[] }>({})
 
@@ -329,17 +332,31 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                           </DropdownMenuItem>
 
                           {worker.TR_ACTIVO && (
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setWorkerToRetire(worker)
-                                setIsRetireModalOpen(true)
-                              }}
-                              disabled={!canManageWorkers}
-                              className="gap-2 rounded-lg font-medium text-xs text-orange-600 dark:text-orange-400 cursor-pointer"
-                            >
-                              <Wallet className="size-3.5" />
-                              Liquidar por Retiro
-                            </DropdownMenuItem>
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setWorkerToSettleIndividual(worker)
+                                  setIsIndividualModalOpen(true)
+                                }}
+                                disabled={!canManageWorkers}
+                                className="gap-2 rounded-lg font-medium text-xs text-emerald-600 dark:text-emerald-400 cursor-pointer"
+                              >
+                                <DollarSign className="size-3.5" />
+                                Liquidación Individual
+                              </DropdownMenuItem>
+
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setWorkerToRetire(worker)
+                                  setIsRetireModalOpen(true)
+                                }}
+                                disabled={!canManageWorkers}
+                                className="gap-2 rounded-lg font-medium text-xs text-orange-600 dark:text-orange-400 cursor-pointer"
+                              >
+                                <Wallet className="size-3.5" />
+                                Liquidar por Retiro
+                              </DropdownMenuItem>
+                            </>
                           )}
 
                           <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800 my-1" />
@@ -401,6 +418,22 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
             workerId={workerToRetire.TR_IDTRABAJADOR_PK}
             workerName={workerToRetire.TR_NOMBRE}
             workerRole={workerToRetire.RL_NOMBRE}
+          />
+        )}
+
+        {workerToSettleIndividual && (
+          <IndividualSettlementModal
+            isOpen={isIndividualModalOpen}
+            onClose={() => {
+              setIsIndividualModalOpen(false)
+              setWorkerToSettleIndividual(null)
+            }}
+            onSuccess={() => {
+              window.location.reload()
+            }}
+            workerId={workerToSettleIndividual.TR_IDTRABAJADOR_PK}
+            workerName={workerToSettleIndividual.TR_NOMBRE}
+            workerRole={workerToSettleIndividual.RL_NOMBRE}
           />
         )}
       </div>

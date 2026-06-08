@@ -147,23 +147,39 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
     let granTotal = 0;
 
     for (const worker of workers) {
+      // 4.0 Determinar fecha de inicio individual (Opción A)
+      const [lastNom]: any = await (connection as any).execute(
+        `SELECT MAX(n.NM_FECHA_FIN) as last_date
+         FROM KS_NOMINAS n
+         JOIN KS_NOMINA_DETALLES nd ON n.NM_IDNOMINA_PK = nd.NM_IDNOMINA_FK
+         WHERE nd.TR_IDTRABAJADOR_FK = ? AND n.NM_ESTADO = 'CONFIRMADA'`,
+        [worker.TR_IDTRABAJADOR_PK]
+      );
+      
+      const lastDate = lastNom[0]?.last_date ? new Date(lastNom[0].last_date) : null;
+      const loteStartMinus1 = new Date(data.startDate);
+      loteStartMinus1.setDate(loteStartMinus1.getDate() - 1);
+      
+      const effectiveLastDate = (lastDate && lastDate >= data.startDate) ? lastDate : loteStartMinus1;
+
       // 4.1. Calcular comisiones de servicios (Descontando insumos asociados)
       const [services]: any = await (connection as any).execute(
         `SELECT SUM((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((
            SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) 
            FROM KS_FACTURA_PRODUCTOS fp 
            WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK
-         ), 0)) as total 
+         ), 0)) as total,
+         SUM(fd.FD_PROPINA) as propinas
          FROM KS_FACTURA_DETALLES fd 
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
-         WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?)
+         WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
          AND f.FC_ESTADO != 'CANCELADO'
          AND NOT EXISTS (
            SELECT 1 FROM KS_PAGOS_FACTURA pf
            JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
            WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
          )`,
-        [worker.TR_IDTRABAJADOR_PK, data.startDate, data.endDate]
+        [worker.TR_IDTRABAJADOR_PK, effectiveLastDate, data.endDate]
       );
       const svcTotal = Number(services[0].total || 0);
       const svcPropinas = Number(services[0].propinas || 0);
@@ -174,14 +190,14 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
         `SELECT SUM(fp.FP_COMISION_VALOR) as total 
          FROM KS_FACTURA_PRODUCTOS fp
          JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
-         WHERE fp.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?) AND f.FC_ESTADO = 'PAGADO'
+         WHERE fp.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?) AND f.FC_ESTADO = 'PAGADO'
          AND fp.FD_IDDETALLE_FK IS NULL
          AND NOT EXISTS (
            SELECT 1 FROM KS_PAGOS_FACTURA pf
            JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
            WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
          )`,
-        [worker.TR_IDTRABAJADOR_PK, data.startDate, data.endDate]
+        [worker.TR_IDTRABAJADOR_PK, effectiveLastDate, data.endDate]
       );
       const prdComm = Number(products[0].total || 0);
 
@@ -190,8 +206,8 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
         `SELECT SUM(STC_VALOR_CUOTA) as total 
          FROM KS_SERVICIO_TRABAJADOR_CUOTAS stc
          JOIN KS_SERVICIOS_TRABAJADOR st ON stc.ST_IDSERVICIO_TRABAJADOR_FK = st.ST_IDSERVICIO_TRABAJADOR_PK
-         WHERE st.TR_IDTRABAJADOR_FK = ? AND stc.STC_ESTADO = 'PENDIENTE' AND DATE(stc.STC_FECHA_COBRO) BETWEEN DATE(?) AND DATE(?)`,
-        [worker.TR_IDTRABAJADOR_PK, data.startDate, data.endDate]
+         WHERE st.TR_IDTRABAJADOR_FK = ? AND stc.STC_ESTADO = 'PENDIENTE' AND DATE(stc.STC_FECHA_COBRO) > DATE(?) AND DATE(stc.STC_FECHA_COBRO) <= DATE(?)`,
+        [worker.TR_IDTRABAJADOR_PK, effectiveLastDate, data.endDate]
       );
       const valesDeduct = Number(vales[0].total || 0);
 
@@ -217,8 +233,8 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
       const [garantiasRegistros]: any = await (connection as any).execute(
         `SELECT SUM(GA_VALOR) as total
          FROM KS_GARANTIAS
-         WHERE TR_IDTECNICO_ORIGINAL_FK = ? AND DATE(GA_FECHA) BETWEEN DATE(?) AND DATE(?)`,
-         [worker.TR_IDTRABAJADOR_PK, data.startDate, data.endDate]
+         WHERE TR_IDTECNICO_ORIGINAL_FK = ? AND DATE(GA_FECHA) > DATE(?) AND DATE(GA_FECHA) <= DATE(?)`,
+         [worker.TR_IDTRABAJADOR_PK, effectiveLastDate, data.endDate]
       );
       const garantiasDeduct = Number(garantiasRegistros[0].total || 0);
 
@@ -621,14 +637,14 @@ export async function getPayrollWorkers(role: string = 'TECNICO'): Promise<ApiRe
  */
 export async function getNominaAudit(workerId: number, startDate: Date, endDate: Date): Promise<ApiResponse> {
   try {
-    // 1. Obtener configuración de servicios para el cálculo (simplificado: usamos la actual o la que aplique al periodo)
-    const [configs]: any = await db.query(
-      "SELECT NC_PORCENTAJE_SERVICIO FROM KS_NOMINA_CONFIG WHERE NC_FECHA_INICIO <= ? ORDER BY NC_FECHA_INICIO DESC LIMIT 1",
-      [endDate]
-    );
-    const svcPercent = Number(configs[0]?.NC_PORCENTAJE_SERVICIO || 0);
+    const configRes = await getConfigForDate(endDate);
+    const svcPercent = configRes.success && configRes.data ? Number(configRes.data.NC_PORCENTAJE_SERVICIO) : 50;
 
-    // 2. Query UNION para servicios y productos
+    // FIX: Use exact same logic as calculations to avoid missing hours/services
+    // We use > startDate and <= endDate. To make BETWEEN work the same, we add 1 day to startDate if we want strict greater than, 
+    // BUT since FC_FECHA has times, > DATE(startDate) means anything from startDate 00:00:01 if we are not careful.
+    // The calculation uses: AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
+    
     const [rows]: any = await db.query(
       `
       -- SERVICIOS
@@ -646,7 +662,7 @@ export async function getNominaAudit(workerId: number, startDate: Date, endDate:
       JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
       JOIN KS_SERVICIOS s ON fd.SV_IDSERVICIO_FK = s.SV_IDSERVICIO_PK
       WHERE fd.TR_IDTECNICO_FK = ? 
-      AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?)
+      AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
       AND f.FC_ESTADO != 'CANCELADO'
       AND NOT EXISTS (
         SELECT 1 FROM KS_PAGOS_FACTURA pf
@@ -654,6 +670,7 @@ export async function getNominaAudit(workerId: number, startDate: Date, endDate:
         WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
       )
 
+      UNION ALL
 
       -- PRODUCTOS
       SELECT 
@@ -671,14 +688,13 @@ export async function getNominaAudit(workerId: number, startDate: Date, endDate:
       JOIN KS_PRODUCTOS p ON fp.PR_IDPRODUCTO_FK = p.PR_IDPRODUCTO_PK
       WHERE fp.TR_IDTECNICO_FK = ? 
       AND fp.FD_IDDETALLE_FK IS NULL
-      AND DATE(f.FC_FECHA) BETWEEN DATE(?) AND DATE(?)
-      AND f.FC_ESTADO != 'CANCELADO'
+      AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
+      AND f.FC_ESTADO = 'PAGADO'
       AND NOT EXISTS (
         SELECT 1 FROM KS_PAGOS_FACTURA pf
         JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
         WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
       )
-
       ORDER BY FC_FECHA DESC`,
       [svcPercent, workerId, startDate, endDate, workerId, startDate, endDate]
     );
@@ -693,8 +709,60 @@ export async function getNominaAudit(workerId: number, startDate: Date, endDate:
 
     return { success: true, data: mapped };
   } catch (error) {
-    console.error("Error getNominaAudit:", error);
-    return { success: false, error: "Error al obtener auditoría" };
+    console.error("Error al obtener auditoría de nómina:", error);
+    return { success: false, data: null, error: "Error al obtener auditoría" };
+  }
+}
+
+/**
+ * Obtener auditData para una nómina específica, resolviendo su fecha de inicio real (lastDate)
+ */
+export async function getSmartNominaAudit(
+  workerId: number, 
+  nominaId: number | null, 
+  fallbackStartDate: Date, 
+  endDate: Date
+): Promise<ApiResponse> {
+  try {
+    let lastDate = fallbackStartDate;
+    const connection = await db.getConnection();
+    
+    try {
+      // Determinar el lastDate real que se usó para esta nómina
+      let queryExtra = "";
+      let params: any[] = [workerId];
+      
+      if (nominaId) {
+        // Si ya hay nómina, buscamos la última confirmada ANTES de esta
+        queryExtra = "AND n.NM_IDNOMINA_PK != ?";
+        params.push(nominaId);
+      }
+      
+      const [lastNom]: any = await (connection as any).execute(
+        `SELECT MAX(n.NM_FECHA_FIN) as last_date
+         FROM KS_NOMINAS n
+         JOIN KS_NOMINA_DETALLES nd ON n.NM_IDNOMINA_PK = nd.NM_IDNOMINA_FK
+         WHERE nd.TR_IDTRABAJADOR_FK = ? AND n.NM_ESTADO = 'CONFIRMADA' ${queryExtra}`,
+        params
+      );
+      
+      if (lastNom[0]?.last_date) {
+        lastDate = new Date(lastNom[0].last_date);
+      } else {
+        // Si no hay previas, usar loteStartMinus1
+        const loteStartMinus1 = new Date(fallbackStartDate);
+        loteStartMinus1.setDate(loteStartMinus1.getDate() - 1);
+        lastDate = loteStartMinus1;
+      }
+    } finally {
+      connection.release();
+    }
+    
+    // Ahora llamamos al getNominaAudit normal con la fecha real
+    return await getNominaAudit(workerId, lastDate, endDate);
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: "Error resolviendo la fecha de inicio" };
   }
 }
 
@@ -1044,4 +1112,390 @@ export async function previewLiquidadionRetiro(
   }
 }
 
+/**
+ * Realizar liquidación individual definitiva (Sin inactivar al trabajador)
+ */
+export async function liquidarTrabajadorIndividual(
+  workerId: number,
+  endDate: Date,
+  basePay: number = 0
+): Promise<ApiResponse> {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
 
+    // 1. Obtener datos del trabajador
+    const [workers]: any = await (connection as any).execute(
+      `SELECT t.TR_IDTRABAJADOR_PK, t.TR_NOMBRE, r.RL_NOMBRE 
+       FROM KS_TRABAJADORES t
+       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+       WHERE t.TR_IDTRABAJADOR_PK = ?`,
+      [workerId]
+    );
+
+    if (workers.length === 0) {
+      return { success: false, error: "Trabajador no encontrado" };
+    }
+    const worker = workers[0];
+
+    // 2. Determinar la fecha de inicio del periodo pendiente
+    const [lastNom]: any = await (connection as any).execute(
+      `SELECT MAX(n.NM_FECHA_FIN) as last_date
+       FROM KS_NOMINAS n
+       JOIN KS_NOMINA_DETALLES nd ON n.NM_IDNOMINA_PK = nd.NM_IDNOMINA_FK
+       WHERE nd.TR_IDTRABAJADOR_FK = ? AND n.NM_ESTADO = 'CONFIRMADA'`,
+      [workerId]
+    );
+    
+    // Si no tiene liquidaciones previas, tomamos 30 días atrás como seguridad
+    const defaultDate = new Date(endDate);
+    defaultDate.setDate(defaultDate.getDate() - 30);
+    const lastDate = lastNom[0]?.last_date ? new Date(lastNom[0].last_date) : defaultDate;
+    
+    // 3. Obtener configuración vigente
+    const configRes = await getConfigForDate(endDate);
+    const svcPercent = configRes.success && configRes.data ? Number(configRes.data.NC_PORCENTAJE_SERVICIO) : 50;
+
+    let comisionesServicios = 0;
+    let comisionesProductos = 0;
+    let propinasTotales = 0;
+
+    if (worker.RL_NOMBRE === 'TECNICO') {
+      // 3.1. Calcular comisiones de servicios
+      const [services]: any = await (connection as any).execute(
+        `SELECT SUM((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((
+           SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) 
+           FROM KS_FACTURA_PRODUCTOS fp 
+           WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK
+         ), 0)) as total,
+         SUM(fd.FD_PROPINA) as propinas
+         FROM KS_FACTURA_DETALLES fd 
+         JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+         WHERE fd.TR_IDTECNICO_FK = ? 
+           AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
+           AND f.FC_ESTADO != 'CANCELADO'
+           AND NOT EXISTS (
+             SELECT 1 FROM KS_PAGOS_FACTURA pf
+             JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+             WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+           )`,
+        [workerId, lastDate, endDate]
+      );
+      const svcTotal = Number(services[0].total || 0);
+      propinasTotales = Number(services[0].propinas || 0);
+      comisionesServicios = svcTotal * (svcPercent / 100);
+
+      // 3.2. Calcular comisiones de productos
+      const [products]: any = await (connection as any).execute(
+        `SELECT SUM(fp.FP_COMISION_VALOR) as total 
+         FROM KS_FACTURA_PRODUCTOS fp
+         JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+         WHERE fp.TR_IDTECNICO_FK = ? 
+           AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
+           AND f.FC_ESTADO = 'PAGADO'
+           AND fp.FD_IDDETALLE_FK IS NULL
+           AND NOT EXISTS (
+             SELECT 1 FROM KS_PAGOS_FACTURA pf
+             JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+             WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+           )`,
+        [workerId, lastDate, endDate]
+      );
+      comisionesProductos = Number(products[0].total || 0);
+    }
+
+    const totalComisiones = comisionesServicios + comisionesProductos + propinasTotales;
+
+    // 4. Deducciones
+    // 4.1. Cuotas de Vales (Solo las correspondientes al periodo)
+    const [valesRegistros]: any = await (connection as any).execute(
+      `SELECT VL_MONTO, VL_CUOTAS, VL_CUOTAS_PAGADAS, VL_IDVALE_PK
+       FROM KS_VALES 
+       WHERE TR_IDTRABAJADOR_FK = ? AND VL_ESTADO = 'PENDIENTE'
+       AND DATE(VL_FECHA_INICIO_COBRO) <= DATE(?)`,
+      [workerId, endDate]
+    );
+
+    let valesTotalDeduct = 0;
+    const valesADescontar = [];
+    for (const vale of valesRegistros) {
+      const remainingCuotas = vale.VL_CUOTAS - vale.VL_CUOTAS_PAGADAS;
+      if (remainingCuotas > 0) {
+        const cuotaValor = vale.VL_MONTO / vale.VL_CUOTAS;
+        valesTotalDeduct += cuotaValor; // Una sola cuota
+        valesADescontar.push({ valeId: vale.VL_IDVALE_PK, monto: cuotaValor });
+      }
+    }
+
+    // 4.2. Cuotas de Servicios de Trabajador (Solo las correspondientes al periodo)
+    const [serviciosCuotas]: any = await (connection as any).execute(
+      `SELECT SUM(stc.STC_VALOR_CUOTA) as total 
+       FROM KS_SERVICIO_TRABAJADOR_CUOTAS stc
+       JOIN KS_SERVICIOS_TRABAJADOR st ON stc.ST_IDSERVICIO_TRABAJADOR_FK = st.ST_IDSERVICIO_TRABAJADOR_PK
+       WHERE st.TR_IDTRABAJADOR_FK = ? AND stc.STC_ESTADO = 'PENDIENTE'
+       AND DATE(stc.STC_FECHA_COBRO) > DATE(?) AND DATE(stc.STC_FECHA_COBRO) <= DATE(?)`,
+      [workerId, lastDate, endDate]
+    );
+    const serviciosTotalDeduct = Number(serviciosCuotas[0].total || 0);
+
+    // 4.3. Garantias
+    const [garantiasRegistros]: any = await (connection as any).execute(
+      `SELECT SUM(GA_VALOR) as total
+       FROM KS_GARANTIAS
+       WHERE TR_IDTECNICO_ORIGINAL_FK = ? AND DATE(GA_FECHA) > DATE(?) AND DATE(GA_FECHA) <= DATE(?)`,
+       [workerId, lastDate, endDate]
+    );
+    const garantiasDeduct = Number(garantiasRegistros[0].total || 0);
+
+    // 5. Calcular balance neto definitivo
+    const netPay = basePay + totalComisiones - serviciosTotalDeduct - valesTotalDeduct - garantiasDeduct;
+
+    // 6. Crear cabecera de Nómina Individual
+    const [nominaResult]: any = await (connection as any).execute(
+      `INSERT INTO KS_NOMINAS (NM_FECHA_INICIO, NM_FECHA_FIN, NM_ESTADO, NM_TIPO, NM_TOTAL_PAGADO, NM_FECHA_CIERRE) 
+       VALUES (?, ?, 'CONFIRMADA', 'INDIVIDUAL', ?, CURRENT_TIMESTAMP)`,
+      [toLocalDateString(lastDate), toLocalDateString(endDate), netPay]
+    );
+    const nominaId = nominaResult.insertId;
+
+    // 7. Insertar detalle de Nómina
+    await (connection as any).execute(
+      `INSERT INTO KS_NOMINA_DETALLES 
+       (NM_IDNOMINA_FK, TR_IDTRABAJADOR_FK, ND_BASE, ND_COMISIONES, ND_BONOS, ND_DEDUCCIONES_SERVICIOS_TRABAJADOR, ND_DEDUCCIONES_VALES, ND_DEDUCCIONES_GARANTIAS, ND_TOTAL_NETO)
+       VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)`,
+      [nominaId, workerId, basePay, totalComisiones, serviciosTotalDeduct, valesTotalDeduct, garantiasDeduct, netPay]
+    );
+
+    // 8. Aplicar descuentos (Confirmar Vales y Servicios)
+    // 8.1. Liquidar Vales (Aumentar cuotas pagadas)
+    for (const vDesc of valesADescontar) {
+      // Buscar vale actual para incrementarlo
+      const [valeCurrent]: any = await (connection as any).execute(
+        "SELECT VL_CUOTAS, VL_CUOTAS_PAGADAS FROM KS_VALES WHERE VL_IDVALE_PK = ?", [vDesc.valeId]
+      );
+      if(valeCurrent.length > 0) {
+        const newPagadas = valeCurrent[0].VL_CUOTAS_PAGADAS + 1;
+        const newEstado = newPagadas >= valeCurrent[0].VL_CUOTAS ? 'DESCONTADO' : 'PENDIENTE';
+        
+        await (connection as any).execute(
+          "UPDATE KS_VALES SET VL_CUOTAS_PAGADAS = ?, VL_ESTADO = ?, NM_IDNOMINA_FK = ? WHERE VL_IDVALE_PK = ?",
+          [newPagadas, newEstado, nominaId, vDesc.valeId]
+        );
+
+        await (connection as any).execute(
+          "INSERT INTO KS_NOMINA_VALES (NM_IDNOMINA_FK, VL_IDVALE_PK, NV_MONTO_DESCONTADO) VALUES (?, ?, ?)",
+          [nominaId, vDesc.valeId, vDesc.monto]
+        );
+      }
+    }
+
+    // 8.2. Liquidar cuotas de servicios de trabajador
+    await (connection as any).execute(
+      `UPDATE KS_SERVICIO_TRABAJADOR_CUOTAS stc
+       JOIN KS_SERVICIOS_TRABAJADOR st ON stc.ST_IDSERVICIO_TRABAJADOR_FK = st.ST_IDSERVICIO_TRABAJADOR_PK
+       SET stc.STC_ESTADO = 'PAGADO'
+       WHERE st.TR_IDTRABAJADOR_FK = ? AND stc.STC_ESTADO = 'PENDIENTE'
+       AND DATE(stc.STC_FECHA_COBRO) > DATE(?) AND DATE(stc.STC_FECHA_COBRO) <= DATE(?)`,
+      [workerId, lastDate, endDate]
+    );
+
+    // El trabajador CONTINUA ACTIVO, no se hace el paso de retiro.
+
+    await connection.commit();
+    revalidatePath("/dashboard/nomina");
+    revalidatePath("/dashboard/trabajadores");
+
+    return {
+      success: true,
+      message: `Liquidación individual para ${worker.TR_NOMBRE} procesada exitosamente. Balance: $${netPay}`,
+      data: { nominaId, netPay }
+    };
+
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Error al liquidar trabajador individualmente:", error);
+    return { success: false, error: "Error al procesar la liquidación individual" };
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+/**
+ * Previsualizar liquidación individual (sin guardarla)
+ */
+export async function previewLiquidacionIndividual(
+  workerId: number,
+  endDate: Date,
+  basePay: number = 0
+): Promise<ApiResponse> {
+  try {
+    const [workers]: any = await db.execute(
+      `SELECT t.TR_IDTRABAJADOR_PK, t.TR_NOMBRE, r.RL_NOMBRE, s.SC_NOMBRE 
+       FROM KS_TRABAJADORES t
+       JOIN KS_ROLES r ON t.RL_IDROL_FK = r.RL_IDROL_PK
+       LEFT JOIN KS_SUCURSALES s ON t.SC_IDSUCURSAL_FK = s.SC_IDSUCURSAL_PK
+       WHERE t.TR_IDTRABAJADOR_PK = ?`,
+      [workerId]
+    );
+
+    if (workers.length === 0) {
+      return { success: false, error: "Trabajador no encontrado" };
+    }
+    const worker = workers[0];
+
+    const [lastNom]: any = await db.execute(
+      `SELECT MAX(n.NM_FECHA_FIN) as last_date
+       FROM KS_NOMINAS n
+       JOIN KS_NOMINA_DETALLES nd ON n.NM_IDNOMINA_PK = nd.NM_IDNOMINA_FK
+       WHERE nd.TR_IDTRABAJADOR_FK = ? AND n.NM_ESTADO = 'CONFIRMADA'`,
+      [workerId]
+    );
+    
+    const defaultDate = new Date(endDate);
+    defaultDate.setDate(defaultDate.getDate() - 30);
+    const lastDate = lastNom[0]?.last_date ? new Date(lastNom[0].last_date) : defaultDate;
+    
+    const configRes = await getConfigForDate(endDate);
+    const svcPercent = configRes.success && configRes.data ? Number(configRes.data.NC_PORCENTAJE_SERVICIO) : 50;
+
+    let comisionesServicios = 0;
+    let comisionesProductos = 0;
+    let propinasTotales = 0;
+    let auditData: any[] = [];
+
+    if (worker.RL_NOMBRE === 'TECNICO') {
+      const [services]: any = await db.execute(
+        `SELECT SUM((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) as total,
+         SUM(fd.FD_PROPINA) as propinas
+         FROM KS_FACTURA_DETALLES fd 
+         JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+         WHERE fd.TR_IDTECNICO_FK = ? 
+           AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
+           AND f.FC_ESTADO != 'CANCELADO'
+           AND NOT EXISTS (
+             SELECT 1 FROM KS_PAGOS_FACTURA pf
+             JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+             WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+           )`,
+        [workerId, lastDate, endDate]
+      );
+      const svcTotal = Number(services[0].total || 0);
+      propinasTotales = Number(services[0].propinas || 0);
+      comisionesServicios = svcTotal * (svcPercent / 100);
+
+      const [products]: any = await db.execute(
+        `SELECT SUM(fp.FP_COMISION_VALOR) as total 
+         FROM KS_FACTURA_PRODUCTOS fp
+         JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
+         WHERE fp.TR_IDTECNICO_FK = ? 
+           AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
+           AND f.FC_ESTADO = 'PAGADO'
+           AND fp.FD_IDDETALLE_FK IS NULL
+           AND NOT EXISTS (
+             SELECT 1 FROM KS_PAGOS_FACTURA pf
+             JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
+             WHERE pf.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK AND mp.MP_NOMBRE = 'SERVICIO DE TRABAJADOR'
+           )`,
+        [workerId, lastDate, endDate]
+      );
+      comisionesProductos = Number(products[0].total || 0);
+
+      const auditRes = await getNominaAudit(workerId, lastDate, endDate);
+      if (auditRes.success && auditRes.data) {
+        auditData = auditRes.data;
+      }
+    }
+
+    const totalComisiones = comisionesServicios + comisionesProductos + propinasTotales;
+
+    const [valesRegistros]: any = await db.execute(
+      `SELECT VL_MONTO, VL_CUOTAS, VL_CUOTAS_PAGADAS, VL_IDVALE_PK
+       FROM KS_VALES 
+       WHERE TR_IDTRABAJADOR_FK = ? AND VL_ESTADO = 'PENDIENTE'
+       AND DATE(VL_FECHA_INICIO_COBRO) <= DATE(?)`,
+      [workerId, endDate]
+    );
+
+    let valesTotalDeduct = 0;
+    for (const vale of valesRegistros) {
+      const remainingCuotas = vale.VL_CUOTAS - vale.VL_CUOTAS_PAGADAS;
+      if (remainingCuotas > 0) {
+        const cuotaValor = vale.VL_MONTO / vale.VL_CUOTAS;
+        valesTotalDeduct += cuotaValor;
+      }
+    }
+
+    const [serviciosCuotas]: any = await db.execute(
+      `SELECT SUM(stc.STC_VALOR_CUOTA) as total 
+       FROM KS_SERVICIO_TRABAJADOR_CUOTAS stc
+       JOIN KS_SERVICIOS_TRABAJADOR st ON stc.ST_IDSERVICIO_TRABAJADOR_FK = st.ST_IDSERVICIO_TRABAJADOR_PK
+       WHERE st.TR_IDTRABAJADOR_FK = ? AND stc.STC_ESTADO = 'PENDIENTE'
+       AND DATE(stc.STC_FECHA_COBRO) > DATE(?) AND DATE(stc.STC_FECHA_COBRO) <= DATE(?)`,
+      [workerId, lastDate, endDate]
+    );
+    const serviciosTotalDeduct = Number(serviciosCuotas[0].total || 0);
+
+    const [garantiasRegistros]: any = await db.execute(
+      `SELECT SUM(GA_VALOR) as total
+       FROM KS_GARANTIAS
+       WHERE TR_IDTECNICO_ORIGINAL_FK = ? AND DATE(GA_FECHA) > DATE(?) AND DATE(GA_FECHA) <= DATE(?)`,
+       [workerId, lastDate, endDate]
+    );
+    const garantiasDeduct = Number(garantiasRegistros[0].total || 0);
+
+    const netPay = basePay + totalComisiones - serviciosTotalDeduct - valesTotalDeduct - garantiasDeduct;
+
+    return {
+      success: true,
+      data: {
+        volante: {
+          TR_NOMBRE: worker.TR_NOMBRE,
+          TR_IDTRABAJADOR_FK: worker.TR_IDTRABAJADOR_PK,
+          RL_NOMBRE: worker.RL_NOMBRE,
+          SC_NOMBRE: worker.SC_NOMBRE || 'Global',
+          ND_BASE: basePay,
+          ND_COMISIONES: totalComisiones,
+          ND_BONOS: 0,
+          ND_DEDUCCIONES_SERVICIOS_TRABAJADOR: serviciosTotalDeduct,
+          ND_DEDUCCIONES_VALES: valesTotalDeduct,
+          ND_DEDUCCIONES_GARANTIAS: garantiasDeduct,
+          ND_TOTAL_NETO: netPay,
+          periodoRange: `Individual: ${lastDate.toISOString().split('T')[0].split('-').reverse().join('/')} al ${new Date(endDate).toISOString().split('T')[0].split('-').reverse().join('/')}`
+        },
+        auditData
+      }
+    };
+
+  } catch (error) {
+    console.error("Error previewing individual liquidation:", error);
+    return { success: false, error: "Error al generar la previsualización individual" };
+  }
+}
+
+/**
+ * Obtener la última fecha de nómina pagada a un trabajador
+ * Útil para mostrar al usuario desde cuándo se va a liquidar
+ */
+export async function getWorkerLastSettlementDate(workerId: number): Promise<ApiResponse> {
+  try {
+    const [lastNom]: any = await db.execute(
+      `SELECT MAX(n.NM_FECHA_FIN) as last_date
+       FROM KS_NOMINAS n
+       JOIN KS_NOMINA_DETALLES nd ON n.NM_IDNOMINA_PK = nd.NM_IDNOMINA_FK
+       WHERE nd.TR_IDTRABAJADOR_FK = ? AND n.NM_ESTADO = 'CONFIRMADA'`,
+      [workerId]
+    );
+    
+    if (lastNom[0]?.last_date) {
+      return { success: true, data: { lastDate: new Date(lastNom[0].last_date).toISOString() } };
+    } else {
+      // Si no hay, devolvemos 30 días atrás por defecto como en el cálculo
+      const defaultDate = new Date();
+      defaultDate.setDate(defaultDate.getDate() - 30);
+      return { success: true, data: { lastDate: defaultDate.toISOString() } };
+    }
+  } catch (error) {
+    console.error("Error obteniendo última fecha de nómina:", error);
+    return { success: false, error: "Error al obtener fecha de inicio" };
+  }
+}

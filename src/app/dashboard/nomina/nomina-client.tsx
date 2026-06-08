@@ -40,7 +40,8 @@ import {
   getPayrollWorkers,
   updateNominaConfig,
   deleteNominaConfig,
-  getNominaAudit
+  getNominaAudit,
+  getSmartNominaAudit
 } from "@/features/nomina/services";
 
 import { toast } from "@/lib/toast-helper";
@@ -416,7 +417,7 @@ export default function NominaClient() {
 
                         <button
                           onClick={async () => {
-                            const auditRes = await getNominaAudit(item.TR_IDTRABAJADOR_FK, startDate, endDate);
+                            const auditRes = await getSmartNominaAudit(item.TR_IDTRABAJADOR_FK, nominaBatch?.NM_IDNOMINA_PK || null, startDate, endDate);
                             if (auditRes.success) setAuditData(auditRes.data);
                             setShowVolante(item);
                           }}
