@@ -182,31 +182,31 @@ export const DailyReportDocument = ({
         <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => (`Página ${pageNumber} de ${totalPages}`)} fixed />
       </Page>
 
-      {/* PÁGINA 2: COMISIONES TÉCNICOS */}
+      {/* PÁGINA 2: PRODUCCIÓN TÉCNICOS */}
       <Page size="A4" style={styles.page} wrap>
         <Header />
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Liquidación / Comisión de Técnicos</Text>
+          <Text style={styles.sectionTitle}>Producción por Técnico</Text>
           <View style={styles.table}>
-            <View style={styles.tableRow}>
+            <View style={{...styles.tableRow, backgroundColor: '#f8fafc'}} fixed>
               <View style={styles.tableColWide}><Text style={styles.tableCellHeader}>Técnico</Text></View>
               <View style={styles.tableColSmall}><Text style={styles.tableCellHeader}>Cant. Serv.</Text></View>
-              <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Prod. de Serv.</Text></View>
-              <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Prod. de Prod.</Text></View>
-              <View style={styles.tableCol}><Text style={styles.tableCellHeader}>A Pagar</Text></View>
+              <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Valor Servicios</Text></View>
+              <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Valor Productos</Text></View>
+              <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Total Producido</Text></View>
             </View>
             {chartsData?.topTechs?.length > 0 ? (
               chartsData.topTechs.map((t: any, i: number) => (
-                <View style={styles.tableRow} key={i}>
+                <View style={styles.tableRow} key={i} wrap={false}>
                   <View style={styles.tableColWide}><Text style={styles.tableCell}>{t.name}</Text></View>
                   <View style={styles.tableColSmall}><Text style={styles.tableCell}>{t.count}</Text></View>
                   <View style={styles.tableCol}><Text style={styles.tableCell}>$ {Number(t.total_servicios || 0).toLocaleString('es-CO')}</Text></View>
                   <View style={styles.tableCol}><Text style={styles.tableCell}>$ {Number(t.total_productos || 0).toLocaleString('es-CO')}</Text></View>
-                  <View style={styles.tableCol}><Text style={styles.tableCell}>$ {Number(t.total_pagar || 0).toLocaleString('es-CO')}</Text></View>
+                  <View style={styles.tableCol}><Text style={styles.tableCell}>$ {Number((t.total_servicios || 0) + (t.total_productos || 0)).toLocaleString('es-CO')}</Text></View>
                 </View>
               ))
             ) : (
-               <View style={styles.tableRow}><Text style={styles.tableCell}>No hay comisiones registradas en el día.</Text></View>
+               <View style={styles.tableRow}><Text style={styles.tableCell}>No hay producción registrada en el día.</Text></View>
             )}
           </View>
         </View>
@@ -219,14 +219,14 @@ export const DailyReportDocument = ({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Detalle de Gastos</Text>
           <View style={styles.table}>
-            <View style={styles.tableRow}>
+            <View style={{...styles.tableRow, backgroundColor: '#f8fafc'}} fixed>
               <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Categoría</Text></View>
               <View style={styles.tableColWide}><Text style={styles.tableCellHeader}>Descripción</Text></View>
               <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Valor</Text></View>
             </View>
             {specificData?.gastos?.length > 0 ? (
               specificData.gastos.map((g: any, i: number) => (
-                <View style={styles.tableRow} key={i}>
+                <View style={styles.tableRow} key={i} wrap={false}>
                   <View style={styles.tableCol}><Text style={styles.tableCell}>{g.GS_CATEGORIA || g.GT_CATEGORIA || 'Gasto'}</Text></View>
                   <View style={styles.tableColWide}><Text style={styles.tableCell}>{g.GS_DESCRIPCION || g.GT_DESCRIPCION || 'Gasto'}</Text></View>
                   <View style={styles.tableCol}><Text style={styles.tableCell}>$ {Number(g.GS_VALOR || g.GT_VALOR || 0).toLocaleString('es-CO')}</Text></View>
@@ -244,19 +244,18 @@ export const DailyReportDocument = ({
       <Page size="A4" style={styles.page} wrap>
         <Header />
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Servicios y Productos Despachados</Text>
+          <Text style={styles.sectionTitle}>Servicios Realizados y Productos Utilizados</Text>
           <View style={styles.table}>
-            <View style={styles.tableRow}>
+            <View style={{...styles.tableRow, backgroundColor: '#f8fafc'}} fixed>
               <View style={styles.tableColTiny}><Text style={styles.tableCellHeader}>Factura</Text></View>
               <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Técnico</Text></View>
               <View style={styles.tableColWide}><Text style={styles.tableCellHeader}>Ítem (Servicio / Producto)</Text></View>
               <View style={styles.tableColTiny}><Text style={styles.tableCellHeader}>Cant.</Text></View>
-              <View style={styles.tableColSmall}><Text style={styles.tableCellHeader}>Valor Total</Text></View>
-              <View style={styles.tableColSmall}><Text style={styles.tableCellHeader}>Comisión</Text></View>
+              <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Valor Total</Text></View>
             </View>
             {specificData?.serviciosDetalle?.length > 0 ? (
               specificData.serviciosDetalle.map((s: any, i: number) => (
-                <View style={styles.tableRow} key={i}>
+                <View style={styles.tableRow} key={i} wrap={false}>
                   <View style={styles.tableColTiny}><Text style={styles.tableCell}>{s.FC_NUMERO_FACTURA || s.FC_IDFACTURA_PK}</Text></View>
                   <View style={styles.tableCol}><Text style={styles.tableCell}>{s.tecnico_nombre || 'N/A'}</Text></View>
                   <View style={styles.tableColWide}>
@@ -265,8 +264,7 @@ export const DailyReportDocument = ({
                     </Text>
                   </View>
                   <View style={styles.tableColTiny}><Text style={styles.tableCell}>{s.cantidad}</Text></View>
-                  <View style={styles.tableColSmall}><Text style={styles.tableCell}>$ {Number(s.valor_total || 0).toLocaleString('es-CO')}</Text></View>
-                  <View style={styles.tableColSmall}><Text style={styles.tableCell}>$ {Number(s.comision || 0).toLocaleString('es-CO')}</Text></View>
+                  <View style={styles.tableCol}><Text style={styles.tableCell}>$ {Number(s.valor_total || 0).toLocaleString('es-CO')}</Text></View>
                 </View>
               ))
             ) : (
@@ -283,7 +281,7 @@ export const DailyReportDocument = ({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Facturas Generadas</Text>
           <View style={styles.table}>
-            <View style={styles.tableRow}>
+            <View style={{...styles.tableRow, backgroundColor: '#f8fafc'}} fixed>
               <View style={styles.tableColSmall}><Text style={styles.tableCellHeader}># Factura</Text></View>
               <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Cliente</Text></View>
               <View style={styles.tableColWide}><Text style={styles.tableCellHeader}>Técnicos Involucrados</Text></View>
@@ -291,7 +289,7 @@ export const DailyReportDocument = ({
             </View>
             {specificData?.facturas?.length > 0 ? (
               specificData.facturas.map((f: any, i: number) => (
-                <View style={styles.tableRow} key={i}>
+                <View style={styles.tableRow} key={i} wrap={false}>
                   <View style={styles.tableColSmall}><Text style={styles.tableCell}>{f.FC_NUMERO_FACTURA || f.FC_CONSECUTIVO || f.FC_IDFACTURA_PK}</Text></View>
                   <View style={styles.tableCol}><Text style={styles.tableCell}>{f.CL_NOMBRE || f.cliente_display || 'Cliente General'}</Text></View>
                   <View style={styles.tableColWide}><Text style={styles.tableCell}>{f.tecnicos || 'N/A'}</Text></View>

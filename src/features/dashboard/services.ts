@@ -293,7 +293,9 @@ export async function getDashboardCharts(sucursalId: number, dateFrom: string, d
               COALESCE(srv.count, 0) as count, 
               COALESCE(srv.total_servicios, 0) as total_servicios,
               COALESCE(prd.total_productos, 0) as total_productos,
-              (COALESCE(srv.total_servicios, 0) * (${svcPercent}/100) + COALESCE(prd.total_comision, 0)) as total_pagar
+              (COALESCE(srv.total_servicios, 0) * (${svcPercent}/100) + COALESCE(prd.total_comision, 0)) as total_pagar,
+              (COALESCE(srv.total_servicios, 0) * (${svcPercent}/100)) as comision_servicios,
+              COALESCE(prd.total_comision, 0) as comision_productos
        FROM KS_TRABAJADORES t
        LEFT JOIN (
            SELECT fd.TR_IDTECNICO_FK, COUNT(fd.FD_IDDETALLE_PK) as count, SUM((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) as total_servicios
@@ -378,6 +380,8 @@ export async function getDashboardCharts(sucursalId: number, dateFrom: string, d
           total_servicios: Number(t.total_servicios || 0), 
           total_productos: Number(t.total_productos || 0),
           total_pagar: Number(t.total_pagar || 0),
+          comision_servicios: Number(t.comision_servicios || 0),
+          comision_productos: Number(t.comision_productos || 0),
           count: Number(t.count || 0) 
         })),
         topServices: (topServices || []).map((s: any) => ({ ...s, count: Number(s.count || 0) })),
