@@ -824,7 +824,7 @@ export async function liquidarTrabajadorPorRetiro(
          FROM KS_FACTURA_DETALLES fd 
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
          WHERE fd.TR_IDTECNICO_FK = ? 
-           AND f.FC_FECHA > ? AND DATE(f.FC_FECHA) <= DATE(?)
+           AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
            AND f.FC_ESTADO != 'CANCELADO'
            AND NOT EXISTS (
              SELECT 1 FROM KS_PAGOS_FACTURA pf
@@ -843,7 +843,7 @@ export async function liquidarTrabajadorPorRetiro(
          FROM KS_FACTURA_PRODUCTOS fp
          JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
          WHERE fp.TR_IDTECNICO_FK = ? 
-           AND f.FC_FECHA > ? AND DATE(f.FC_FECHA) <= DATE(?)
+           AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
            AND f.FC_ESTADO = 'PAGADO'
            AND fp.FD_IDDETALLE_FK IS NULL
            AND NOT EXISTS (
@@ -1014,7 +1014,7 @@ export async function previewLiquidadionRetiro(
          FROM KS_FACTURA_DETALLES fd 
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
          WHERE fd.TR_IDTECNICO_FK = ? 
-           AND f.FC_FECHA > ? AND DATE(f.FC_FECHA) <= DATE(?)
+           AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
            AND f.FC_ESTADO != 'CANCELADO'
            AND NOT EXISTS (
              SELECT 1 FROM KS_PAGOS_FACTURA pf
@@ -1033,7 +1033,7 @@ export async function previewLiquidadionRetiro(
          FROM KS_FACTURA_PRODUCTOS fp
          JOIN KS_FACTURAS f ON fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
          WHERE fp.TR_IDTECNICO_FK = ? 
-           AND f.FC_FECHA > ? AND DATE(f.FC_FECHA) <= DATE(?)
+           AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
            AND f.FC_ESTADO = 'PAGADO'
            AND fp.FD_IDDETALLE_FK IS NULL
            AND NOT EXISTS (
@@ -1100,7 +1100,7 @@ export async function previewLiquidadionRetiro(
           ND_DEDUCCIONES_SERVICIOS_TRABAJADOR: serviciosTotalDeduct,
           ND_DEDUCCIONES_VALES: valesTotalDeduct,
           ND_TOTAL_NETO: netPay,
-          periodoRange: `Retiro: ${lastDate.toLocaleDateString('es-CO')} al ${new Date(fechaRetiro).toLocaleDateString('es-CO')}`
+          periodoRange: `Retiro: ${lastDate.toISOString().split('T')[0].split('-').reverse().join('/')} al ${new Date(fechaRetiro).toISOString().split('T')[0].split('-').reverse().join('/')}`
         },
         auditData
       }

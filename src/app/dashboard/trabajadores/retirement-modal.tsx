@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { AlertCircle, Loader2, Calendar, FileText, Wallet, Eye } from 'lucide-react'
-import { previewLiquidadionRetiro, liquidarTrabajadorPorRetiro } from '@/features/nomina/services'
+import { previewLiquidadionRetiro, liquidarTrabajadorPorRetiro, getWorkerLastSettlementDate } from '@/features/nomina/services'
 import { VolantePago } from '@/components/nomina/volante-pago'
 import { toast } from '@/lib/toast-helper'
 
@@ -34,6 +34,7 @@ export function RetirementModal({
   workerName,
   workerRole
 }: RetirementModalProps) {
+  const [startDate, setStartDate] = React.useState<string>('')
   const [fechaRetiro, setFechaRetiro] = React.useState<string>(new Date().toISOString().split('T')[0])
   const [motivo, setMotivo] = React.useState('')
   const [basePay, setBasePay] = React.useState<number>(0)
@@ -50,13 +51,20 @@ export function RetirementModal({
       setBasePay(0)
       setPassword('')
       setPreviewData(null)
+      
+      // Fetch start date
+      getWorkerLastSettlementDate(workerId).then(res => {
+        if (res.success && res.data?.lastDate) {
+          setStartDate(new Date(res.data.lastDate).toISOString().split('T')[0])
+        }
+      })
     }
-  }, [isOpen])
+  }, [isOpen, workerId])
 
   const handlePreview = async () => {
     setIsPreviewing(true)
     try {
-      const res = await previewLiquidadionRetiro(workerId, new Date(fechaRetiro), basePay)
+      const res = await previewLiquidadionRetiro(workerId, new Date(fechaRetiro + 'T12:00:00'), basePay)
       if (res.success && res.data) {
         setPreviewData(res.data)
         toast.success('PREVISUALIZACIÓN GENERADA', 'El volante de pago se ha calculado correctamente.')
@@ -79,7 +87,7 @@ export function RetirementModal({
 
     setIsSubmitting(true)
     try {
-      const res = await liquidarTrabajadorPorRetiro(workerId, new Date(fechaRetiro), motivo, basePay)
+      const res = await liquidarTrabajadorPorRetiro(workerId, new Date(fechaRetiro + 'T12:00:00'), motivo, basePay)
       if (res.success) {
         toast.success('TRABAJADOR LIQUIDADO', res.message || 'La liquidación ha sido confirmada con éxito.')
         onSuccess()
@@ -116,7 +124,20 @@ export function RetirementModal({
 
         <div className="p-6 space-y-6">
           {/* Formulario Inicial */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="fecha-desde" className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                <Calendar className="size-3.5" /> Liquidar Desde (Auto)
+              </Label>
+              <Input
+                id="fecha-desde"
+                type="date"
+                className="rounded-xl border-slate-200 dark:border-slate-800 h-10 text-xs font-bold bg-slate-50 dark:bg-slate-900/50 text-slate-400 cursor-not-allowed opacity-80"
+                value={startDate}
+                disabled
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="fecha-retiro" className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
                 <Calendar className="size-3.5" /> Fecha de Retiro
