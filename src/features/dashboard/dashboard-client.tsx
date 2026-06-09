@@ -133,6 +133,7 @@ export function DashboardClient() {
     const [chartsData, setChartsData] = React.useState<any>(null)
     const [specificData, setSpecificData] = React.useState<any>(null)
     const [isLoading, setIsLoading] = React.useState(true)
+    const [isGeneratingPDF, setIsGeneratingPDF] = React.useState(false)
 
     // Billing Modal Data
     const [isBillingModalOpen, setIsBillingModalOpen] = React.useState(false)
@@ -227,7 +228,39 @@ export function DashboardClient() {
         setCurrentDate(prev => dir === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1))
     }
 
-
+    const handleDownloadReport = async () => {
+        setIsGeneratingPDF(true);
+        try {
+            const { pdf } = await import('@react-pdf/renderer');
+            const { DailyReportDocument } = await import('./daily-report-pdf');
+            const sucursalName = selectedSede === -1 ? 'TODAS LAS SUCURSALES' : (sedes.find(s => s.SC_IDSUCURSAL_PK === selectedSede)?.SC_NOMBRE || 'SUCURSAL');
+            const dateStr = format(currentDate, "dd/MM/yyyy");
+            const origin = typeof window !== 'undefined' ? window.location.origin : '';
+            const blob = await pdf(<DailyReportDocument 
+                sucursalName={sucursalName}
+                dateStr={dateStr}
+                stats={stats}
+                chartsData={chartsData}
+                specificData={specificData}
+                origin={origin}
+            />).toBlob();
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${sucursalName} CIERRE ${format(currentDate, "dd-MM-yyyy")}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast.success("Informe descargado correctamente");
+        } catch (err) {
+            console.error(err);
+            toast.error("Error al generar el PDF");
+        } finally {
+            setIsGeneratingPDF(false);
+        }
+    };
 
     const handleOpenAddProduct = (invoice: any) => {
         setApEditData(null)
@@ -401,7 +434,7 @@ export function DashboardClient() {
                                     filterType === 'RANGO' ? "bg-[#FF7E5F] text-white shadow-md shadow-coral-500/20" : "text-slate-500 hover:text-slate-700"
                                 )}
                             >
-                                POR RANGO
+                                SEMANAL
                             </button>
                             <button
                                 onClick={() => setFilterType('MES')}
@@ -513,6 +546,17 @@ export function DashboardClient() {
                                 </Button>
                             </div>
                         ) : null}
+
+                        {filterType === 'DIA' && selectedSede !== -1 && (
+                            <Button 
+                                onClick={handleDownloadReport}
+                                disabled={isGeneratingPDF}
+                                className="bg-[#FF7E5F] hover:bg-[#FF7E5F]/90 text-white font-black text-[10px] uppercase tracking-widest rounded-xl flex items-center gap-2 h-9 px-4 shadow-sm"
+                            >
+                                {isGeneratingPDF ? <Loader2 className="size-4 animate-spin" /> : <FileText className="size-4" />}
+                                Descargar Informe
+                            </Button>
+                        )}
                     </div>
 
                     {/* View Switcher */}
