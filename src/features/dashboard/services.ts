@@ -370,7 +370,8 @@ export async function getDashboardCharts(sucursalId: number, dateFrom: string, d
     const comisionProductos = Number(globalMetrics[0]?.comision_productos || 0);
     const comisionServicios = totalServicios * (svcPercent / 100);
     const pagoTecnicos = comisionServicios + comisionProductos;
-    const ingresoLocal = (totalServicios + totalProductos) - pagoTecnicos;
+    // Los productos son considerados gasto/recuperación, no entran en la ganancia real del local
+    const ingresoLocal = totalServicios - pagoTecnicos;
 
     return {
       success: true,
@@ -433,12 +434,14 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
         FROM KS_FACTURA_DETALLES fd 
         JOIN KS_SERVICIOS sv ON fd.SV_IDSERVICIO_FK = sv.SV_IDSERVICIO_PK 
         WHERE fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK) as servicios,
+       (SELECT SUM((fd.FD_VALOR * fd.FD_CANTIDAD) - IFNULL((SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FD_IDDETALLE_FK = fd.FD_IDDETALLE_PK), 0)) FROM KS_FACTURA_DETALLES fd WHERE fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK) as valor_servicios_neto,
        (SELECT COUNT(*) FROM KS_FACTURA_DETALLES fd WHERE fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK) as servicios_count,
        (SELECT GROUP_CONCAT(DISTINCT p.PR_NOMBRE SEPARATOR ', ') 
         FROM KS_FACTURA_PRODUCTOS fp 
         JOIN KS_PRODUCTOS p ON fp.PR_IDPRODUCTO_FK = p.PR_IDPRODUCTO_PK 
         WHERE fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK) as productos,
        (SELECT SUM(fp.FP_VALOR * fp.FP_CANTIDAD) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK) as productos_total,
+       (SELECT SUM(fp.FP_COMISION_VALOR) FROM KS_FACTURA_PRODUCTOS fp WHERE fp.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK) as comision_productos_total,
        (SELECT GROUP_CONCAT(DISTINCT tech.TR_NOMBRE SEPARATOR ', ')
         FROM KS_TRABAJADORES tech
         WHERE tech.TR_IDTRABAJADOR_PK IN (
@@ -669,7 +672,19 @@ export async function getDashboardSpecificData(sucursalId: number, dateFrom: str
     return {
       success: true,
       data: {
-        facturas: (facturas || []).map((f: any) => ({ ...f, FC_TOTAL: Number(f.FC_TOTAL || 0) })),
+        facturas: (facturas || []).map((f: any) => {
+           const valSvcNeto = Number(f.valor_servicios_neto || 0);
+           const comProd = Number(f.comision_productos_total || 0);
+           const comSvc = valSvcNeto * (svcPercent / 100);
+           const ganancia_local = valSvcNeto - comSvc - comProd;
+           return { 
+             ...f, 
+             FC_TOTAL: Number(f.FC_TOTAL || 0),
+             valor_servicios_neto: valSvcNeto, 
+             comision_productos_total: comProd, 
+             ganancia_local 
+           };
+        }),
         creditos: (creditos || []).map((c: any) => ({ ...c, CR_VALOR_PENDIENTE: Number(c.CR_VALOR_PENDIENTE || 0) })),
         vales: (vales || []).map((v: any) => ({ ...v, ST_VALOR: Number(v.ST_VALOR || 0) })),
         productos: (productos || []).map((p: any) => ({ ...p, FP_VALOR: Number(p.FP_VALOR || 0) })),

@@ -102,11 +102,11 @@ export const DailyReportDocument = ({
             </View>
             <View style={styles.flujoRow}>
               <Text style={styles.flujoLabel}>Crédito</Text>
-              <Text style={styles.flujoValue}>$ {(stats?.metodos_pago?.['CREDITO'] || 0).toLocaleString('es-CO')}</Text>
+              <Text style={styles.flujoValueNegative}>- $ {(stats?.metodos_pago?.['CREDITO'] || 0).toLocaleString('es-CO')}</Text>
             </View>
             <View style={styles.flujoRow}>
               <Text style={styles.flujoLabel}>Servicio Trabajador</Text>
-              <Text style={styles.flujoValue}>$ {(stats?.metodos_pago?.['SERVICIO DE TRABAJADOR'] || 0).toLocaleString('es-CO')}</Text>
+              <Text style={styles.flujoValueNegative}>- $ {(stats?.metodos_pago?.['SERVICIO DE TRABAJADOR'] || 0).toLocaleString('es-CO')}</Text>
             </View>
             <View style={styles.flujoRow}>
               <Text style={styles.flujoLabel}>Propina</Text>
@@ -119,6 +119,10 @@ export const DailyReportDocument = ({
             <View style={styles.flujoRow}>
               <Text style={styles.flujoLabel}>Vales</Text>
               <Text style={styles.flujoValueNegative}>- $ {(stats?.vales_total || 0).toLocaleString('es-CO')}</Text>
+            </View>
+            <View style={styles.flujoRow}>
+              <Text style={styles.flujoLabel}>Producto</Text>
+              <Text style={styles.flujoValueNegative}>- $ {(stats?.globalMetrics?.productos_total || 0).toLocaleString('es-CO')}</Text>
             </View>
             <View style={styles.flujoTotalRow}>
               <Text style={styles.flujoTotalLabel}>EFECTIVO EN CAJA</Text>
@@ -141,7 +145,7 @@ export const DailyReportDocument = ({
               <Text style={styles.flujoValue}>{specificData?.serviciosDetalle?.filter((s: any) => s.tipo_item === 'SERVICIO').reduce((acc: number, curr: any) => acc + curr.cantidad, 0) || 0}</Text>
             </View>
             <View style={styles.flujoRow}>
-              <Text style={styles.flujoLabel}>Productos Utilizados</Text>
+              <Text style={styles.flujoLabel}>Producto</Text>
               <Text style={styles.flujoValue}>{specificData?.serviciosDetalle?.filter((s: any) => s.tipo_item === 'PRODUCTO').reduce((acc: number, curr: any) => acc + curr.cantidad, 0) || 0}</Text>
             </View>
             <View style={styles.flujoRow}>
@@ -240,35 +244,59 @@ export const DailyReportDocument = ({
         <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => (`Página ${pageNumber} de ${totalPages}`)} fixed />
       </Page>
 
-      {/* PÁGINA 4: DETALLE DE ÍTEMS REALIZADOS (SERVICIOS Y PRODUCTOS) */}
+      {/* PÁGINA 4: DETALLE DE SERVICIOS */}
       <Page size="A4" style={styles.page} wrap>
         <Header />
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Servicios Realizados y Productos Utilizados</Text>
+          <Text style={styles.sectionTitle}>Detalle de Servicios Realizados</Text>
+          <View style={styles.table}>
+            <View style={{...styles.tableRow, backgroundColor: '#f8fafc'}} fixed>
+              <View style={styles.tableColTiny}><Text style={styles.tableCellHeader}>Factura</Text></View>
+              <View style={styles.tableColSmall}><Text style={styles.tableCellHeader}>Técnico</Text></View>
+              <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Servicio</Text></View>
+              <View style={styles.tableColWide}><Text style={styles.tableCellHeader}>Insumos Utilizados</Text></View>
+              <View style={styles.tableColTiny}><Text style={styles.tableCellHeader}>Cant.</Text></View>
+              <View style={styles.tableColSmall}><Text style={styles.tableCellHeader}>Valor Neto</Text></View>
+            </View>
+            {specificData?.serviciosDetalle?.filter((s: any) => s.tipo_item === 'SERVICIO').length > 0 ? (
+              specificData.serviciosDetalle.filter((s: any) => s.tipo_item === 'SERVICIO').map((s: any, i: number) => (
+                <View style={styles.tableRow} key={i} wrap={false}>
+                  <View style={styles.tableColTiny}><Text style={styles.tableCell}>{s.FC_NUMERO_FACTURA || s.FC_IDFACTURA_PK}</Text></View>
+                  <View style={styles.tableColSmall}><Text style={styles.tableCell}>{s.tecnico_nombre || 'N/A'}</Text></View>
+                  <View style={styles.tableCol}><Text style={styles.tableCell}>{s.item_nombre}</Text></View>
+                  <View style={styles.tableColWide}><Text style={styles.tableCell}>{s.servicio_relacionado || '-'}</Text></View>
+                  <View style={styles.tableColTiny}><Text style={styles.tableCell}>{s.cantidad}</Text></View>
+                  <View style={styles.tableColSmall}><Text style={styles.tableCell}>$ {Number(s.valor_total || 0).toLocaleString('es-CO')}</Text></View>
+                </View>
+              ))
+            ) : (
+               <View style={styles.tableRow}><Text style={styles.tableCell}>No hay servicios registrados.</Text></View>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Detalle de Productos Utilizados</Text>
           <View style={styles.table}>
             <View style={{...styles.tableRow, backgroundColor: '#f8fafc'}} fixed>
               <View style={styles.tableColTiny}><Text style={styles.tableCellHeader}>Factura</Text></View>
               <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Técnico</Text></View>
-              <View style={styles.tableColWide}><Text style={styles.tableCellHeader}>Ítem (Servicio / Producto)</Text></View>
+              <View style={styles.tableColWide}><Text style={styles.tableCellHeader}>Producto</Text></View>
               <View style={styles.tableColTiny}><Text style={styles.tableCellHeader}>Cant.</Text></View>
               <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Valor Total</Text></View>
             </View>
-            {specificData?.serviciosDetalle?.length > 0 ? (
-              specificData.serviciosDetalle.map((s: any, i: number) => (
+            {specificData?.serviciosDetalle?.filter((s: any) => s.tipo_item === 'PRODUCTO').length > 0 ? (
+              specificData.serviciosDetalle.filter((s: any) => s.tipo_item === 'PRODUCTO').map((s: any, i: number) => (
                 <View style={styles.tableRow} key={i} wrap={false}>
                   <View style={styles.tableColTiny}><Text style={styles.tableCell}>{s.FC_NUMERO_FACTURA || s.FC_IDFACTURA_PK}</Text></View>
                   <View style={styles.tableCol}><Text style={styles.tableCell}>{s.tecnico_nombre || 'N/A'}</Text></View>
-                  <View style={styles.tableColWide}>
-                    <Text style={styles.tableCell}>
-                      {s.tipo_item === 'PRODUCTO' ? '[PROD] ' : '[SERV] '} {s.item_nombre}
-                    </Text>
-                  </View>
+                  <View style={styles.tableColWide}><Text style={styles.tableCell}>{s.item_nombre}</Text></View>
                   <View style={styles.tableColTiny}><Text style={styles.tableCell}>{s.cantidad}</Text></View>
                   <View style={styles.tableCol}><Text style={styles.tableCell}>$ {Number(s.valor_total || 0).toLocaleString('es-CO')}</Text></View>
                 </View>
               ))
             ) : (
-               <View style={styles.tableRow}><Text style={styles.tableCell}>No hay ítems registrados.</Text></View>
+               <View style={styles.tableRow}><Text style={styles.tableCell}>No hay productos registrados.</Text></View>
             )}
           </View>
         </View>
@@ -282,18 +310,22 @@ export const DailyReportDocument = ({
           <Text style={styles.sectionTitle}>Facturas Generadas</Text>
           <View style={styles.table}>
             <View style={{...styles.tableRow, backgroundColor: '#f8fafc'}} fixed>
-              <View style={styles.tableColSmall}><Text style={styles.tableCellHeader}># Factura</Text></View>
-              <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Cliente</Text></View>
-              <View style={styles.tableColWide}><Text style={styles.tableCellHeader}>Técnicos Involucrados</Text></View>
-              <View style={styles.tableColSmall}><Text style={styles.tableCellHeader}>Total</Text></View>
+              <View style={styles.tableColTiny}><Text style={styles.tableCellHeader}>Fact.</Text></View>
+              <View style={styles.tableColWide}><Text style={styles.tableCellHeader}>Servicios</Text></View>
+              <View style={styles.tableColWide}><Text style={styles.tableCellHeader}>Productos</Text></View>
+              <View style={styles.tableColSmall}><Text style={styles.tableCellHeader}>Val. Serv</Text></View>
+              <View style={styles.tableColSmall}><Text style={styles.tableCellHeader}>Val. Prod</Text></View>
+              <View style={styles.tableColSmall}><Text style={styles.tableCellHeader}>Ganancia</Text></View>
             </View>
             {specificData?.facturas?.length > 0 ? (
               specificData.facturas.map((f: any, i: number) => (
                 <View style={styles.tableRow} key={i} wrap={false}>
-                  <View style={styles.tableColSmall}><Text style={styles.tableCell}>{f.FC_NUMERO_FACTURA || f.FC_CONSECUTIVO || f.FC_IDFACTURA_PK}</Text></View>
-                  <View style={styles.tableCol}><Text style={styles.tableCell}>{f.CL_NOMBRE || f.cliente_display || 'Cliente General'}</Text></View>
-                  <View style={styles.tableColWide}><Text style={styles.tableCell}>{f.tecnicos || 'N/A'}</Text></View>
-                  <View style={styles.tableColSmall}><Text style={styles.tableCell}>$ {Number(f.FC_TOTAL || 0).toLocaleString('es-CO')}</Text></View>
+                  <View style={styles.tableColTiny}><Text style={styles.tableCell}>{f.FC_NUMERO_FACTURA || f.FC_CONSECUTIVO || f.FC_IDFACTURA_PK}</Text></View>
+                  <View style={styles.tableColWide}><Text style={styles.tableCell}>{f.servicios || '-'}</Text></View>
+                  <View style={styles.tableColWide}><Text style={styles.tableCell}>{f.productos || '-'}</Text></View>
+                  <View style={styles.tableColSmall}><Text style={styles.tableCell}>$ {Number(f.valor_servicios_neto || 0).toLocaleString('es-CO')}</Text></View>
+                  <View style={styles.tableColSmall}><Text style={styles.tableCell}>$ {Number(f.productos_total || 0).toLocaleString('es-CO')}</Text></View>
+                  <View style={styles.tableColSmall}><Text style={styles.tableCell}>$ {Number(f.ganancia_local || 0).toLocaleString('es-CO')}</Text></View>
                 </View>
               ))
             ) : (

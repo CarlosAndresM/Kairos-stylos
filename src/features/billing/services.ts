@@ -189,15 +189,9 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
 
       const allMethodsAreValid = data.payments.every(p => {
         const name = getMethodName(p.MP_IDMETODO_FK);
-        return name !== ''
-      });
-
-      if (allMethodsAreValid && Math.abs(totalPagado - invoiceTotal) <= tolerance) {
-        if (data.FC_ESTADO !== 'PENDIENTE') {
-          data.FC_ESTADO = 'PAGADO';
-        }
-      }
-    }
+    // El estado de la factura (PENDIENTE / PAGADO / CANCELADO)
+    // ahora es manejado 100% manual por el usuario desde el frontend.
+    // Pendiente significa "En ejecución", Pagado significa "Finalizado".
 
     // 0.1 Check for duplicate invoice number IF provided
     if (data.FC_NUMERO_FACTURA) {
@@ -448,9 +442,17 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
       );
 
       if (existingCredit.length > 0) {
+        const creditId = existingCredit[0].cr_idcredito_pk;
+        const [abonos]: any = await (connection as any).execute(
+          "SELECT COALESCE(SUM(ab_valor), 0) as total_abonos FROM ks_credito_abonos WHERE cr_idcredito_fk = ?",
+          [creditId]
+        );
+        const totalAbonado = Number(abonos[0].total_abonos || 0);
+        const nuevoPendiente = Math.max(0, valorCreditoTotal - totalAbonado);
+
         await (connection as any).execute(
           "UPDATE ks_creditos SET cr_valor_pendiente = ? WHERE cr_idcredito_pk = ?",
-          [valorCreditoTotal, existingCredit[0].cr_idcredito_pk]
+          [nuevoPendiente, creditId]
         );
       } else {
         await (connection as any).execute(

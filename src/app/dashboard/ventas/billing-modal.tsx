@@ -435,8 +435,9 @@ export function BillingModal({
   }, [watchedServices])
 
   const total = React.useMemo(() => {
-    return Math.max(0, sTotal - totalInsumos) + pTotal + tTotal
-  }, [sTotal, totalInsumos, pTotal, tTotal])
+    // El total que paga el cliente no descuenta los insumos, es el valor real del servicio más adicionales
+    return sTotal + pTotal + tTotal
+  }, [sTotal, pTotal, tTotal])
 
   const totalPaid = React.useMemo(() => {
     return (watchedPayments || []).reduce((sum, p) => sum + (Number(p.PF_VALOR) || 0), 0)
@@ -1302,9 +1303,9 @@ export function BillingModal({
                       </div>
                       
                       {totalInsumos > 0 && (
-                        <div className="flex justify-between items-center text-red-400 mb-2 border-b border-dashed border-slate-200 pb-2">
-                          <span className="text-[10px] font-bold uppercase">- Deducción de productos</span>
-                          <span className="text-[10px] font-bold">-$ {(totalInsumos || 0).toLocaleString('es-CO')}</span>
+                        <div className="flex justify-between items-center text-indigo-400 mb-2 border-b border-dashed border-slate-200 pb-2">
+                          <span className="text-[10px] font-bold uppercase">Gasto Insumos (Interno)</span>
+                          <span className="text-[10px] font-bold">${(totalInsumos || 0).toLocaleString('es-CO')}</span>
                         </div>
                       )}
 

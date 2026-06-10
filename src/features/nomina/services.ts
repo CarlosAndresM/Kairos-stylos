@@ -173,7 +173,7 @@ export async function procesarNominaSemanal(data: { startDate: Date, endDate: Da
          FROM KS_FACTURA_DETALLES fd 
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
          WHERE fd.TR_IDTECNICO_FK = ? AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
-         AND f.FC_ESTADO != 'CANCELADO'
+         AND f.FC_ESTADO = 'PAGADO'
          AND NOT EXISTS (
            SELECT 1 FROM KS_PAGOS_FACTURA pf
            JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
@@ -663,7 +663,7 @@ export async function getNominaAudit(workerId: number, startDate: Date, endDate:
       JOIN KS_SERVICIOS s ON fd.SV_IDSERVICIO_FK = s.SV_IDSERVICIO_PK
       WHERE fd.TR_IDTECNICO_FK = ? 
       AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
-      AND f.FC_ESTADO != 'CANCELADO'
+      AND f.FC_ESTADO = 'PAGADO'
       AND NOT EXISTS (
         SELECT 1 FROM KS_PAGOS_FACTURA pf
         JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
@@ -825,7 +825,7 @@ export async function liquidarTrabajadorPorRetiro(
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
          WHERE fd.TR_IDTECNICO_FK = ? 
            AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
-           AND f.FC_ESTADO != 'CANCELADO'
+           AND f.FC_ESTADO = 'PAGADO'
            AND NOT EXISTS (
              SELECT 1 FROM KS_PAGOS_FACTURA pf
              JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
@@ -1015,7 +1015,7 @@ export async function previewLiquidadionRetiro(
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
          WHERE fd.TR_IDTECNICO_FK = ? 
            AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
-           AND f.FC_ESTADO != 'CANCELADO'
+           AND f.FC_ESTADO = 'PAGADO'
            AND NOT EXISTS (
              SELECT 1 FROM KS_PAGOS_FACTURA pf
              JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
@@ -1173,7 +1173,7 @@ export async function liquidarTrabajadorIndividual(
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
          WHERE fd.TR_IDTECNICO_FK = ? 
            AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
-           AND f.FC_ESTADO != 'CANCELADO'
+           AND f.FC_ESTADO = 'PAGADO'
            AND NOT EXISTS (
              SELECT 1 FROM KS_PAGOS_FACTURA pf
              JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
@@ -1371,7 +1371,7 @@ export async function previewLiquidacionIndividual(
          JOIN KS_FACTURAS f ON fd.FC_IDFACTURA_FK = f.FC_IDFACTURA_PK
          WHERE fd.TR_IDTECNICO_FK = ? 
            AND DATE(f.FC_FECHA) > DATE(?) AND DATE(f.FC_FECHA) <= DATE(?)
-           AND f.FC_ESTADO != 'CANCELADO'
+           AND f.FC_ESTADO = 'PAGADO'
            AND NOT EXISTS (
              SELECT 1 FROM KS_PAGOS_FACTURA pf
              JOIN KS_METODOS_PAGO mp ON pf.MP_IDMETODO_FK = mp.MP_IDMETODO_PK
