@@ -177,8 +177,11 @@ export function DashboardClient() {
         init()
     }, [])
 
+    const fetchCounter = React.useRef(0)
+
     const fetchData = React.useCallback(async () => {
         setIsLoading(true)
+        const currentReq = ++fetchCounter.current
         try {
             let from = format(currentDate, 'yyyy-MM-dd')
             let to = format(currentDate, 'yyyy-MM-dd')
@@ -193,20 +196,28 @@ export function DashboardClient() {
 
             const res = await getDashboardFullData(selectedSede, from, to)
 
+            if (currentReq !== fetchCounter.current) return
+
             if (res.success && res.data) {
                 if (res.data.stats) setStats(res.data.stats)
                 if (res.data.charts) setChartsData(res.data.charts)
                 if (res.data.specific) setSpecificData(res.data.specific)
             }
         } catch (error) {
-            toast.error("Error al cargar datos")
+            if (currentReq === fetchCounter.current) toast.error("Error al cargar datos")
         } finally {
-            setIsLoading(false)
+            if (currentReq === fetchCounter.current) setIsLoading(false)
         }
     }, [selectedSede, currentDate, dateRange, filterType, viewMode])
 
     React.useEffect(() => {
-        if (mounted) fetchData()
+        if (!mounted) return
+        
+        const timer = setTimeout(() => {
+            fetchData()
+        }, 300)
+        
+        return () => clearTimeout(timer)
     }, [fetchData, mounted])
 
     if (!mounted) return null
