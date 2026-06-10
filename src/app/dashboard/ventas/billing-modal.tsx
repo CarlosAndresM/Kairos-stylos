@@ -1303,10 +1303,16 @@ export function BillingModal({
                       </div>
                       
                       {totalInsumos > 0 && (
-                        <div className="flex justify-between items-center text-indigo-400 mb-2 border-b border-dashed border-slate-200 pb-2">
-                          <span className="text-[10px] font-bold uppercase">Gasto Insumos (Interno)</span>
-                          <span className="text-[10px] font-bold">${(totalInsumos || 0).toLocaleString('es-CO')}</span>
-                        </div>
+                        <>
+                          <div className="flex justify-between items-center text-indigo-400 mb-1 border-b border-dashed border-slate-200 pb-1">
+                            <span className="text-[10px] font-bold uppercase">Gasto Insumos (Interno)</span>
+                            <span className="text-[10px] font-bold">${(totalInsumos || 0).toLocaleString('es-CO')}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-emerald-600 mb-2 border-b border-dashed border-slate-200 pb-2">
+                            <span className="text-[10px] font-bold uppercase">Queda en local</span>
+                            <span className="text-[10px] font-bold">${((total || 0) - (totalInsumos || 0)).toLocaleString('es-CO')}</span>
+                          </div>
+                        </>
                       )}
 
                       <div className="flex justify-between items-center text-slate-800 mb-2 mt-2">

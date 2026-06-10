@@ -122,7 +122,7 @@ export const DailyReportDocument = ({
             </View>
             <View style={styles.flujoRow}>
               <Text style={styles.flujoLabel}>Producto</Text>
-              <Text style={styles.flujoValueNegative}>- $ {(stats?.globalMetrics?.productos_total || 0).toLocaleString('es-CO')}</Text>
+              <Text style={styles.flujoValueNegative}>- $ {(specificData?.serviciosDetalle?.filter((s: any) => s.tipo_item === 'PRODUCTO').reduce((acc: number, curr: any) => acc + Number(curr.valor_total || 0), 0) || 0).toLocaleString('es-CO')}</Text>
             </View>
             <View style={styles.flujoTotalRow}>
               <Text style={styles.flujoTotalLabel}>EFECTIVO EN CAJA</Text>
