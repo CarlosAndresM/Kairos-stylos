@@ -179,16 +179,7 @@ export async function saveInvoice(data: InvoiceFormData): Promise<ApiResponse> {
     const metodoCreditoId = allMethods.find(m => m.mp_nombre.toUpperCase() === 'CREDITO')?.mp_idmetodo_pk;
     const metodoServicioId = allMethods.find(m => m.mp_nombre.toUpperCase() === 'VALE' || m.mp_nombre.toUpperCase() === 'SERVICIO DE TRABAJADOR' || m.mp_nombre.toUpperCase() === 'SERVICIO TRABAJADOR')?.mp_idmetodo_pk;
 
-    // Auto-resolve invoice status
-    if (data.payments && data.payments.length > 0) {
-      const totalPagado = data.payments.reduce((sum, p) => sum + (Number(p.PF_VALOR) || 0), 0);
-      const invoiceTotal = Number(data.FC_TOTAL || 0);
-      const tolerance = 1;
 
-      const getMethodName = (id: number) => allMethods.find((m: any) => m.mp_idmetodo_pk === id)?.mp_nombre?.toUpperCase() || '';
-
-      const allMethodsAreValid = data.payments.every(p => {
-        const name = getMethodName(p.MP_IDMETODO_FK);
     // El estado de la factura (PENDIENTE / PAGADO / CANCELADO)
     // ahora es manejado 100% manual por el usuario desde el frontend.
     // Pendiente significa "En ejecución", Pagado significa "Finalizado".
