@@ -47,7 +47,7 @@ export class S3StorageProvider implements IStorageProvider {
 
     async move(tempUrl: string, destinationFolder: string): Promise<string> {
         const oldKey = this.getKeyFromUrl(tempUrl);
-        if (!oldKey || !oldKey.includes('/temp/')) return tempUrl;
+        if (!oldKey || !oldKey.includes('temp/')) return tempUrl;
 
         const fileName = oldKey.split('/').pop() || '';
         const newKey = `${destinationFolder}/${fileName}`.replace(/\/+/g, '/');
