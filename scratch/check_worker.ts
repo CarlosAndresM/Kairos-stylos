@@ -2,14 +2,13 @@ import { db } from "../src/lib/db";
 
 async function main() {
   try {
-    // Buscar al trabajador "Angelika sede 2"
     const [workers]: any = await db.execute(
       `SELECT TR_IDTRABAJADOR_PK, TR_NOMBRE, TR_ACTIVO, TR_FECHA_RETIRO, TR_MOTIVO_RETIRO
        FROM KS_TRABAJADORES 
-       WHERE TR_NOMBRE LIKE '%Angelika%'`
+       WHERE TR_NOMBRE LIKE '%Angel%'`
     );
 
-    console.log("Trabajadores encontrados:");
+    console.log("Trabajadores encontrados con 'Angel':");
     console.log(workers);
 
     for (const worker of workers) {
@@ -20,7 +19,7 @@ async function main() {
          FROM KS_NOMINAS n
          JOIN KS_NOMINA_DETALLES nd ON n.NM_IDNOMINA_PK = nd.NM_IDNOMINA_FK
          WHERE nd.TR_IDTRABAJADOR_FK = ?
-         ORDER BY n.NM_FECHA_INICIO DESC`,
+         ORDER BY n.NM_FECHA_FIN DESC`,
         [worker.TR_IDTRABAJADOR_PK]
       );
       console.log(nominas);

@@ -9,6 +9,12 @@ export async function GET() {
        WHERE pf_evidencia_url LIKE '%/temp/%'`
     );
 
+    const [evidenciaFisica]: any = await db.execute(
+      `SELECT fc_idfactura_pk as id, fc_evidencia_fisica_url as url, fc_idfactura_pk as parent_id, 'FACTURA_EVIDENCIA_FISICA' as source
+       FROM ks_facturas
+       WHERE fc_evidencia_fisica_url LIKE '%/temp/%'`
+    );
+
     const [gastos]: any = await db.execute(
       `SELECT gs_idgasto_pk as id, gs_comprobantes as url, gs_idgasto_pk as parent_id, 'GASTO' as source
        FROM ks_gastos 
@@ -38,7 +44,7 @@ export async function GET() {
       }
     }
 
-    const allImages = [...facturas, ...processedGastos];
+    const allImages = [...facturas, ...evidenciaFisica, ...processedGastos];
 
     return NextResponse.json({ success: true, data: allImages });
   } catch (error) {

@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     }
 
     let folderName = '';
-    if (source === 'FACTURA') {
+    if (source === 'FACTURA' || source === 'FACTURA_EVIDENCIA_FISICA') {
       const [inv]: any = await db.execute("SELECT fc_numero_factura FROM ks_facturas WHERE fc_idfactura_pk = ?", [parent_id]);
       if (inv.length > 0) {
          folderName = inv[0].fc_numero_factura;
@@ -34,6 +34,11 @@ export async function POST(request: NextRequest) {
     if (source === 'FACTURA') {
       await db.execute(
         "UPDATE ks_pagos_factura SET pf_evidencia_url = ? WHERE pf_idpago_pk = ?",
+        [newUrl, id]
+      );
+    } else if (source === 'FACTURA_EVIDENCIA_FISICA') {
+      await db.execute(
+        "UPDATE ks_facturas SET fc_evidencia_fisica_url = ? WHERE fc_idfactura_pk = ?",
         [newUrl, id]
       );
     } else if (source === 'GASTO') {
