@@ -811,6 +811,7 @@ export async function liquidarTrabajadorPorRetiro(
 
     let comisionesServicios = 0;
     let comisionesProductos = 0;
+    let svcPropinas = 0;
 
     if (worker.RL_NOMBRE === 'TECNICO') {
       // 3.1. Calcular comisiones de servicios en el periodo pendiente (Descontando insumos)
@@ -834,7 +835,7 @@ export async function liquidarTrabajadorPorRetiro(
         [workerId, lastDate, fechaRetiro]
       );
       const svcTotal = Number(services[0].total || 0);
-      const svcPropinas = Number(services[0].propinas || 0);
+      svcPropinas = Number(services[0].propinas || 0);
       comisionesServicios = svcTotal * (svcPercent / 100) + svcPropinas;
 
       // 3.2. Calcular comisiones de productos
@@ -1004,6 +1005,7 @@ export async function previewLiquidadionRetiro(
 
     let comisionesServicios = 0;
     let comisionesProductos = 0;
+    let svcPropinas = 0;
     let auditData: any[] = [];
 
     if (worker.RL_NOMBRE === 'TECNICO') {
@@ -1024,7 +1026,7 @@ export async function previewLiquidadionRetiro(
         [workerId, lastDate, fechaRetiro]
       );
       const svcTotal = Number(services[0].total || 0);
-      const svcPropinas = Number(services[0].propinas || 0);
+      svcPropinas = Number(services[0].propinas || 0);
       comisionesServicios = svcTotal * (svcPercent / 100) + svcPropinas;
 
       // 3.2. Calcular comisiones de productos
@@ -1052,7 +1054,7 @@ export async function previewLiquidadionRetiro(
       }
     }
 
-    const totalComisiones = comisionesServicios + comisionesProductos;
+    const totalComisiones = comisionesServicios + comisionesProductos + svcPropinas;
 
     // 4. Calcular el 100% de la deuda consolidada
     // 4.1. Saldo pendiente de vales
