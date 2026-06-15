@@ -130,7 +130,7 @@ export function MigrationClient() {
       </div>
 
       <div className="w-full bg-slate-100 rounded-full h-2.5 mb-6 overflow-hidden">
-        <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style={{ width: \`\${progress}%\` }}></div>
+        <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
       </div>
 
       <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden max-h-[500px] overflow-y-auto">
