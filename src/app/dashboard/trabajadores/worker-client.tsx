@@ -331,7 +331,7 @@ export function WorkerClient({ initialWorkers, roles, sedes, currentRole, sucurs
                             {worker.TR_ACTIVO ? 'Desactivar Acceso' : 'Activar Acceso'}
                           </DropdownMenuItem>
 
-                          {worker.TR_ACTIVO && (
+                          {!!worker.TR_ACTIVO && (
                             <>
                               <DropdownMenuItem
                                 onClick={() => {
