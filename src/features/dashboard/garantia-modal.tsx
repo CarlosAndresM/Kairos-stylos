@@ -149,8 +149,8 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-4xl max-w-4xl max-h-[95vh] overflow-y-auto custom-scrollbar">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-4xl max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2 text-slate-800">
             <ShieldAlert className="size-5 text-emerald-600" />
             Vincular Garantía
@@ -160,20 +160,18 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 my-2">
-          <div className="relative w-full" ref={containerRef}>
-            <div className="relative">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 min-h-[50vh] overflow-hidden my-2">
+          {/* Panel Izquierdo: Buscador y Resultados */}
+          <div className="md:col-span-4 flex flex-col gap-3 h-full border-r pr-2 md:pr-4">
+            <div className="relative shrink-0">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                 <Search className="size-4" />
               </div>
               <Input
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
-                onFocus={() => {
-                  if (searchResults.length > 0) setOpen(true)
-                }}
-                placeholder="Escribe el número de factura, nombre o teléfono..."
-                className="pl-9 pr-9 bg-white border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 transition-all h-11 text-base shadow-sm"
+                placeholder="Buscar cliente, factura o teléfono..."
+                className="pl-9 pr-9 bg-slate-50 border-slate-200 focus:bg-white focus:border-emerald-500 focus:ring-emerald-500/20 transition-all h-10 text-sm shadow-sm"
                 autoComplete="off"
               />
               {isLoading && (
@@ -183,47 +181,61 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
               )}
             </div>
 
-            {open && groupedClients.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                <ul className="max-h-64 overflow-y-auto py-1 custom-scrollbar">
-                  {groupedClients.map((client: any, idx: number) => (
-                    <li
-                      key={idx}
-                      className="px-4 py-3 hover:bg-emerald-50 cursor-pointer flex flex-col group transition-colors border-b border-slate-50 last:border-0"
-                      onClick={() => {
-                        setClientData(client)
-                        setInvoiceNumber(client.name)
-                        setSelectedServiceId(null)
-                        setServiceSearch('')
-                        setOpen(false)
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">
-                          {client.name} {client.phone ? ` - ${client.phone}` : ''}
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase">
-                          {client.invoices.length} {client.invoices.length === 1 ? 'Factura' : 'Facturas'}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+              {groupedClients.length > 0 ? (
+                <ul className="space-y-1 pb-4">
+                  {groupedClients.map((client: any, idx: number) => {
+                    const isSelected = clientData?.name === client.name && clientData?.phone === client.phone;
+                    return (
+                      <li
+                        key={idx}
+                        className={`px-3 py-2.5 rounded-lg cursor-pointer flex flex-col transition-all border ${
+                          isSelected
+                            ? 'bg-emerald-50 border-emerald-200 shadow-sm'
+                            : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'
+                        }`}
+                        onClick={() => {
+                          setClientData(client)
+                          setSelectedServiceId(null)
+                          setServiceSearch('')
+                        }}
+                      >
+                        <div className="flex flex-col gap-0.5">
+                          <span className={`text-sm font-bold truncate ${isSelected ? 'text-emerald-800' : 'text-slate-700'}`}>
+                            {client.name}
+                          </span>
+                          {client.phone && (
+                            <span className="text-xs font-medium text-slate-500">{client.phone}</span>
+                          )}
+                          <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase w-fit mt-1">
+                            {client.invoices.length} {client.invoices.length === 1 ? 'Factura' : 'Facturas'}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
-              </div>
-            )}
+              ) : invoiceNumber.trim().length >= 2 && !isLoading ? (
+                <p className="text-xs text-center text-slate-500 italic mt-6">No se encontraron clientes.</p>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center opacity-40 space-y-2 pb-10">
+                  <Search className="size-8 text-slate-300" />
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Busca para ver resultados</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {clientData && (
-            <div className="bg-slate-50 border rounded-xl p-3 sm:p-4 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b pb-2 gap-1">
-                <span className="text-xs font-bold text-slate-800 uppercase">{clientData.name}</span>
-                {clientData.phone && <span className="text-xs font-bold text-slate-500">{clientData.phone}</span>}
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 gap-2">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Seleccionar servicio defectuoso de su historial:</p>
-                  <div className="relative w-full sm:w-48 shrink-0">
+          {/* Panel Derecho: Tabla de Servicios */}
+          <div className="md:col-span-8 flex flex-col h-full overflow-hidden">
+            {clientData ? (
+              <div className="flex flex-col h-full bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4 overflow-hidden">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-slate-200 pb-3 mb-3 gap-3 shrink-0">
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="text-sm font-bold text-slate-800 uppercase truncate" title={clientData.name}>{clientData.name}</span>
+                    {clientData.phone && <span className="text-xs font-medium text-slate-500">{clientData.phone}</span>}
+                  </div>
+                  <div className="relative w-full sm:w-56 shrink-0">
                     <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
                       <Search className="size-3" />
                     </div>
@@ -231,22 +243,26 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
                       value={serviceSearch}
                       onChange={(e) => setServiceSearch(e.target.value)}
                       placeholder="Filtrar servicio..."
-                      className="h-7 pl-8 text-xs bg-white border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20"
+                      className="h-8 pl-8 text-xs bg-white border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 shadow-sm"
                     />
                   </div>
                 </div>
-                {filteredClientServices.length === 0 ? (
-                  <p className="text-xs italic text-slate-500">No se encontraron servicios registrados.</p>
-                ) : (
-                  <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-                    <Table wrapperClassName="max-h-[40vh] sm:max-h-72 overflow-y-auto overflow-x-auto custom-scrollbar">
-                      <TableHeader className="bg-slate-50 sticky top-0 z-10">
-                        <TableRow className="hover:bg-transparent border-b border-slate-100">
+
+                <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm">
+                  {filteredClientServices.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+                      <p className="text-sm font-medium text-slate-500">No se encontraron servicios registrados.</p>
+                      <p className="text-xs text-slate-400 mt-1">Intenta cambiar el filtro de búsqueda.</p>
+                    </div>
+                  ) : (
+                    <Table wrapperClassName="flex-1 overflow-y-auto overflow-x-auto custom-scrollbar relative h-full">
+                      <TableHeader className="bg-slate-50 sticky top-0 z-10 shadow-sm border-b border-slate-200">
+                        <TableRow className="hover:bg-transparent">
                           <TableHead className="px-2 sm:px-4 py-3 text-[10px] font-bold uppercase text-slate-500 w-[40px] text-center"></TableHead>
-                          <TableHead className="px-2 sm:px-4 py-3 text-[10px] font-bold uppercase text-slate-500 min-w-[120px]">Servicio</TableHead>
-                          <TableHead className="px-2 sm:px-4 py-3 text-[10px] font-bold uppercase text-slate-500 min-w-[100px]">Técnico original</TableHead>
+                          <TableHead className="px-2 sm:px-4 py-3 text-[10px] font-bold uppercase text-slate-500 min-w-[140px]">Servicio</TableHead>
+                          <TableHead className="px-2 sm:px-4 py-3 text-[10px] font-bold uppercase text-slate-500 min-w-[120px]">Técnico original</TableHead>
                           <TableHead className="px-2 sm:px-4 py-3 text-[10px] font-bold uppercase text-slate-500 text-center min-w-[80px]">Factura</TableHead>
-                          <TableHead className="px-2 sm:px-4 py-3 text-[10px] font-bold uppercase text-slate-500 text-center min-w-[80px]">Fecha</TableHead>
+                          <TableHead className="px-2 sm:px-4 py-3 text-[10px] font-bold uppercase text-slate-500 text-center min-w-[90px]">Fecha</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -254,26 +270,26 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
                           <TableRow 
                             key={s.fd_iddetalle_pk}
                             onClick={() => setSelectedServiceId(s.fd_iddetalle_pk)}
-                            className={`cursor-pointer transition-colors border-b border-slate-100/50 last:border-0 ${selectedServiceId === s.fd_iddetalle_pk ? 'bg-emerald-50/50 hover:bg-emerald-50/70' : 'hover:bg-slate-50/50'}`}
+                            className={`cursor-pointer transition-colors border-b border-slate-100 last:border-0 ${selectedServiceId === s.fd_iddetalle_pk ? 'bg-emerald-50/70 hover:bg-emerald-50' : 'hover:bg-slate-50/60'}`}
                           >
-                            <TableCell className="px-2 sm:px-4 py-3 text-center">
-                              <div className={`size-4 mx-auto rounded-full border-2 flex items-center justify-center transition-colors ${selectedServiceId === s.fd_iddetalle_pk ? 'border-emerald-600' : 'border-slate-300'}`}>
+                            <TableCell className="px-2 sm:px-4 py-3 text-center align-middle">
+                              <div className={`size-4 mx-auto rounded-full border-2 flex items-center justify-center transition-colors ${selectedServiceId === s.fd_iddetalle_pk ? 'border-emerald-600 bg-emerald-50' : 'border-slate-300 bg-white'}`}>
                                 {selectedServiceId === s.fd_iddetalle_pk && <div className="size-2 rounded-full bg-emerald-600" />}
                               </div>
                             </TableCell>
-                            <TableCell className="px-2 sm:px-4 py-3">
-                              <span className="text-xs font-bold text-slate-800">{s.sv_nombre}</span>
+                            <TableCell className="px-2 sm:px-4 py-3 align-middle">
+                              <span className="text-xs font-bold text-slate-800 block">{s.sv_nombre}</span>
                             </TableCell>
-                            <TableCell className="px-2 sm:px-4 py-3">
-                              <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">{s.tecnico_nombre}</span>
+                            <TableCell className="px-2 sm:px-4 py-3 align-middle">
+                              <span className="text-[11px] font-semibold text-slate-600 whitespace-nowrap block">{s.tecnico_nombre}</span>
                             </TableCell>
-                            <TableCell className="px-2 sm:px-4 py-3 text-center">
-                              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase whitespace-nowrap">
+                            <TableCell className="px-2 sm:px-4 py-3 text-center align-middle">
+                              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md uppercase whitespace-nowrap inline-block">
                                 #{s.invoice.fc_numero_factura}
                               </span>
                             </TableCell>
-                            <TableCell className="px-2 sm:px-4 py-3 text-center">
-                              <span className="text-[10px] font-medium text-slate-500 tabular-nums whitespace-nowrap">
+                            <TableCell className="px-2 sm:px-4 py-3 text-center align-middle">
+                              <span className="text-[11px] font-medium text-slate-500 tabular-nums whitespace-nowrap block">
                                 {format(new Date(s.invoice.fc_fecha), "dd/MM/yyyy", { locale: es })}
                               </span>
                             </TableCell>
@@ -281,17 +297,26 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-
-            </div>
-          )}
+            ) : (
+              <div className="flex-1 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                <div className="text-center space-y-3 opacity-60 max-w-xs">
+                  <div className="size-12 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <ShieldAlert className="size-6 text-slate-400" />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-600">Ningún cliente seleccionado</p>
+                  <p className="text-xs text-slate-500">Busca a la izquierda y selecciona un cliente para ver su historial completo de servicios.</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        <DialogFooter className="mt-2">
-          <Button variant="outline" onClick={onClose} className="rounded-xl w-full sm:w-auto">Cancelar</Button>
-          <Button onClick={handleConfirm} disabled={!selectedServiceId} className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl w-full sm:w-auto mt-2 sm:mt-0">
+        <DialogFooter className="shrink-0 mt-4 border-t pt-4">
+          <Button variant="outline" onClick={onClose} className="rounded-xl w-full sm:w-auto h-11 px-6">Cancelar</Button>
+          <Button onClick={handleConfirm} disabled={!selectedServiceId} className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl w-full sm:w-auto h-11 px-8 mt-2 sm:mt-0 font-medium shadow-sm transition-all">
             Confirmar Garantía
           </Button>
         </DialogFooter>
