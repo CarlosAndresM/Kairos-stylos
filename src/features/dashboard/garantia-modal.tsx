@@ -103,14 +103,25 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
     }
 
     if (!clientData) return;
-    const allServices = clientData.invoices.flatMap((inv: any) => inv.services)
-    const service = allServices.find((s: any) => s.fd_iddetalle_pk === selectedServiceId)
-    if (!service) return
+    
+    let selectedInv = null;
+    let service = null;
+    
+    for(const inv of clientData.invoices) {
+      const s = inv.services.find((serv: any) => serv.fd_iddetalle_pk === selectedServiceId);
+      if (s) {
+        selectedInv = inv;
+        service = s;
+        break;
+      }
+    }
+    
+    if (!service || !selectedInv) return;
 
     onSuccess({
       detalleOriginalId: service.fd_iddetalle_pk,
       tecnicoOriginalId: service.tecnico_id,
-      factura: service.invoice?.fc_numero_factura,
+      factura: selectedInv.invoice.fc_numero_factura,
       servicio: service.sv_nombre,
       tecnicoOriginalNombre: service.tecnico_nombre
     })
