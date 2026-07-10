@@ -311,9 +311,9 @@ export function BillingClient({
         <div className={cn("bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm", activeTab !== 'VENTAS' && 'hidden')}>
           <div>
             <Table wrapperClassName="max-h-[65vh] overflow-y-auto overflow-x-auto">
-              <TableHeader className="bg-slate-50 dark:bg-slate-800 sticky top-0 z-10">
+              <TableHeader className="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-slate-50 dark:[&_th]:bg-slate-800">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-10 py-0 px-4 w-[110px] border border-slate-200 sticky left-0 top-0 z-20 bg-slate-50 dark:bg-slate-800">
+                  <TableHead className="h-10 py-0 px-4 w-[110px] border border-slate-200 left-0 !z-20">
                     <TableFilter
                       label="FACT. #"
                       options={getFilterOptions('FC_NUMERO_FACTURA')}
@@ -525,7 +525,7 @@ export function BillingClient({
           </div>
           <div>
             <Table wrapperClassName="max-h-[65vh] overflow-y-auto overflow-x-auto">
-              <TableHeader className="bg-slate-50 dark:bg-slate-800 sticky top-0 z-10">
+              <TableHeader className="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-slate-50 dark:[&_th]:bg-slate-800">
                 <TableRow className="hover:bg-transparent border-b border-slate-100">
                   <TableHead className="px-6 py-4 text-[10px] font-bold uppercase text-slate-500">Concepto / Detalle</TableHead>
                   <TableHead className="px-4 py-4 text-[10px] font-bold uppercase text-slate-500 text-center">Sucursal</TableHead>
