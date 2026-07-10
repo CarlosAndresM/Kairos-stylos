@@ -149,7 +149,7 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-4xl max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-5xl max-w-5xl max-h-[95vh] p-4 sm:p-5 overflow-hidden flex flex-col">
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2 text-slate-800">
             <ShieldAlert className="size-5 text-emerald-600" />
@@ -160,9 +160,9 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[60vh] min-h-[400px] max-h-[800px] overflow-hidden my-2">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-[60vh] min-h-[400px] max-h-[800px] overflow-hidden my-1">
           {/* Panel Izquierdo: Buscador y Resultados */}
-          <div className="md:col-span-4 flex flex-col gap-3 h-full border-r pr-2 md:pr-4 overflow-hidden">
+          <div className="md:col-span-4 flex flex-col gap-2 h-full border-r pr-2 md:pr-3 overflow-hidden">
             <div className="relative shrink-0">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                 <Search className="size-4" />
@@ -229,8 +229,8 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
           {/* Panel Derecho: Tabla de Servicios */}
           <div className="md:col-span-8 flex flex-col h-full overflow-hidden">
             {clientData ? (
-              <div className="flex flex-col h-full bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4 overflow-hidden">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-slate-200 pb-3 mb-3 gap-3 shrink-0">
+              <div className="flex flex-col h-full bg-slate-50 border border-slate-200 rounded-xl p-2 sm:p-3 overflow-hidden">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-slate-200 pb-2 mb-2 gap-2 shrink-0">
                   <div className="flex flex-col overflow-hidden">
                     <span className="text-sm font-bold text-slate-800 uppercase truncate" title={clientData.name}>{clientData.name}</span>
                     {clientData.phone && <span className="text-xs font-medium text-slate-500">{clientData.phone}</span>}
