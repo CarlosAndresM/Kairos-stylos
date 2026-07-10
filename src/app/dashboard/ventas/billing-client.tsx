@@ -313,7 +313,7 @@ export function BillingClient({
             <Table>
               <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-10 py-0 px-4 w-[110px] border border-slate-200">
+                  <TableHead className="h-10 py-0 px-4 w-[110px] border border-slate-200 sticky left-0 z-20 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-sm">
                     <TableFilter
                       label="FACT. #"
                       options={getFilterOptions('FC_NUMERO_FACTURA')}
@@ -397,7 +397,7 @@ export function BillingClient({
                       key={invoice.FC_IDFACTURA_PK}
                       className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
                     >
-                      <TableCell className="py-2 px-4 font-bold text-slate-700 text-xs border border-slate-200">
+                      <TableCell className="py-2 px-4 font-bold text-slate-700 text-xs border border-slate-200 sticky left-0 z-10 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/50">
                         {invoice.FC_NUMERO_FACTURA}
                       </TableCell>
                       <TableCell className="py-2 px-4 border border-slate-200">
