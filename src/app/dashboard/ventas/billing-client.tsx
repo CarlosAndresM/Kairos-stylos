@@ -309,8 +309,8 @@ export function BillingClient({
         </div>
 
         <div className={cn("bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm", activeTab !== 'VENTAS' && 'hidden')}>
-          <div className="overflow-x-auto max-h-[65vh] overflow-y-auto">
-            <Table>
+          <div>
+            <Table wrapperClassName="max-h-[65vh] overflow-y-auto overflow-x-auto">
               <TableHeader className="bg-slate-50/50 dark:bg-slate-800/50 sticky top-0 z-10">
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="h-10 py-0 px-4 w-[110px] border border-slate-200 sticky left-0 z-20 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-sm">
@@ -523,9 +523,9 @@ export function BillingClient({
               {expenses.length} registros
             </span>
           </div>
-          <div className="overflow-x-auto max-h-[65vh] overflow-y-auto">
-            <Table>
-              <TableHeader className="bg-slate-50/30">
+          <div>
+            <Table wrapperClassName="max-h-[65vh] overflow-y-auto overflow-x-auto">
+              <TableHeader className="bg-slate-50/30 sticky top-0 z-10">
                 <TableRow className="hover:bg-transparent border-b border-slate-100">
                   <TableHead className="px-6 py-4 text-[10px] font-bold uppercase text-slate-500">Concepto / Detalle</TableHead>
                   <TableHead className="px-4 py-4 text-[10px] font-bold uppercase text-slate-500 text-center">Sucursal</TableHead>
