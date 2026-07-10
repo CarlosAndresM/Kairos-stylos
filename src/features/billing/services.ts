@@ -120,7 +120,16 @@ export async function getInvoiceById(id: number): Promise<ApiResponse> {
 
     // Check if there is a Garantia associated with this invoice
     const [garantias]: any = await (db as any).execute(
-      "SELECT fd_iddetalle_original_fk, tr_idtecnico_original_fk FROM ks_garantias WHERE fc_idfactura_nueva_fk = ?",
+      `SELECT g.fd_iddetalle_original_fk, g.tr_idtecnico_original_fk,
+              f_old.fc_numero_factura as factura,
+              s_old.sv_nombre as servicio,
+              t_old.tr_nombre as tecnico_nombre
+       FROM ks_garantias g
+       JOIN ks_factura_detalles fd_old ON g.fd_iddetalle_original_fk = fd_old.fd_iddetalle_pk
+       JOIN ks_facturas f_old ON fd_old.fc_idfactura_fk = f_old.fc_idfactura_pk
+       JOIN ks_servicios s_old ON fd_old.sv_idservicio_fk = s_old.sv_idservicio_pk
+       JOIN ks_trabajadores t_old ON g.tr_idtecnico_original_fk = t_old.tr_idtrabajador_pk
+       WHERE g.fc_idfactura_nueva_fk = ?`,
       [id]
     );
 
@@ -141,7 +150,10 @@ export async function getInvoiceById(id: number): Promise<ApiResponse> {
           if (mpNombre && (mpNombre.toUpperCase() === 'GARANTIA' || mpNombre.toUpperCase() === 'GARANTÍA') && garantias && garantias.length > 0) {
             meta = {
               detalleOriginalId: garantias[0].fd_iddetalle_original_fk || garantias[0].FD_IDDETALLE_ORIGINAL_FK,
-              tecnicoOriginalId: garantias[0].tr_idtecnico_original_fk || garantias[0].TR_IDTECNICO_ORIGINAL_FK
+              tecnicoOriginalId: garantias[0].tr_idtecnico_original_fk || garantias[0].TR_IDTECNICO_ORIGINAL_FK,
+              factura: garantias[0].factura,
+              servicio: garantias[0].servicio,
+              tecnicoOriginalNombre: garantias[0].tecnico_nombre
             };
           }
           return {
