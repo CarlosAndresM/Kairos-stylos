@@ -29,7 +29,7 @@ import { es } from 'date-fns/locale'
 interface GarantiaModalProps {
   isOpen: boolean
   onClose: () => void
-  onSuccess: (data: { detalleOriginalId: number, tecnicoOriginalId: number }) => void
+  onSuccess: (data: { detalleOriginalId: number, tecnicoOriginalId: number, factura?: string, servicio?: string, tecnicoOriginalNombre?: string }) => void
 }
 
 export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps) {
@@ -45,8 +45,8 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
   React.useEffect(() => {
     if (!isOpen) {
       setInvoiceNumber('')
-      setClientData(null)
       setSearchResults([])
+      setClientData(null)
       setSelectedServiceId(null)
       setServiceSearch('')
       setOpen(false)
@@ -109,7 +109,10 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
 
     onSuccess({
       detalleOriginalId: service.fd_iddetalle_pk,
-      tecnicoOriginalId: service.tecnico_id
+      tecnicoOriginalId: service.tecnico_id,
+      factura: service.invoice?.fc_numero_factura,
+      servicio: service.sv_nombre,
+      tecnicoOriginalNombre: service.tecnico_nombre
     })
     onClose()
   }
