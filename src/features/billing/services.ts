@@ -32,13 +32,13 @@ export async function getWorkers(): Promise<ApiResponse> {
 export async function searchOldInvoiceForWarranty(invoiceNumber: string): Promise<ApiResponse> {
   try {
     const [invoices]: any = await (db as any).execute(
-      `SELECT f.fc_idfactura_pk, f.fc_numero_factura, f.fc_fecha, COALESCE(f.fc_cliente_nombre, t.tr_nombre) as cliente_display 
+      `SELECT f.fc_idfactura_pk, f.fc_numero_factura, f.fc_fecha, COALESCE(f.fc_cliente_nombre, t.tr_nombre) as cliente_display, f.fc_cliente_telefono 
        FROM ks_facturas f
        LEFT JOIN ks_trabajadores t ON f.tr_idcliente_fk = t.tr_idtrabajador_pk
-       WHERE f.fc_numero_factura LIKE ? OR COALESCE(f.fc_cliente_nombre, t.tr_nombre) LIKE ?
+       WHERE f.fc_numero_factura LIKE ? OR COALESCE(f.fc_cliente_nombre, t.tr_nombre) LIKE ? OR f.fc_cliente_telefono LIKE ?
        ORDER BY f.fc_fecha DESC
        LIMIT 15`,
-       [`%${invoiceNumber}%`, `%${invoiceNumber}%`]
+       [`%${invoiceNumber}%`, `%${invoiceNumber}%`, `%${invoiceNumber}%`]
     );
     if (!invoices || invoices.length === 0) return { success: false, error: 'Factura no encontrada' };
     

@@ -15,6 +15,8 @@ import { Search, Loader2, ShieldAlert } from 'lucide-react'
 import { searchOldInvoiceForWarranty } from '@/features/billing/services'
 import { toast } from '@/lib/toast-helper'
 import { NumericFormat } from 'react-number-format'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
 interface GarantiaModalProps {
   isOpen: boolean
@@ -25,7 +27,7 @@ interface GarantiaModalProps {
 export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps) {
   const [invoiceNumber, setInvoiceNumber] = React.useState('')
   const [isLoading, setIsLoading] = React.useState(false)
-  const [invoiceData, setInvoiceData] = React.useState<any>(null)
+  const [clientData, setClientData] = React.useState<any>(null)
   const [searchResults, setSearchResults] = React.useState<any[]>([])
   const [selectedServiceId, setSelectedServiceId] = React.useState<number | null>(null)
 
@@ -35,7 +37,7 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
   React.useEffect(() => {
     if (!isOpen) {
       setInvoiceNumber('')
-      setInvoiceData(null)
+      setClientData(null)
       setSearchResults([])
       setSelectedServiceId(null)
       setOpen(false)
@@ -55,7 +57,7 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
 
   const handleSearch = async () => {
     if (!invoiceNumber.trim()) {
-      toast.error('Ingrese un número de factura o cliente')
+      toast.error('Ingrese un número de factura, cliente o teléfono')
       return
     }
 
@@ -83,7 +85,9 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
       return
     }
 
-    const service = invoiceData.services.find((s: any) => s.fd_iddetalle_pk === selectedServiceId)
+    if (!clientData) return;
+    const allServices = clientData.invoices.flatMap((inv: any) => inv.services)
+    const service = allServices.find((s: any) => s.fd_iddetalle_pk === selectedServiceId)
     if (!service) return
 
     onSuccess({
@@ -93,16 +97,42 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
     onClose()
   }
 
+  // Group search results by client
+  const groupedClients = React.useMemo(() => {
+    const map = new Map();
+    searchResults.forEach(result => {
+      // Usar nombre y telefono como llave, si no tiene teléfono usar solo nombre
+      const key = `${result.invoice.cliente_display}-${result.invoice.fc_cliente_telefono || ''}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          name: result.invoice.cliente_display,
+          phone: result.invoice.fc_cliente_telefono,
+          invoices: []
+        });
+      }
+      map.get(key).invoices.push(result);
+    });
+    return Array.from(map.values());
+  }, [searchResults]);
+
+  // Extract all services for the selected client and sort by date DESC
+  const allClientServices = React.useMemo(() => {
+    if (!clientData) return [];
+    return clientData.invoices
+      .flatMap((inv: any) => inv.services.map((s: any) => ({ ...s, invoice: inv.invoice })))
+      .sort((a: any, b: any) => new Date(b.invoice.fc_fecha).getTime() - new Date(a.invoice.fc_fecha).getTime());
+  }, [clientData]);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-slate-800">
             <ShieldAlert className="size-5 text-emerald-600" />
             Vincular Garantía
           </DialogTitle>
           <DialogDescription>
-            Busca la factura anterior para relacionar el mal servicio y descontarlo al técnico responsable.
+            Busca la factura, nombre o teléfono para encontrar el cliente y selecciona el servicio original defectuoso.
           </DialogDescription>
         </DialogHeader>
 
@@ -120,7 +150,7 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
                     if (searchResults.length > 0) setOpen(true)
                   }}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="Número de factura o cliente..."
+                  placeholder="Número de factura, nombre o teléfono..."
                   className="pl-9 bg-white border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 transition-all"
                   autoComplete="off"
                 />
@@ -130,34 +160,27 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
               </Button>
             </div>
 
-            {open && searchResults.length > 0 && (
+            {open && groupedClients.length > 0 && (
               <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 <ul className="max-h-64 overflow-y-auto py-1 custom-scrollbar">
-                  {searchResults.map((result: any) => (
+                  {groupedClients.map((client: any, idx: number) => (
                     <li
-                      key={result.invoice.fc_idfactura_pk}
+                      key={idx}
                       className="px-4 py-3 hover:bg-emerald-50 cursor-pointer flex flex-col group transition-colors border-b border-slate-50 last:border-0"
                       onClick={() => {
-                        setInvoiceData(result)
-                        setInvoiceNumber(result.invoice.fc_numero_factura)
-                        if (result.services.length === 1) {
-                          setSelectedServiceId(result.services[0].fd_iddetalle_pk)
-                        } else {
-                          setSelectedServiceId(null)
-                        }
+                        setClientData(client)
+                        setInvoiceNumber(client.name)
+                        setSelectedServiceId(null)
                         setOpen(false)
                       }}
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">
-                          Factura #{result.invoice.fc_numero_factura}
+                          {client.name} {client.phone ? ` - ${client.phone}` : ''}
                         </span>
                         <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase">
-                          {new Date(result.invoice.fc_fecha).toLocaleDateString()}
+                          {client.invoices.length} {client.invoices.length === 1 ? 'Factura' : 'Facturas'}
                         </span>
-                      </div>
-                      <div className="text-xs font-medium text-slate-500 mt-1">
-                        Cliente: {result.invoice.cliente_display}
                       </div>
                     </li>
                   ))}
@@ -166,19 +189,19 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
             )}
           </div>
 
-          {invoiceData && (
+          {clientData && (
             <div className="bg-slate-50 border rounded-xl p-3 space-y-3">
               <div className="flex justify-between items-center border-b pb-2">
-                <span className="text-xs font-bold text-slate-500 uppercase">Factura #{invoiceData.invoice.fc_numero_factura}</span>
-                <span className="text-xs font-bold text-slate-800">{invoiceData.invoice.cliente_display}</span>
+                <span className="text-xs font-bold text-slate-800 uppercase">{clientData.name}</span>
+                {clientData.phone && <span className="text-xs font-bold text-slate-500">{clientData.phone}</span>}
               </div>
 
-              <div className="space-y-2">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Seleccionar servicio defectuoso:</p>
-                {invoiceData.services.length === 0 && (
-                  <p className="text-xs italic text-slate-500">Esta factura no tiene servicios registrados.</p>
+              <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar pr-2">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Seleccionar servicio defectuoso de su historial:</p>
+                {allClientServices.length === 0 && (
+                  <p className="text-xs italic text-slate-500">Este cliente no tiene servicios registrados en las facturas encontradas.</p>
                 )}
-                {invoiceData.services.map((s: any) => (
+                {allClientServices.map((s: any) => (
                   <div 
                     key={s.fd_iddetalle_pk}
                     onClick={() => setSelectedServiceId(s.fd_iddetalle_pk)}
@@ -187,8 +210,11 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-slate-800">{s.sv_nombre}</span>
                       <span className="text-[10px] text-slate-500 mt-0.5">Técnico original: <span className="font-bold text-slate-700">{s.tecnico_nombre}</span></span>
+                      <span className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                        Factura #{s.invoice.fc_numero_factura} &bull; {format(new Date(s.invoice.fc_fecha), "dd/MM/yyyy", { locale: es })}
+                      </span>
                     </div>
-                    <div className={"size-4 rounded-full border-2 flex items-center justify-center " + (selectedServiceId === s.fd_iddetalle_pk ? 'border-emerald-600' : 'border-slate-300')}>
+                    <div className={"size-4 flex-shrink-0 rounded-full border-2 flex items-center justify-center " + (selectedServiceId === s.fd_iddetalle_pk ? 'border-emerald-600' : 'border-slate-300')}>
                       {selectedServiceId === s.fd_iddetalle_pk && <div className="size-2 rounded-full bg-emerald-600" />}
                     </div>
                   </div>
