@@ -1296,6 +1296,29 @@ export function BillingModal({
                         })}
                       </div>
                     )}
+                    
+                    {/* Info box de Garantia Vinculada */}
+                    {(() => {
+                      const garantiaPayment = watchedPayments.find(p => {
+                        const m = paymentMethods.find(pm => pm.MP_IDMETODO_PK === p.MP_IDMETODO_FK)
+                        return m?.MP_NOMBRE?.toUpperCase() === 'GARANTÍA' || m?.MP_NOMBRE?.toUpperCase() === 'GARANTIA'
+                      })
+                      if (garantiaPayment?.meta?.factura) {
+                        return (
+                          <div className="flex flex-col p-3 mt-0 mb-3 bg-emerald-50/50 border border-emerald-200 rounded-lg shadow-sm">
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <Receipt className="size-4 text-emerald-600" />
+                              <span className="text-xs font-black text-emerald-900 uppercase">Garantía Vinculada (Factura #{garantiaPayment.meta.factura})</span>
+                            </div>
+                            <div className="flex flex-col gap-1 ml-5">
+                              <span className="text-[11px] text-emerald-700 font-medium">Servicio original: <span className="font-bold text-emerald-900">{garantiaPayment.meta.servicio}</span></span>
+                              <span className="text-[11px] text-emerald-700 font-medium">Técnico original: <span className="font-bold text-emerald-900">{garantiaPayment.meta.tecnicoOriginalNombre}</span></span>
+                            </div>
+                          </div>
+                        )
+                      }
+                      return null
+                    })()}
 
                     {/* Balance */}
                     <div className={cn("p-3 rounded-lg border",

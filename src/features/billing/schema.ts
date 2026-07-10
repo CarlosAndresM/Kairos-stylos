@@ -42,6 +42,9 @@ export const paymentDetailSchema = z.object({
   meta: z.object({
     detalleOriginalId: z.number().optional().nullable(),
     tecnicoOriginalId: z.number().optional().nullable(),
+    factura: z.string().optional().nullable(),
+    servicio: z.string().optional().nullable(),
+    tecnicoOriginalNombre: z.string().optional().nullable(),
   }).optional().nullable(),
 });
 
