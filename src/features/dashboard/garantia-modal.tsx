@@ -160,9 +160,9 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 min-h-[50vh] overflow-hidden my-2">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[60vh] min-h-[400px] max-h-[800px] overflow-hidden my-2">
           {/* Panel Izquierdo: Buscador y Resultados */}
-          <div className="md:col-span-4 flex flex-col gap-3 h-full border-r pr-2 md:pr-4">
+          <div className="md:col-span-4 flex flex-col gap-3 h-full border-r pr-2 md:pr-4 overflow-hidden">
             <div className="relative shrink-0">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                 <Search className="size-4" />
@@ -181,7 +181,7 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 min-h-0">
               {groupedClients.length > 0 ? (
                 <ul className="space-y-1 pb-4">
                   {groupedClients.map((client: any, idx: number) => {
