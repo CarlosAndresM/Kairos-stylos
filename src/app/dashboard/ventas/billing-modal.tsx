@@ -1236,37 +1236,20 @@ export function BillingModal({
                         .map(method => {
                           const payment = watchedPayments.find(p => p.MP_IDMETODO_FK === method.MP_IDMETODO_PK)
                           const isSelected = !!payment
-                          const isGarantia = method.MP_NOMBRE?.toUpperCase() === 'GARANTÍA' || method.MP_NOMBRE?.toUpperCase() === 'GARANTIA'
                           
                           return (
                             <div key={method.MP_IDMETODO_PK}
                               onClick={() => !isPaid && handlePaymentToggle(method, !isSelected)}
-                              className={cn("flex flex-col gap-1.5 p-3 border rounded-lg cursor-pointer select-none transition-all",
+                              className={cn("flex items-center gap-2.5 p-3 border rounded-lg cursor-pointer select-none transition-all",
                                 isPaid ? "cursor-not-allowed opacity-60" : "",
                                 isSelected ? "border-[#FF7E5F] bg-[#FF7E5F]/5" : "border-slate-200 bg-white hover:border-slate-300")}>
-                              <div className="flex items-center gap-2.5">
-                                <div className={cn("size-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all",
-                                  isSelected ? "border-[#FF7E5F] bg-[#FF7E5F]" : "border-slate-300 bg-white")}>
-                                  {isSelected && <Check className="size-2.5 text-white" strokeWidth={3} />}
-                                </div>
-                                <span className="text-xs font-semibold text-slate-700">
-                                  {method.MP_NOMBRE?.toUpperCase() === 'VALE' ? 'Servicio de Trabajador' : method.MP_NOMBRE}
-                                </span>
+                              <div className={cn("size-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all",
+                                isSelected ? "border-[#FF7E5F] bg-[#FF7E5F]" : "border-slate-300 bg-white")}>
+                                {isSelected && <Check className="size-2.5 text-white" strokeWidth={3} />}
                               </div>
-                              {isSelected && isGarantia && payment?.meta?.factura && (
-                                <div className="ml-6 flex flex-col p-2 mt-0.5 bg-white border border-[#FF7E5F]/20 rounded-md shadow-sm">
-                                  <div className="flex items-center gap-1.5 mb-1">
-                                    <Receipt className="size-3 text-slate-400" />
-                                    <span className="text-[10px] font-black text-slate-700">Factura {payment.meta.factura}</span>
-                                  </div>
-                                  <span className="text-[9px] text-slate-500 font-medium truncate mb-0.5" title={payment.meta.servicio}>
-                                    • {payment.meta.servicio}
-                                  </span>
-                                  <span className="text-[9px] text-slate-500 font-medium truncate" title={payment.meta.tecnicoOriginalNombre}>
-                                    • Téc: <span className="font-bold text-slate-700">{payment.meta.tecnicoOriginalNombre}</span>
-                                  </span>
-                                </div>
-                              )}
+                              <span className="text-xs font-semibold text-slate-700">
+                                {method.MP_NOMBRE?.toUpperCase() === 'VALE' ? 'Servicio de Trabajador' : method.MP_NOMBRE}
+                              </span>
                             </div>
                           )
                         })}
