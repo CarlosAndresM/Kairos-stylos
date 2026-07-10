@@ -24,6 +24,14 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
+import {
   Table,
   TableBody,
   TableCell,
@@ -590,47 +598,57 @@ export function BillingClient({
         />
 
         {/* Modal Autenticación Admin para Eliminar */}
-        {isAdminDeleteAuthOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-2xl p-6 w-full max-w-sm">
-              <h3 className="text-sm font-bold text-slate-900 mb-1 flex items-center gap-2">
+        <Dialog open={isAdminDeleteAuthOpen} onOpenChange={(open) => {
+          if (!open && !isDeleting) {
+            setIsAdminDeleteAuthOpen(false)
+            setAdminPassword('')
+            setInvoiceToDelete(null)
+          }
+        }}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-sm font-bold text-slate-900">
                 <Trash2 className="size-4 text-red-500" /> Eliminar factura
-              </h3>
-              <p className="text-xs text-slate-500 mb-4">Esta acción es permanente. Ingrese la contraseña de administrador para confirmar.</p>
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Esta acción es permanente. Ingrese la contraseña de administrador para confirmar.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-2">
               <Input
                 type="password"
                 placeholder="Contraseña administrador"
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
-                className="mb-4"
                 autoFocus
                 autoComplete="new-password"
                 onKeyDown={(e) => e.key === 'Enter' && confirmDeleteInvoice()}
               />
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setIsAdminDeleteAuthOpen(false)
-                    setAdminPassword('')
-                    setInvoiceToDelete(null)
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white gap-2"
-                  onClick={confirmDeleteInvoice}
-                  disabled={isDeleting}
-                >
-                  {isDeleting && <Loader2 className="size-3 animate-spin" />}
-                  Eliminar
-                </Button>
-              </div>
             </div>
-          </div>
-        )}
+            <DialogFooter className="flex sm:justify-between gap-2 mt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                disabled={isDeleting}
+                onClick={() => {
+                  setIsAdminDeleteAuthOpen(false)
+                  setAdminPassword('')
+                  setInvoiceToDelete(null)
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white gap-2"
+                onClick={confirmDeleteInvoice}
+                disabled={isDeleting}
+              >
+                {isDeleting && <Loader2 className="size-3 animate-spin" />}
+                Eliminar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </LoadingGate>
   )
