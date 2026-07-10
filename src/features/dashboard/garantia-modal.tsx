@@ -141,7 +141,7 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto custom-scrollbar">
+      <DialogContent className="sm:max-w-4xl max-w-4xl max-h-[95vh] overflow-y-auto custom-scrollbar">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-slate-800">
             <ShieldAlert className="size-5 text-emerald-600" />
