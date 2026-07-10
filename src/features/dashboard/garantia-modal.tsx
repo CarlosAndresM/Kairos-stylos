@@ -64,20 +64,28 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleSearch = async () => {
-    if (!invoiceNumber.trim()) {
-      toast.error('Ingrese un número de factura, cliente o teléfono')
-      return
-    }
+  // Debounced search
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      const query = invoiceNumber.trim();
+      if (query.length >= 2) {
+        performSearch(query);
+      } else {
+        setSearchResults([]);
+        setOpen(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [invoiceNumber]);
 
+  const performSearch = async (query: string) => {
     setIsLoading(true)
     try {
-      const res = await searchOldInvoiceForWarranty(invoiceNumber.trim())
-      if (res.success && res.data) {
+      const res = await searchOldInvoiceForWarranty(query)
+      if (res.success && res.data && res.data.length > 0) {
         setSearchResults(res.data)
         setOpen(true)
       } else {
-        toast.error('No se encontraron coincidencias')
         setSearchResults([])
         setOpen(false)
       }
@@ -154,26 +162,25 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
 
         <div className="space-y-4 my-2">
           <div className="relative w-full" ref={containerRef}>
-            <div className="flex gap-2 relative">
-              <div className="relative flex-1">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  <Search className="size-4" />
-                </div>
-                <Input
-                  value={invoiceNumber}
-                  onChange={(e) => setInvoiceNumber(e.target.value)}
-                  onFocus={() => {
-                    if (searchResults.length > 0) setOpen(true)
-                  }}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="Número de factura, nombre o teléfono..."
-                  className="pl-9 bg-white border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 transition-all"
-                  autoComplete="off"
-                />
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <Search className="size-4" />
               </div>
-              <Button onClick={handleSearch} disabled={isLoading} className="bg-slate-900 hover:bg-slate-800 text-white shadow-sm px-4 sm:px-6 shrink-0">
-                {isLoading ? <Loader2 className="size-4 animate-spin" /> : 'Buscar'}
-              </Button>
+              <Input
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+                onFocus={() => {
+                  if (searchResults.length > 0) setOpen(true)
+                }}
+                placeholder="Escribe el número de factura, nombre o teléfono..."
+                className="pl-9 pr-9 bg-white border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 transition-all h-11 text-base shadow-sm"
+                autoComplete="off"
+              />
+              {isLoading && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-600">
+                  <Loader2 className="size-4 animate-spin" />
+                </div>
+              )}
             </div>
 
             {open && groupedClients.length > 0 && (
