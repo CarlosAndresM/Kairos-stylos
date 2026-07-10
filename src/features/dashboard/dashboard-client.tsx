@@ -938,7 +938,7 @@ export function DashboardClient() {
                                         <Table wrapperClassName="max-h-[65vh] overflow-y-auto overflow-x-auto">
                                             <TableHeader className="bg-slate-50 dark:bg-slate-800 sticky top-0 z-10">
                                                 <TableRow className="hover:bg-transparent border-b border-slate-100">
-                                                    <TableHead className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider w-[120px] border border-slate-200 sticky left-0 z-20 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-sm">Factura</TableHead>
+                                                    <TableHead className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider w-[120px] border border-slate-200 sticky left-0 top-0 z-20 bg-slate-50 dark:bg-slate-800">Factura</TableHead>
                                                     <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider w-[100px] text-center border border-slate-200">Fecha</TableHead>
                                                     <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider border border-slate-200">Sucursal</TableHead>
                                                     <TableHead className="px-4 py-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider border border-slate-200">Técnicos</TableHead>

@@ -313,7 +313,7 @@ export function BillingClient({
             <Table wrapperClassName="max-h-[65vh] overflow-y-auto overflow-x-auto">
               <TableHeader className="bg-slate-50 dark:bg-slate-800 sticky top-0 z-10">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-10 py-0 px-4 w-[110px] border border-slate-200 sticky left-0 z-20 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-sm">
+                  <TableHead className="h-10 py-0 px-4 w-[110px] border border-slate-200 sticky left-0 top-0 z-20 bg-slate-50 dark:bg-slate-800">
                     <TableFilter
                       label="FACT. #"
                       options={getFilterOptions('FC_NUMERO_FACTURA')}
