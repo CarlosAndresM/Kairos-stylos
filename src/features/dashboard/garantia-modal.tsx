@@ -12,6 +12,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, Loader2, ShieldAlert } from 'lucide-react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { searchOldInvoiceForWarranty } from '@/features/billing/services'
 import { toast } from '@/lib/toast-helper'
 import { NumericFormat } from 'react-number-format'
@@ -40,6 +48,7 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
       setClientData(null)
       setSearchResults([])
       setSelectedServiceId(null)
+      setServiceSearch('')
       setOpen(false)
     }
   }, [isOpen])
@@ -123,6 +132,13 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
       .sort((a: any, b: any) => new Date(b.invoice.fc_fecha).getTime() - new Date(a.invoice.fc_fecha).getTime());
   }, [clientData]);
 
+  const [serviceSearch, setServiceSearch] = React.useState('')
+  const filteredClientServices = React.useMemo(() => {
+    if (!serviceSearch.trim()) return allClientServices;
+    const lowerSearch = serviceSearch.toLowerCase();
+    return allClientServices.filter((s: any) => s.sv_nombre.toLowerCase().includes(lowerSearch));
+  }, [allClientServices, serviceSearch]);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-xl">
@@ -171,6 +187,7 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
                         setClientData(client)
                         setInvoiceNumber(client.name)
                         setSelectedServiceId(null)
+                        setServiceSearch('')
                         setOpen(false)
                       }}
                     >
@@ -196,29 +213,69 @@ export function GarantiaModal({ isOpen, onClose, onSuccess }: GarantiaModalProps
                 {clientData.phone && <span className="text-xs font-bold text-slate-500">{clientData.phone}</span>}
               </div>
 
-              <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar pr-2">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Seleccionar servicio defectuoso de su historial:</p>
-                {allClientServices.length === 0 && (
-                  <p className="text-xs italic text-slate-500">Este cliente no tiene servicios registrados en las facturas encontradas.</p>
-                )}
-                {allClientServices.map((s: any) => (
-                  <div 
-                    key={s.fd_iddetalle_pk}
-                    onClick={() => setSelectedServiceId(s.fd_iddetalle_pk)}
-                    className={"p-3 border rounded-xl cursor-pointer flex justify-between items-center transition-all " + (selectedServiceId === s.fd_iddetalle_pk ? 'bg-emerald-50 border-emerald-500 shadow-sm' : 'bg-white border-slate-200 hover:border-emerald-300')}
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-slate-800">{s.sv_nombre}</span>
-                      <span className="text-[10px] text-slate-500 mt-0.5">Técnico original: <span className="font-bold text-slate-700">{s.tecnico_nombre}</span></span>
-                      <span className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
-                        Factura #{s.invoice.fc_numero_factura} &bull; {format(new Date(s.invoice.fc_fecha), "dd/MM/yyyy", { locale: es })}
-                      </span>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Seleccionar servicio defectuoso de su historial:</p>
+                  <div className="relative w-48">
+                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
+                      <Search className="size-3" />
                     </div>
-                    <div className={"size-4 flex-shrink-0 rounded-full border-2 flex items-center justify-center " + (selectedServiceId === s.fd_iddetalle_pk ? 'border-emerald-600' : 'border-slate-300')}>
-                      {selectedServiceId === s.fd_iddetalle_pk && <div className="size-2 rounded-full bg-emerald-600" />}
-                    </div>
+                    <Input
+                      value={serviceSearch}
+                      onChange={(e) => setServiceSearch(e.target.value)}
+                      placeholder="Filtrar servicio..."
+                      className="h-7 pl-8 text-xs bg-white border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20"
+                    />
                   </div>
-                ))}
+                </div>
+                {filteredClientServices.length === 0 ? (
+                  <p className="text-xs italic text-slate-500">No se encontraron servicios registrados.</p>
+                ) : (
+                  <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                    <Table wrapperClassName="max-h-72 overflow-y-auto custom-scrollbar">
+                      <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                        <TableRow className="hover:bg-transparent border-b border-slate-100">
+                          <TableHead className="px-4 py-3 text-[10px] font-bold uppercase text-slate-500 w-[40px] text-center"></TableHead>
+                          <TableHead className="px-4 py-3 text-[10px] font-bold uppercase text-slate-500">Servicio</TableHead>
+                          <TableHead className="px-4 py-3 text-[10px] font-bold uppercase text-slate-500">Técnico original</TableHead>
+                          <TableHead className="px-4 py-3 text-[10px] font-bold uppercase text-slate-500 text-center">Factura</TableHead>
+                          <TableHead className="px-4 py-3 text-[10px] font-bold uppercase text-slate-500 text-center">Fecha</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredClientServices.map((s: any) => (
+                          <TableRow 
+                            key={s.fd_iddetalle_pk}
+                            onClick={() => setSelectedServiceId(s.fd_iddetalle_pk)}
+                            className={`cursor-pointer transition-colors border-b border-slate-100/50 last:border-0 ${selectedServiceId === s.fd_iddetalle_pk ? 'bg-emerald-50/50 hover:bg-emerald-50/70' : 'hover:bg-slate-50/50'}`}
+                          >
+                            <TableCell className="px-4 py-3 text-center">
+                              <div className={`size-4 mx-auto rounded-full border-2 flex items-center justify-center transition-colors ${selectedServiceId === s.fd_iddetalle_pk ? 'border-emerald-600' : 'border-slate-300'}`}>
+                                {selectedServiceId === s.fd_iddetalle_pk && <div className="size-2 rounded-full bg-emerald-600" />}
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-4 py-3">
+                              <span className="text-xs font-bold text-slate-800">{s.sv_nombre}</span>
+                            </TableCell>
+                            <TableCell className="px-4 py-3">
+                              <span className="text-xs font-semibold text-slate-600">{s.tecnico_nombre}</span>
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-center">
+                              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase">
+                                #{s.invoice.fc_numero_factura}
+                              </span>
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-center">
+                              <span className="text-[10px] font-medium text-slate-500 tabular-nums">
+                                {format(new Date(s.invoice.fc_fecha), "dd/MM/yyyy", { locale: es })}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </div>
 
             </div>
